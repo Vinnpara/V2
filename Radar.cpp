@@ -336,3 +336,72 @@ void Radar::DrawScale(){
     }
 
 }
+
+void Radar::DrawScaleLong() {
+
+    static int TriangleHalves = int(NumberOfTriangles / 2);
+    int j;
+
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+
+    //td::cout << "\nVertix  " << RadarSectorTriangle.size();
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+    glBindVertexArray(0);
+
+
+    for (j = 0; j <= 200; j += 20) {
+
+        float ScaleValue = ConvertRadarValue(float(j));
+
+        for (int t = 0; t < TriangleHalves; t+=10) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians(-(float)t);
+            transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+            S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            S1.setMat4("transform", transform);
+
+            glBindVertexArray(VAO);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_LINES, 0, TriangleHalves);
+
+        }
+
+        for (int t = 0; t < TriangleHalves; t += 10) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians((float)t);
+            transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+            S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            S1.setMat4("transform", transform);
+            glBindVertexArray(VAO);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_LINES, 0, TriangleHalves);
+
+        }
+    }
+
+
+
+}

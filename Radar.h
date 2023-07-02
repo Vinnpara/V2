@@ -29,6 +29,7 @@ public:
 	void DrawSegments();
 	void DrawRadar();
 	void DrawScale();
+	void DrawScaleLong();
 	void UpdateValues(int16_t RadarVals, int16_t RadarPos);
 	
 private:

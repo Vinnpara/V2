@@ -159,7 +159,7 @@ int main()
         R1.DrawSegments();
         R1.DrawRadar();
         R1.DrawScale();
-        
+        R1.DrawScaleLong();
         
         /*DrawSegments2(NumberOfTriangles, S1, SectorVertices);
         DrawRadar2(S1, RadarValues, SectorVertices);
