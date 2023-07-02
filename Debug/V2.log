@@ -1,0 +1,13 @@
+﻿  Robot.cpp
+D:\V2\V2\V2\Robot.cpp(68,20): warning C4101: 'e': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(68,31): warning C4101: 'en': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(68,25): warning C4101: 'st': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(121,20): warning C4101: 'e': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(192,6): warning C4244: '=': conversion from 'float' to 'unsigned short', possible loss of data
+D:\V2\V2\V2\Robot.cpp(168,16): warning C4101: 'v2': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(167,8): warning C4101: 'light': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(169,6): warning C4101: 'lig': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(164,9): warning C4101: 'l': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(168,12): warning C4101: 'v1': unreferenced local variable
+D:\V2\V2\V2\Robot.cpp(319,10): warning C4101: 'ti': unreferenced local variable
+  V2.vcxproj -> D:\V2\V2\Debug\V2.exe
