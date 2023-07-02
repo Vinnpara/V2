@@ -31,6 +31,7 @@ public:
 	void DrawScale();
 	void DrawScaleLong();
 	void UpdateValues(int16_t RadarVals, int16_t RadarPos);
+	void DeleteVertexBuffers();
 	
 private:
 
@@ -40,6 +41,10 @@ private:
 	std::vector<float> SectorVertices;
 	std::vector<float> LineSectorVertices;
 	const int NumberOfTriangles = 173;
+	unsigned int VAODrawSegments, VBODrawSegments,
+		         VAODrawRadar, VBODrawRadar,
+		         VAODrawScale, VBODrawScale,
+	             VAODrawScaleLong, VBODrawScaleLong;
 
 	float ConvertRadarDistanceColorBlue(float RadarValue);
 	float ConvertRadarDistanceColorRed(float RadarValue);

@@ -157,13 +157,13 @@ float Radar::ConvertRadarDistanceColorBlue(float RadarValue) {
 
 void Radar::DrawSegments() {
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    
+    glGenVertexArrays(1, &VAODrawSegments);
+    glGenBuffers(1, &VBODrawSegments);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAODrawSegments);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBODrawSegments);
     glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
 
     //td::cout << "\nVertix  " << RadarSectorTriangle.size();
@@ -192,7 +192,7 @@ void Radar::DrawSegments() {
         S1.setVec4("Color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
         S1.setMat4("transform", transform);
 
-        glBindVertexArray(VAO);
+        glBindVertexArray(VAODrawSegments);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glDrawArrays(GL_TRIANGLES, 0, TriangleHalves);
@@ -209,7 +209,7 @@ void Radar::DrawSegments() {
         S1.setVec4("Color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
         S1.setMat4("transform", transform);
 
-        glBindVertexArray(VAO);
+        glBindVertexArray(VAODrawSegments);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glDrawArrays(GL_TRIANGLES, 0, TriangleHalves);
@@ -220,13 +220,13 @@ void Radar::DrawSegments() {
 
 void Radar::DrawRadar(){
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    
+    glGenVertexArrays(1, &VAODrawRadar);
+    glGenBuffers(1, &VBODrawRadar);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAODrawRadar);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBODrawRadar);
     glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
 
     //td::cout << "\nVertix  " << RadarSectorTriangle.size();
@@ -256,7 +256,7 @@ void Radar::DrawRadar(){
             //cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
             S1.setVec4("Color", glm::vec4(ConvertRadarDistanceColorRed(float(RadarValues.at(t))), 0.0f, ConvertRadarDistanceColorBlue(float(RadarValues.at(t))), 1.0f));
             S1.setMat4("transform", transform);
-            glBindVertexArray(VAO);
+            glBindVertexArray(VAODrawRadar);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glDrawArrays(GL_TRIANGLES, 0, RadarValues.size() * 3);
 
@@ -275,13 +275,13 @@ void Radar::DrawScale(){
     static int TriangleHalves = int(NumberOfTriangles / 2);
     int j;
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    
+    glGenVertexArrays(1, &VAODrawScale);
+    glGenBuffers(1, &VBODrawScale);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAODrawScale);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBODrawScale);
     glBufferData(GL_ARRAY_BUFFER, LineSectorVertices.size(), &LineSectorVertices[0], GL_STATIC_DRAW);
 
     //td::cout << "\nVertix  " << RadarSectorTriangle.size();
@@ -311,7 +311,7 @@ void Radar::DrawScale(){
             S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
             S1.setMat4("transform", transform);
 
-            glBindVertexArray(VAO);
+            glBindVertexArray(VAODrawScale);
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawArrays(GL_LINES, 0, TriangleHalves);
@@ -327,7 +327,7 @@ void Radar::DrawScale(){
 
             S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
             S1.setMat4("transform", transform);
-            glBindVertexArray(VAO);
+            glBindVertexArray(VAODrawScale);
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawArrays(GL_LINES, 0, TriangleHalves);
@@ -342,13 +342,13 @@ void Radar::DrawScaleLong() {
     static int TriangleHalves = int(NumberOfTriangles / 2);
     int j;
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    
+    glGenVertexArrays(1, &VAODrawScaleLong);
+    glGenBuffers(1, &VBODrawScaleLong);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAODrawScaleLong);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBODrawScaleLong);
     glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
 
     //td::cout << "\nVertix  " << RadarSectorTriangle.size();
@@ -378,7 +378,7 @@ void Radar::DrawScaleLong() {
             S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
             S1.setMat4("transform", transform);
 
-            glBindVertexArray(VAO);
+            glBindVertexArray(VAODrawScaleLong);
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawArrays(GL_LINES, 0, TriangleHalves);
@@ -394,7 +394,7 @@ void Radar::DrawScaleLong() {
 
             S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
             S1.setMat4("transform", transform);
-            glBindVertexArray(VAO);
+            glBindVertexArray(VAODrawScaleLong);
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawArrays(GL_LINES, 0, TriangleHalves);
@@ -403,5 +403,24 @@ void Radar::DrawScaleLong() {
     }
 
 
+
+}
+
+void Radar::DeleteVertexBuffers() {
+
+
+    glDeleteVertexArrays(1, &VAODrawSegments);
+    glDeleteBuffers(1, &VBODrawSegments);
+
+    glDeleteVertexArrays(1, &VAODrawRadar);
+    glDeleteBuffers(1, &VBODrawRadar);
+
+    glDeleteVertexArrays(1, &VAODrawScale);
+    glDeleteBuffers(1, &VBODrawScale);
+
+    glDeleteVertexArrays(1, &VAODrawScaleLong);
+    glDeleteBuffers(1, &VBODrawScaleLong);
+
+    std::cout << "\nVERTEX BUFFERS DELETED " << std::endl;
 
 }

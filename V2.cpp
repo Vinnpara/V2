@@ -174,9 +174,10 @@ int main()
     }
    
     //glDeleteVertexArrays(1, &VAORadarBackground);
-    //glDeleteBuffers(1, &VBORadarBackground);
+    //glDeleteBuffers(1, &VBORadarBackground)
 
     arduino.SerialClose();
+    R1.DeleteVertexBuffers();
     //std::cout << "Hello World!\n";
     glfwTerminate();
     return 0;
