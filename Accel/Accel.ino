@@ -15,7 +15,9 @@ float AccErrorX, AccErrorY, GyroErrorX, GyroErrorY, GyroErrorZ;
 float elapsedTime, currentTime, previousTime;
 int c = 0;
 const int TransferGain=1000;
-int16_t RollTransfer, PitchTransfer, YawTransfer;
+const int TransferGain2=10000;
+int16_t RollTransfer, PitchTransfer, YawTransfer,
+        AccelXTranfer, AccelYTranfer, AccelZTranfer;
 int8_t Buffer16Int[2];
 
 void setup() {
@@ -97,15 +99,22 @@ RollTransfer=roll*TransferGain;
 PitchTransfer=pitch*TransferGain;
 YawTransfer=yaw*TransferGain;
 
-  WriteCommandInt16(MEASURED_ROLL,RollTransfer);
+AccelXTranfer=AccX*TransferGain2;
+AccelYTranfer=AccY*TransferGain2;
+AccelZTranfer=AccZ*TransferGain2;
+
+  /*WriteCommandInt16(MEASURED_ROLL,RollTransfer);
   WriteCommandInt16(MEASURED_PITCH,PitchTransfer);
   WriteCommandInt16(MEASURED_YAW,YawTransfer);
+  WriteCommandInt16(MEASURED_ACCEL_X,AccelXTranfer);
+  WriteCommandInt16(MEASURED_ACCEL_Y,AccelYTranfer);
+  WriteCommandInt16(MEASURED_ACCEL_Z,AccelZTranfer);*/
   
-  /*Serial.print(AccX);
+  Serial.println(AccelXTranfer);
   Serial.print("/");
-  Serial.print(AccY);
+  Serial.print(AccelYTranfer);
   Serial.print("/");
-  Serial.print(AccZ);*/
+  Serial.print(AccelZTranfer);
   
 }
 

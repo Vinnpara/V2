@@ -676,6 +676,35 @@ void ReadBuffer(SerialPort &Serial ) {
             cout << "\MEASURED_YAW " << Yaw_Int16 << " " << ConvertedYaw << endl;
             break;
         }
+        case MEASURED_ACCEL_X:
+        {   //This sent as an int16_t
+            int16_t X_Accel_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedXAccel = float(X_Accel_Int16) / 10000;
+            cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_ACCEL_Y:
+        {   //This sent as an int16_t
+            int16_t Y_Pitch_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedYAccel = float(Y_Pitch_Int16) / 10000;
+            cout << "\MEASURED_Y_ACCEL " << Y_Pitch_Int16 << " " << ConvertedYAccel << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_ACCEL_Z:
+        {   //This sent as an int16_t
+            int16_t Z_Pitch_int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedZAccel = float(Z_Pitch_int16) / 10000;
+            cout << "\MEASURED_Y_ACCEL " << Z_Pitch_int16 << " " << ConvertedZAccel << endl;
+            break;
+        }
         default:
         {
             //char InternalBuffer[MAX_DATA_LENGTH];
