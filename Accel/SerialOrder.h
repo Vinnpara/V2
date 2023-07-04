@@ -11,8 +11,8 @@ enum SerialOrder {
   RECEIVED = 5,
   MOTOR_SPEED = 6,
   STOP=7,
-  MEASURED_ROLL = 8,
-  MEASURED_PITCH = 9,
+  MEASURED_ROLL=8,
+  MEASURED_PITCH = 9,  
   MEASURED_YAW = 10,
 };
 
