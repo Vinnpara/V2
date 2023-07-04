@@ -647,17 +647,62 @@ void ReadBuffer(SerialPort &Serial ) {
             //cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
             break;
         }
-        case ARD_ITERATION_TIME:
+        case MEASURED_ROLL:
         {   //This sent as an int16_t
-            int16_t ArduinoIterationTime = read_i16(Serial);
-            cout << "\nARDUINO_EXECUTION_TIME " << ArduinoIterationTime << endl;
+            int16_t Roll_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedRoll = float(Roll_Int16) / 1000;
+            cout << "\MEASURED_ROLL " << Roll_Int16<<" "<< ConvertedRoll << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
         }
-        case RADAR_DISTANCE_2:
-        {
-            int16_t ReceivedCommand[3]; 
-            read_i16_compound(Serial, RADAR_DISTANCE_2, ReceivedCommand);
-            cout << "\nRADAR_DISTANCE_2 " << ReceivedCommand[0] << "RADAR POSITION_2 "<< ReceivedCommand[1] << endl;
+        case MEASURED_PITCH:
+        {   //This sent as an int16_t
+            int16_t Pitch_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedPitch = float(Pitch_Int16) / 1000;
+            cout << "\MEASURED_PITCH " << Pitch_Int16 << " " << ConvertedPitch << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }        
+        case MEASURED_YAW:
+        {   //This sent as an int16_t
+            int16_t Yaw_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedYaw = float(Yaw_Int16) / 1000;
+            cout << "\MEASURED_YAW " << Yaw_Int16 << " " << ConvertedYaw << endl;
+            break;
+        }
+        case MEASURED_ACCEL_X:
+        {   //This sent as an int16_t
+            int16_t X_Accel_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedXAccel = float(X_Accel_Int16) / 10000;
+            cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_ACCEL_Y:
+        {   //This sent as an int16_t
+            int16_t Y_Pitch_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedYAccel = float(Y_Pitch_Int16) / 10000;
+            cout << "\MEASURED_Y_ACCEL " << Y_Pitch_Int16 << " " << ConvertedYAccel << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_ACCEL_Z:
+        {   //This sent as an int16_t
+            int16_t Z_Pitch_int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedZAccel = float(Z_Pitch_int16) / 10000;
+            cout << "\MEASURED_Y_ACCEL " << Z_Pitch_int16 << " " << ConvertedZAccel << endl;
             break;
         }
         default:
@@ -684,13 +729,7 @@ void ReadBuffer2Values(SerialPort Serial) {
         switch (ReceivedType)
         {
 
-        case RADAR_DISTANCE_2:
-        {
-            int16_t ReceivedCommand[3];
-            read_i16_compound(Serial, RADAR_DISTANCE_2, ReceivedCommand);
-            cout << "\nRADAR_DISTANCE_2 " << ReceivedCommand[0] << "RADAR POSITION_2 " << ReceivedCommand[1] << endl;
-            break;
-        }
+
         default:
         {
             //char InternalBuffer[MAX_DATA_LENGTH];
