@@ -1,0 +1,3 @@
+07/08
+Added better code for Accel/gyro receiver. Uses pitch, roll from original code and yaw from newer mpu code.
+This was since old code had lots of yaw drift. New code has inaccurate and slow roll/pitch.  
