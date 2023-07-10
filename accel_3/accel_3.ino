@@ -70,7 +70,7 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 
-const int TransferGain=10000;
+const int TransferGain=1000;
 const int TransferGain2=10000;
 int16_t RollTransfer, PitchTransfer, YawTransfer,
         AccelXTranfer, AccelYTranfer, AccelZTranfer;
