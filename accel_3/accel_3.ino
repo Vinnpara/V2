@@ -5,6 +5,8 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include<Servo.h> 
+#include <LiquidCrystal.h>
+
 
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
@@ -16,8 +18,23 @@
 #define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
+int8_t Buffer16Int[2];
 
+int16_t ValueSent;
+int32_t val32;
+static int PitchCounter, YawCounter, RollCounter;
 
+SerialOrder OrderReceived;
+SerialOrder OrderSent;
+
+char buffin[64];
+int16_t GyroTst;
+
+int Contrast=75;
+
+LiquidCrystal lcd(12, 11, 5, 4, 3, 8);  
+
+SerialOrder OrderTest;
 // ================================================================
 // ===               FROM OLDER CODE                ===
 // ================================================================
@@ -53,12 +70,12 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 
-const int TransferGain=1000;
+const int TransferGain=10000;
 const int TransferGain2=10000;
 int16_t RollTransfer, PitchTransfer, YawTransfer,
         AccelXTranfer, AccelYTranfer, AccelZTranfer;
 //float pitch, roll, yaw;
-int8_t Buffer16Int[2];
+
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -165,10 +182,15 @@ void setup() {
   delay(20);
     // configure LED for output
     pinMode(LED_PIN, OUTPUT);
+
+
+    analogWrite(6,Contrast);
+     lcd.begin(16, 2);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+       GetMessages();
    if (!dmpReady) return;
     // read a packet from FIFO
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
@@ -179,7 +201,7 @@ void loop() {
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-            yaw=ypr[0] * 180/M_PI;
+            yaw =ypr[0] * 180/M_PI;
             //pitch=ypr[1] * 180/M_PI;
             //roll=ypr[2] * 180/M_PI;
 
@@ -232,24 +254,58 @@ void loop() {
   roll=gyroAngleX;
   pitch=gyroAngleY;
             
-            Serial.print("ypr\t");
-            Serial.print(yaw);
-            Serial.print("\t");
-            Serial.print(roll);
-            Serial.print("\t");
-            Serial.println(pitch);
-      
-        
 
+      RollTransfer=roll*TransferGain;
+      PitchTransfer=pitch*TransferGain;
+      YawTransfer=yaw*TransferGain;
 
-      
-      //RollTransfer=roll*TransferGain;
-      //PitchTransfer=pitch*TransferGain;
-      //YawTransfer=yaw*TransferGain;
+      /*Serial.print("ypr\t");
+       Serial.print(yaw);
+       Serial.print("\t");
+       Serial.print(roll);
+       Serial.print("\t");
+       Serial.println(pitch);*/
+       
 
       //WriteCommandInt16(MEASURED_ROLL,RollTransfer);
        //WriteCommandInt16(MEASURED_PITCH,PitchTransfer);
       //WriteCommandInt16(MEASURED_YAW,YawTransfer);
+
+       
+        PitchCounter ++;
+
+     lcd.setCursor(0, 0);
+     lcd.print("ROL");
+       
+     lcd.setCursor(6, 0);
+     lcd.print("PIT");
+
+     lcd.setCursor(10, 0);
+     lcd.print("YAW");
+
+    lcd.setCursor(0, 1);
+    lcd.print(roll);
+
+    lcd.setCursor(6, 1);
+     lcd.print(pitch);
+     
+    lcd.setCursor(12, 1);
+     lcd.print(yaw);
+     
+
+    /*if(OrderReceived==PC_NOT_READY){
+    lcd.setCursor(0, 9);
+    lcd.print(OrderReceived);
+      }
+     else{
+    lcd.setCursor(0, 1);
+    lcd.print(OrderReceived);
+      
+      }
+    
+    lcd.setCursor(6, 1);
+    lcd.print(val32);*/
+
       
       }
 }
@@ -296,7 +352,8 @@ void calculate_IMU_error() {
   GyroErrorY = GyroErrorY / 200;
   GyroErrorZ = GyroErrorZ / 200;
   // Print the error values on the Serial Monitor
-  Serial.print("AccErrorX: ");
+  
+  /*Serial.print("AccErrorX: ");
   Serial.println(AccErrorX);
   Serial.print("AccErrorY: ");
   Serial.println(AccErrorY);
@@ -305,7 +362,7 @@ void calculate_IMU_error() {
   Serial.print("GyroErrorY: ");
   Serial.println(GyroErrorY);
   Serial.print("GyroErrorZ: ");
-  Serial.println(GyroErrorZ);
+  Serial.println(GyroErrorZ);*/
   
 }
 
@@ -353,6 +410,85 @@ void WriteInt16_2Command(enum SerialOrder CommandOrder1, int16_t Num1, enum Seri
 }
 
 void WriteCommandInt16(enum SerialOrder CommandOrder, int16_t Command){
+  GyroTst=Command;
   WriteOrder(CommandOrder);
   WriteInt16(Command);
   }
+
+void WriteInt32( int32_t num)
+{
+  int8_t buffer[4] = { (int8_t)(num & 0xff), (int8_t)(num >> 8 & 0xff), (int8_t)(num >> 16 & 0xff), (int8_t)(num >> 24 & 0xff) };
+  Serial.write((char*)buffer, 4 * sizeof(int8_t));
+}
+  
+
+enum SerialOrder read_order()
+{
+  return (SerialOrder) Serial.read();
+}  
+
+void GetMessages(){
+  
+  if(Serial.available() > 0)
+  {
+    
+    SerialOrder order_received = read_order();
+    OrderReceived=order_received;
+    
+    switch(order_received){
+      
+      case PC_NOT_READY:
+      {
+        
+        
+          break;
+        
+       }
+      
+      
+      case REQUEST_ROLL:
+      {
+        float TransferValue=roll*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ROLL;
+        
+        WriteOrder(OrderSent);
+       
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      case REQUEST_PITCH:
+      {
+        
+        float TransferValue=pitch*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_PITCH;
+        
+        WriteOrder(OrderSent);
+       
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+      case REQUEST_YAW:
+      {
+        float TransferValue=yaw*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_YAW;
+        
+        WriteOrder(OrderSent);
+       
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      
+      }
+    
+    
+  }
+  
+  
+ 
+}

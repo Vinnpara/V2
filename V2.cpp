@@ -46,6 +46,13 @@ using namespace std;
 int16_t RadarValue, RadarPosition;
 
 void ReadBuffer(SerialPort& Serial);
+void ReadBuffer(SerialPort& Serial, SerialOrder Command, bool &CommandReceived, bool CommandRecieved);
+void RequestReadData(SerialPort& Serial, SerialOrder Command);
+void RequestReadData(SerialPort& Serial, SerialOrder Command, static bool PCReady);
+void RequestReadDataFirstRequest(SerialPort& Serial, SerialOrder Command, static bool &FirstPass);
+void ReTryRequest(SerialPort& Serial, SerialOrder Command);
+void ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand);
+
 int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue);
 void ReadBuffer2Values(SerialPort Serial);
 
@@ -126,7 +133,10 @@ int main()
     for (int i = 0; i < 172; i++) {
         RadarValues.push_back(0.0);
     }
-
+    static bool FirstPass;
+    FirstPass = true;
+    static bool ValidRoll=false;
+    static bool ValidPitch = false;
     while (!glfwWindowShouldClose(window)) {
 
         //using namespace std::chrono_literals;
@@ -134,7 +144,8 @@ int main()
        // -----
         //clock_wait = timer::now();
 
-        ReadBuffer(arduino);
+        //ReadBuffer(arduino);
+        static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw;
 
         processInput(window);
 
@@ -164,10 +175,35 @@ int main()
         /*DrawSegments2(NumberOfTriangles, S1, SectorVertices);
         DrawRadar2(S1, RadarValues, SectorVertices);
         DrawScale(NumberOfTriangles, S1, LineSectorVertices);*/
-        
-
+        bool one=0, two=0;
+        //ReadBuffer(arduino, REQUEST_PITCH, ValidCommand);
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
+
+        RequestReadData(arduino, REQUEST_PITCH, ValidCommandRoll);
+        ReadBuffer(arduino, REQUEST_PITCH, ValidCommandRoll);
+
+        if (ValidCommandRoll)
+            ValidRoll = true;
+
+
+        if (ValidRoll) {
+
+            RequestReadData(arduino, REQUEST_ROLL, ValidCommandPitch);
+            ReadBuffer(arduino, REQUEST_ROLL, ValidCommandPitch);
+        }
+
+        if (ValidCommandPitch);
+        ValidPitch = true;
+
+        if (ValidPitch) {
+
+            RequestReadData(arduino, REQUEST_YAW, ValidCommandYaw);
+            ReadBuffer(arduino, REQUEST_YAW, ValidCommandYaw);
+        }
+
 
         //cout << "\nITERATION DONE";
 
@@ -617,6 +653,188 @@ int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t &ReadValue
 
 }
 
+void ReTryRequest(SerialPort& Serial, SerialOrder Command) {
+
+    bool TransferFail;
+
+    char buff[1] = { Command };
+    TransferFail = Serial.writeSerialPort(buff, 1);
+    //cout << "\n RETRYING COMMAND " << TransferFail << endl;
+
+
+}
+
+void ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand) {
+
+
+    SerialOrder ReceivedType;
+
+    if (Serial.isConnected()) {
+
+        ReceivedType = read_order(Serial);
+        //cout << "\nENUM RECEVIED " << ReceivedType << endl;
+        switch (ReceivedType)
+        {
+        case HELLO:
+        {
+            //cout << "\nHELLO" << endl;
+            break;
+        }
+        case RADAR_DISTANCE:
+        {   //This sent as an int16_t
+            int16_t MeasuredRadarDistance = read_i16(Serial);
+            RadarValue = MeasuredRadarDistance;
+            BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case RADAR_POSITION:
+        {   //This sent as an int16_t
+            int16_t MeasuredRadarPosition = read_i16(Serial);
+            RadarPosition = MeasuredRadarPosition;
+            //cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
+            break;
+        }
+        case MEASURED_ROLL:
+        {   //This sent as an int16_t
+            //int16_t Roll_Int16 = read_i16(Serial);
+
+            int32_t Roll_Int32 = read_i32(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedRoll = float(Roll_Int32) / 1000;
+            cout << "\MEASURED_ROLL " << Roll_Int32 <<" "<< ConvertedRoll << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_PITCH:
+        {   //This sent as an int16_t
+           // int16_t Pitch_Int16 = read_i16(Serial);
+
+            int32_t Pitch_Int32 = read_i32(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedPitch = float(Pitch_Int32) / 1000;
+            cout << "\MEASURED_PITCH " << Pitch_Int32 << " " << ConvertedPitch << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_YAW:
+        {   //This sent as an int16_t
+            //int16_t Yaw_Int16 = read_i16(Serial);
+
+            int32_t Yaw_Int32 = read_i32(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedYaw = float(Yaw_Int32) / 1000;
+            cout << "\MEASURED_YAW " << Yaw_Int32 << " " << ConvertedYaw << endl;
+            break;
+        }
+        case MEASURED_ACCEL_X:
+        {   //This sent as an int16_t
+            int16_t X_Accel_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedXAccel = float(X_Accel_Int16) / 10000;
+            cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_ACCEL_Y:
+        {   //This sent as an int16_t
+            int16_t Y_Pitch_Int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedYAccel = float(Y_Pitch_Int16) / 10000;
+            cout << "\MEASURED_Y_ACCEL " << Y_Pitch_Int16 << " " << ConvertedYAccel << endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
+        case MEASURED_ACCEL_Z:
+        {   //This sent as an int16_t
+            int16_t Z_Pitch_int16 = read_i16(Serial);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            float ConvertedZAccel = float(Z_Pitch_int16) / 10000;
+            cout << "\MEASURED_Y_ACCEL " << Z_Pitch_int16 << " " << ConvertedZAccel << endl;
+            break;
+        }
+        default:
+        {
+            //The PC is not getting any valid values so do not write into serial on ard.
+
+            SerialOrder OrderWait = PC_NOT_READY;
+
+            char buff[1] = { OrderWait };
+            //bool TransferReceived = false;
+            bool TransferFail = Serial.writeSerialPort(buff, 1);
+            //cout << "\nBAD ENUM RECEVIED " <<endl;
+            //char InternalBuffer[MAX_DATA_LENGTH];
+            //Serial.readSerialPort(InternalBuffer, MAX_DATA_LENGTH);
+            //cout << "\nUnknown command buffer: "<< InternalBuffer[0] << endl;
+            //cout << "\nUnknown command : " << ReceivedType << endl;
+
+            ReTryRequest(Serial, Command);
+        }
+
+        }
+
+        if ((Command-10) == ReceivedType) {
+            ExpectedCommand = true;
+            
+        }
+        else
+            ExpectedCommand = false;
+        //cout << "\nCommand not received   " << Command << endl;
+    }
+    else
+        cout << "\nARDUINO DISCONNECTED " << endl;
+
+
+}
+
+void RequestReadData(SerialPort& Serial, SerialOrder Command, static bool PCReady) {
+    bool TransferFail;
+
+    if (PCReady) {
+        char buff[1] = { Command };
+
+        TransferFail = Serial.writeSerialPort(buff, 1);
+
+        cout << "\n " << TransferFail << endl;
+
+    }
+    //else
+    //cout << "\PC NOT SENDING " << endl;
+}
+
+
+void RequestReadDataFirstRequest(SerialPort& Serial, SerialOrder Command, static bool& FirstPass) {
+    bool TransferFail;
+
+    if (FirstPass == true) {
+        char buff[1] = { Command };
+        TransferFail = Serial.writeSerialPort(buff, 1);
+        cout << "\n TRANSFER FIRST PASS " << endl;
+    }
+
+  
+   FirstPass = false;
+
+  
+
+
+}
+
+void ReadBuffer(SerialPort& Serial, SerialOrder Command, bool& CommandReceived, bool CommandRecieved) {
+
+
+    ReadBuffer(Serial, (SerialOrder)(Command - 10), CommandRecieved);
+
+    //cout << "\n " << TransferFail << endl;
+
+}
+
 void ReadBuffer(SerialPort &Serial ) {
 
     SerialOrder ReceivedType;
@@ -624,7 +842,7 @@ void ReadBuffer(SerialPort &Serial ) {
     if (Serial.isConnected()) {
 
         ReceivedType = read_order(Serial);
-
+        cout << "\nENUM RECEVIED " << ReceivedType<<endl;
         switch (ReceivedType)
         {
         case HELLO:
@@ -652,8 +870,8 @@ void ReadBuffer(SerialPort &Serial ) {
             int16_t Roll_Int16 = read_i16(Serial);
             //RadarValue = MeasuredRadarDistance;
             //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedRoll = float(Roll_Int16) / 1000;
-            cout << "\MEASURED_ROLL " << Roll_Int16<<" "<< ConvertedRoll << endl;
+            float ConvertedRoll = float(Roll_Int16) / 10000;
+            //cout << "\MEASURED_ROLL " << Roll_Int16<<" "<< ConvertedRoll << endl;
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
         }
@@ -662,7 +880,7 @@ void ReadBuffer(SerialPort &Serial ) {
             int16_t Pitch_Int16 = read_i16(Serial);
             //RadarValue = MeasuredRadarDistance;
             //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedPitch = float(Pitch_Int16) / 1000;
+            float ConvertedPitch = float(Pitch_Int16) / 10000;
             cout << "\MEASURED_PITCH " << Pitch_Int16 << " " << ConvertedPitch << endl;
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
@@ -672,8 +890,8 @@ void ReadBuffer(SerialPort &Serial ) {
             int16_t Yaw_Int16 = read_i16(Serial);
             //RadarValue = MeasuredRadarDistance;
             //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedYaw = float(Yaw_Int16) / 1000;
-            cout << "\MEASURED_YAW " << Yaw_Int16 << " " << ConvertedYaw << endl;
+            float ConvertedYaw = float(Yaw_Int16) / 10000;
+            //cout << "\MEASURED_YAW " << Yaw_Int16 << " " << ConvertedYaw << endl;
             break;
         }
         case MEASURED_ACCEL_X:

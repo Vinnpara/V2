@@ -38,7 +38,7 @@ void write_u32(std::fstream& file, uint16_t num)
 SerialOrder read_order(SerialPort& serial_port)
 {
 	char buffer[MAX_DATA_LENGTH];
-	serial_port.readSerialPort(buffer, 1);
+	serial_port.readSerialPort(buffer, sizeof(uint8_t));
 	return (SerialOrder)buffer[0];
 }
 
@@ -112,3 +112,4 @@ int32_t read_i32(SerialPort& serial_port)
 	serial_port.readSerialPort(buffer, 4);
 	return (((int32_t)buffer[0]) & 0xff) | (((int32_t)buffer[1]) << 8 & 0xff00) | (((int32_t)buffer[2]) << 16 & 0xff0000) | (((int32_t)buffer[3]) << 24 & 0xff000000);
 }
+

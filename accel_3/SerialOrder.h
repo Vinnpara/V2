@@ -17,6 +17,10 @@ enum SerialOrder {
   MEASURED_ACCEL_X = 11,
   MEASURED_ACCEL_Y = 12,
   MEASURED_ACCEL_Z = 13,
+  REQUEST_ROLL = 18,
+  REQUEST_PITCH = 19,
+  REQUEST_YAW = 20,
+  PC_NOT_READY=15,
 };
 
 typedef enum SerialOrder SerialOrder;
