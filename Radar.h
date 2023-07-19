@@ -26,12 +26,24 @@ class Radar {
 public:
 	Radar(Shader &Shade);
 
+	void GenerateSegmentArrays();
+	void GenerateSegmentArraysBuf();
+	void GenerateSegmentArraysBuf(unsigned int &VBOExt);
+
 	void DrawSegments();
 	void DrawRadar();
 	void DrawScale();
 	void DrawScaleLong();
+
+	void DrawSegmentsBuf();
+	void DrawRadarBuf();
+	void DrawScaleBuf();
+	void DrawScaleLongBuf();
+
 	void UpdateValues(int16_t RadarVals, int16_t RadarPos);
 	void DeleteVertexBuffers();
+	void DeleteVertexBuffersBuf();
+	void DeleteVertexBuffersBuf(unsigned int &VBO);
 	
 private:
 
@@ -41,10 +53,10 @@ private:
 	std::vector<float> SectorVertices;
 	std::vector<float> LineSectorVertices;
 	const int NumberOfTriangles = 173;
-	unsigned int VAODrawSegments, VBODrawSegments,
-		         VAODrawRadar, VBODrawRadar,
-		         VAODrawScale, VBODrawScale,
-	             VAODrawScaleLong, VBODrawScaleLong;
+	unsigned int VAODrawSegments, VBODrawSegments, IBODrawSegments,
+		         VAODrawRadar, VBODrawRadar, IBODrawRadar,
+		         VAODrawScale, VBODrawScale, IBODrawScale,
+	             VAODrawScaleLong, VBODrawScaleLong, IBODrawScaleLong,VBOCommon;
 
 	float ConvertRadarDistanceColorBlue(float RadarValue);
 	float ConvertRadarDistanceColorRed(float RadarValue);

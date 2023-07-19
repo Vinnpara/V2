@@ -155,9 +155,299 @@ float Radar::ConvertRadarDistanceColorBlue(float RadarValue) {
 
 }
 
+
+void Radar::GenerateSegmentArraysBuf(unsigned int &VBOExt) {
+
+    /*
+        RADAR SEGMENTS
+        */
+
+    glGenVertexArrays(1, &VAODrawSegments);
+    glGenBuffers(1, &VBOExt);
+    glBindVertexArray(VAODrawSegments);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOExt);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
+    /*
+    RADAR
+    */
+
+    glGenVertexArrays(1, &VAODrawRadar);
+    glGenBuffers(1, &VBOExt);
+    glBindVertexArray(VAODrawRadar);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOExt);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    /*
+    RADAR SCALE LATERAL
+    */
+    glGenVertexArrays(1, &VAODrawScale);
+    glGenBuffers(1, &VBOExt);
+    glBindVertexArray(VAODrawScale);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOExt);
+    glBufferData(GL_ARRAY_BUFFER, LineSectorVertices.size(), &LineSectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    /*
+   RADAR SCALE LONG.
+   */
+
+    glGenVertexArrays(1, &VAODrawScaleLong);
+    glGenBuffers(1, &VBOExt);
+    glBindVertexArray(VAODrawScaleLong);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOExt);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+}
+
+void Radar::GenerateSegmentArraysBuf() {
+
+    /*
+    RADAR SEGMENTS
+    */
+
+    glGenVertexArrays(1, &VAODrawSegments);
+    glGenBuffers(1, &VBOCommon);
+    glBindVertexArray(VAODrawSegments);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOCommon);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
+    /*
+    RADAR
+    */
+
+    glGenVertexArrays(1, &VAODrawRadar);
+    glGenBuffers(1, &VBOCommon);
+    glBindVertexArray(VAODrawRadar);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOCommon);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    /*
+    RADAR SCALE LATERAL
+    */
+    glGenVertexArrays(1, &VAODrawScale);
+    glGenBuffers(1, &VBOCommon);
+    glBindVertexArray(VAODrawScale);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOCommon);
+    glBufferData(GL_ARRAY_BUFFER, LineSectorVertices.size(), &LineSectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    /*
+   RADAR SCALE LONG.
+   */
+
+    glGenVertexArrays(1, &VAODrawScaleLong);
+    glGenBuffers(1, &VBOCommon);
+    glBindVertexArray(VAODrawScaleLong);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOCommon);
+    glBufferData(GL_ARRAY_BUFFER, SectorVertices.size(), &SectorVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+
+}
+
+void Radar::DrawSegmentsBuf(){
+
+    S1.use();
+    
+
+    static int TriangleHalves = int(NumberOfTriangles / 2);
+
+    for (int t = 0; t < TriangleHalves; t++) {
+
+        glm::mat4 transform = glm::mat4(1.0f);
+        float AngleTest = glm::radians(-(float)t);
+        transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+        transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+        S1.setVec4("Color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        S1.setMat4("transform", transform);
+
+        glBindVertexArray(VAODrawSegments);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDrawArrays(GL_TRIANGLES, 0, TriangleHalves);
+
+    }
+
+    for (int t = 0; t < TriangleHalves; t++) {
+
+        glm::mat4 transform = glm::mat4(1.0f);
+        float AngleTest = glm::radians((float)t);
+        transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+        transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+        S1.setVec4("Color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        S1.setMat4("transform", transform);
+
+        glBindVertexArray(VAODrawSegments);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDrawArrays(GL_TRIANGLES, 0, TriangleHalves);
+
+    }
+}
+
+void Radar::DrawRadarBuf() {
+
+    S1.use();
+
+    if (RadarValues.size() > 1) {
+
+        static int TriangleHalves = int((RadarValues.size()) / 2);
+
+        for (int t = 0; t < RadarValues.size(); t++) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians(ConvertRadarPosition((float)t));
+            transform = glm::scale(transform, glm::vec3(ConvertRadarValue(float(RadarValues.at(t))), ConvertRadarValue(float(RadarValues.at(t))), ConvertRadarValue(float(RadarValues.at(t)))));
+            //transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+            //cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
+            S1.setVec4("Color", glm::vec4(ConvertRadarDistanceColorRed(float(RadarValues.at(t))), 0.0f, ConvertRadarDistanceColorBlue(float(RadarValues.at(t))), 1.0f));
+            S1.setMat4("transform", transform);
+            glBindVertexArray(VAODrawRadar);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glDrawArrays(GL_TRIANGLES, 0, RadarValues.size() * 3);
+
+        }
+
+
+
+    }
+
+}
+
+void Radar::DrawScaleBuf() {
+
+    //Draws segements Every 10cm
+
+    static int TriangleHalves = int(NumberOfTriangles / 2);
+    int j;
+
+    S1.use();
+
+    for (j = 0; j <= 200; j += 10) {
+
+        float ScaleValue = ConvertRadarValue(float(j));
+
+        for (int t = 0; t < TriangleHalves; t++) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians(-(float)t);
+            transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+            S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            S1.setMat4("transform", transform);
+
+            glBindVertexArray(VAODrawScale);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_LINES, 0, TriangleHalves);
+
+        }
+
+        for (int t = 0; t < TriangleHalves; t++) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians((float)t);
+            transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+            S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            S1.setMat4("transform", transform);
+            glBindVertexArray(VAODrawScale);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_LINES, 0, TriangleHalves);
+
+        }
+    }
+
+}
+
+void Radar::DrawScaleLongBuf() {
+
+    static int TriangleHalves = int(NumberOfTriangles / 2);
+    int j;
+
+    S1.use();
+    
+    for (j = 0; j <= 200; j += 20) {
+
+        float ScaleValue = ConvertRadarValue(float(j));
+
+        for (int t = 0; t < TriangleHalves; t += 10) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians(-(float)t);
+            transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+            S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            S1.setMat4("transform", transform);
+
+            glBindVertexArray(VAODrawScaleLong);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_LINES, 0, TriangleHalves);
+
+        }
+
+        for (int t = 0; t < TriangleHalves; t += 10) {
+
+            glm::mat4 transform = glm::mat4(1.0f);
+            float AngleTest = glm::radians((float)t);
+            transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+            transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+            S1.setVec4("Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            S1.setMat4("transform", transform);
+            glBindVertexArray(VAODrawScaleLong);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_LINES, 0, TriangleHalves);
+
+        }
+    }
+
+
+
+}
+
 void Radar::DrawSegments() {
 
     
+    S1.use();
+
     glGenVertexArrays(1, &VAODrawSegments);
     glGenBuffers(1, &VBODrawSegments);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
@@ -177,8 +467,6 @@ void Radar::DrawSegments() {
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     glBindVertexArray(0);
-
-
 
     static int TriangleHalves = int(NumberOfTriangles / 2);
 
@@ -220,7 +508,7 @@ void Radar::DrawSegments() {
 
 void Radar::DrawRadar(){
 
-    
+    S1.use();
     glGenVertexArrays(1, &VAODrawRadar);
     glGenBuffers(1, &VBODrawRadar);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
@@ -275,7 +563,7 @@ void Radar::DrawScale(){
     static int TriangleHalves = int(NumberOfTriangles / 2);
     int j;
 
-    
+    S1.use();
     glGenVertexArrays(1, &VAODrawScale);
     glGenBuffers(1, &VBODrawScale);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
@@ -342,7 +630,7 @@ void Radar::DrawScaleLong() {
     static int TriangleHalves = int(NumberOfTriangles / 2);
     int j;
 
-    
+    S1.use();
     glGenVertexArrays(1, &VAODrawScaleLong);
     glGenBuffers(1, &VBODrawScaleLong);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
@@ -422,5 +710,45 @@ void Radar::DeleteVertexBuffers() {
     glDeleteBuffers(1, &VBODrawScaleLong);
 
     std::cout << "\nVERTEX BUFFERS DELETED " << std::endl;
+
+}
+
+void Radar::DeleteVertexBuffersBuf() {
+
+
+    glDeleteVertexArrays(1, &VAODrawSegments);
+
+    glDeleteBuffers(1, &VBOCommon);
+
+    glDeleteVertexArrays(1, &VAODrawRadar);
+
+
+    glDeleteVertexArrays(1, &VAODrawScale);
+
+
+    glDeleteVertexArrays(1, &VAODrawScaleLong);
+
+
+    std::cout << "\nVERTEX BUFFERS DELETED COMMON VBO " << std::endl;
+
+}
+
+void Radar::DeleteVertexBuffersBuf(unsigned int &VBO) {
+
+
+    glDeleteVertexArrays(1, &VAODrawSegments);
+
+    glDeleteBuffers(1, &VBO);
+
+    glDeleteVertexArrays(1, &VAODrawRadar);
+
+
+    glDeleteVertexArrays(1, &VAODrawScale);
+
+
+    glDeleteVertexArrays(1, &VAODrawScaleLong);
+
+
+    std::cout << "\nVERTEX BUFFERS DELETED COMMON VBO " << std::endl;
 
 }

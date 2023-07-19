@@ -6,7 +6,7 @@
 
 
 
-
+using namespace std;
 void write_i8(std::fstream& file, int8_t num)
 {
 	file.write((char*)&num, sizeof(int8_t));
@@ -108,8 +108,14 @@ uint16_t uread_i16(SerialPort& serial_port)
 
 int32_t read_i32(SerialPort& serial_port)
 {
+	int32_t ValBad= 8000020;
 	char buffer[MAX_DATA_LENGTH];
 	serial_port.readSerialPort(buffer, 4);
-	return (((int32_t)buffer[0]) & 0xff) | (((int32_t)buffer[1]) << 8 & 0xff00) | (((int32_t)buffer[2]) << 16 & 0xff0000) | (((int32_t)buffer[3]) << 24 & 0xff000000);
+	if (sizeof(buffer) >= 4) {
+		return (((int32_t)buffer[0]) & 0xff) | (((int32_t)buffer[1]) << 8 & 0xff00) | (((int32_t)buffer[2]) << 16 & 0xff0000) | (((int32_t)buffer[3]) << 24 & 0xff000000);
+	}
+	else
+		return ValBad;
+	
 }
 
