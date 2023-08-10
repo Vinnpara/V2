@@ -15,10 +15,13 @@
 #include <RadarVirtual.h>
 #include <RadarUI.h>
 
-GraphicRender *GR1;
-RadarScaleLongitudinal* ScaleLong;
+GraphicRender *GR1, *GR2;
+RadarScaleLongitudinal* RSL;
+RadarBackground* RB;
+RadarScaleLateral* RS;
 
 RadarUI::RadarUI() {
+
 
 }
 
@@ -29,8 +32,22 @@ RadarUI::RadarUI(Shader Shade) {
 
 void RadarUI::RadarInitalize() {
 
-    ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
+    SectorVertices = GenerateVertices(NumberOfTriangles, VerticesSolid);
+    LineSectorVertices = GenerateVertices(NumberOfTriangles, VerticesDashed);
 
+    ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
+    ResourceManager::GetShader("radar").Use().SetInteger("radar", 0);
+
+    int TriangleHalves = int(NumberOfTriangles / 2);
+
+    GR1 = new GraphicRender(ResourceManager::GetShader("radar"), SectorVertices, TriangleHalves);
+    GR2 = new GraphicRender(ResourceManager::GetShader("radar"), LineSectorVertices, TriangleHalves);
+
+    RB = new RadarBackground;
+    RSL = new RadarScaleLongitudinal;
+    RS = new RadarScaleLateral;
+
+    /*ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
     ResourceManager::GetShader("radar").Use().SetInteger("radar", 0);
 
     float VerticesRadar[] = {
@@ -65,22 +82,27 @@ void RadarUI::RadarInitalize() {
     ScaleLong = new RadarScaleLongitudinal;
     ScaleLong->RadarInitLongVS();
     //ScaleLat->RadarInitLat(&Shade, VAOScaleLat, RadarScaleLatVertices, TriangleHalves);
-    //Background->RadarInitBack(&Shade, VAOScaleLat, RadarScaleLatVertices, TriangleHalves);
+    //Background->RadarInitBack(&Shade, VAOScaleLat, RadarScaleLatVertices, TriangleHalves);*/
 
 }
 
 
 void RadarUI::RadarDraw() {
     
-    ScaleLong->Draw(GR1);
+   // ScaleLong->Draw(*GR1);
    //ScaleLat->Draw();
    //Background->Draw();
-
+    RB->Draw(*GR1);
+    RS->Draw(*GR2);
+    //RSL->Draw(*GR1);
 
 }
 
 RadarUI::~RadarUI() {
-    delete ScaleLong;
+    //delete ScaleLong;
     delete GR1;
-
+    delete GR2;
+    delete RB;
+    delete RS;
+    delete RSL;
 }

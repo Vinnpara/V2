@@ -47,10 +47,24 @@ private:
 		VAOBack,
 		VAORadar;
 
+	std::vector<float> SectorVertices, LineSectorVertices;
+
 	std::vector<float> RadarBackgroundSectorVertices;
 	std::vector<float> RadarSectorVertices;
 	std::vector<float> RadarScaleLongVertices;
 	std::vector<float> RadarScaleLatVertices;
+
+	float VerticesSolid[9] = {
+		// first triangle 10 triangles
+		0.000873f, 0.1f, 0.0f,  // left
+		0.0f, -0.0f, 0.0f,  // right
+		-0.000873f, 0.1f, 0.0f,  // top
+	};;
+	float VerticesDashed[6] = {
+		// first triangle 10 triangles
+		0.000873f, 0.1f, 0.0f,  // p1
+		-0.000873f, 0.1f, 0.0f,  // p2
+	};
 
 	int16_t RadarValue, RadarPosition;
 	std::vector<int16_t>RadarValues;
@@ -60,7 +74,7 @@ private:
 
 	const char *vs = "D:/V2/V2/V2/include/RadarBackgroundVertex.vs";
 	const char *vf = "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs";
-	const int NumberOfTriangles = 173;
+
 	int TriangleHalves = 0;
 
 

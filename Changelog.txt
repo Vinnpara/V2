@@ -9,3 +9,8 @@ LCD screen for debugging
 08/08
 New Radar function to display Y/P/R values. added new RadarUI class, meant to be used
 as a userfacing class for radar
+
+08/09
+Added RadarUI with updated features. occassionally, it would draw the radial scale
+(RadarScaleLateral) weird intermittently. Does not seem to be an issue with the 
+individual code when used in V2, likely something with RadarUI

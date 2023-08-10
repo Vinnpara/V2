@@ -46,6 +46,7 @@ public:
 
 	void DrawSegmentsBuf();
 	void DrawSegmentsBufVS();
+
 	void DrawSegmentsBufVS(GraphicRender &Gr1);
 	void DrawScaleLongBufVS(GraphicRender& Gr1);
 	void DrawScaleBufVS(GraphicRender& Gr1);

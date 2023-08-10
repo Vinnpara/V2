@@ -151,7 +151,11 @@ int main()
     }
    
     Shader S1("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs");
-    
+    SerialPort arduino(port);
+
+    //RadarUI Radar1;
+
+    //SUCCEEDING BLOCK WORKS, NEED TO PREPARE TEXT BEFOR WHILE LOOP//
 
     ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
     ResourceManager::GetShader("radar").Use().SetInteger("radar", 0);
@@ -160,17 +164,18 @@ int main()
     std::vector<float> SectorVertices = GenerateVertices(NumberOfTriangles);
     std::vector<float> LineSectorVertices = GenerateVertices2(NumberOfTriangles);
 
-    SerialPort arduino(port);
+
     int TriangleHalves = int(NumberOfTriangles / 2);
 
-    ///INITIALIZING LARGE VECTOR WITH VERTICES*******
     GR12 = new GraphicRender(ResourceManager::GetShader("radar"), SectorVertices, TriangleHalves);
     GR13 = new GraphicRender(ResourceManager::GetShader("radar"), LineSectorVertices, TriangleHalves);
     R12 = new Radar(ResourceManager::GetShader("radar"));
     T12 = new TextRender();
+
+
     //RadarUI Rad1;
 
-    Radar Rtest(S1);
+    //Radar Rtest(S1);
 
 
     RadarPosition = 0;
@@ -197,14 +202,17 @@ int main()
     //R1.GenerateSegmentArraysBuf(CommonVBO);
     //PrepareText(S1Char,CharVAO, CharVBO);
 
-    T12->PrepareTextVS();
-    R12->GenerateSegmentArraysBuf();
+    //T12->PrepareTextVS();
+
+    //R12->GenerateSegmentArraysBuf();
     
     //Rtest.GenerateSegmentArraysBuf();
 
     //Rad1.RadarInitalize();
     
     //Test->ShaderInit("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs");
+    
+    //Radar1.RadarInitalize();
 
     while (!glfwWindowShouldClose(window) ) {
 
@@ -274,11 +282,11 @@ int main()
         char YawRead[20];
         sprintf_s(YawRead, "%f", ConvertedYaw);
 
+        //Radar1.RadarDraw();
 
         T12->RenderTextVS(YawRead, 155.0f, 125.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
         T12->RenderTextVS(PtchRead, 155.0f, 75.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
         T12->RenderTextVS(RollRead, 145.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-
         R12->DrawSegmentsBufVS(*GR12);
         R12->DrawScaleLongBufVS(*GR12);
         R12->DrawScaleBufVS(*GR13);

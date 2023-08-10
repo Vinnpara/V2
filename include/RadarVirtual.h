@@ -68,13 +68,14 @@ public:
 		this->VS1 = &Vs;
 	}
 
-	void Draw();
-	void Draw(GraphicRender *Rs1);
+	void Draw(GraphicRender &Gr1);
 	//RadarVirtual R;
 protected:
 	float mScaleLong = 0.0395;
 	float CScaleLong = 0.1;
 	ShaderVision *VS1;
+	glm::mat4 TransformRadarScaleLong = glm::mat4(1.0f);
+	glm::vec4 ColorRadarScale = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 };
 /*
 RDAR LAT SCALE
@@ -88,12 +89,14 @@ public:
 		std::vector<float> BufferVerticesUsed,
 		int Vertices);
 
-	void Draw();
+	void Draw(GraphicRender& Gr1);
 
 protected:
 	float mRadarLateral = 0.0395;
 	float CRadarLateral = 0.1;
 
+	glm::mat4 TransformRadarScale = glm::mat4(1.0f);
+	glm::vec4 ColorRadarScale = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 };
 /*
 RDAR BACKGROUND 
@@ -107,8 +110,9 @@ public:
 		std::vector<float> BufferVerticesUsed,
 		int Vertices);
 
-	void Draw();
-
+	void Draw(GraphicRender& Gr1);
+	glm::mat4 TransformRadarBack;
+	glm::vec4 ColorRadarBack = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 };
 /*
 RDAR ACTUAL
