@@ -1,0 +1,12 @@
+/////BASICALLY A WISH LIST FOR THE PROJECT, MAY NOT ACTUALLY TURN OUT THAT WAY////////
+*                                                                                    *
+*                                 TO DO LIST										     *
+*										     *
+*										     *
+****************************but if it works it works**********************************
+
+08/10
+Added working RadarUI, telemetryUI classes. Better to have both in a single UI class that will 
+display radar and telem. This will have a serial object passed into it. Next step is to get a robust, 
+fast radar and accel receiver. This UI could also handle robot commands, as serial object is already in it.
+

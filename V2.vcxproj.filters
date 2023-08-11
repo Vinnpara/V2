@@ -51,6 +51,9 @@
     <ClCompile Include="ResourceHandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TelemetryUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\glad\glad.h">
@@ -114,6 +117,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="include\ResourceHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TelemetryUI.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TextRender.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TelemetryUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

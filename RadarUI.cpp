@@ -33,7 +33,7 @@ RadarUI::RadarUI(Shader Shade) {
 void RadarUI::RadarInitalize() {
 
     SectorVertices = GenerateVertices(NumberOfTriangles, VerticesSolid);
-    LineSectorVertices = GenerateVertices(NumberOfTriangles, VerticesDashed);
+    LineSectorVertices = GenerateVertices2(NumberOfTriangles);
 
     ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
     ResourceManager::GetShader("radar").Use().SetInteger("radar", 0);
@@ -94,7 +94,7 @@ void RadarUI::RadarDraw() {
    //Background->Draw();
     RB->Draw(*GR1);
     RS->Draw(*GR2);
-    //RSL->Draw(*GR1);
+    RSL->Draw(*GR1);
 
 }
 
@@ -105,4 +105,6 @@ RadarUI::~RadarUI() {
     delete RB;
     delete RS;
     delete RSL;
+
+    std::cout << "\nDELETED IN RADAR UI ";
 }

@@ -31,6 +31,8 @@ protected:
 
 	float ConvertValue(float RadarValX, float m, float C);
 	std::vector<float> GenerateVertices(int VerticesNUmber, float* vertices1_1);
+	std::vector<float> GenerateVertices2(int VerticesNUmber);
+
 	void GenerateSegments();
 
 	//virtual void DrawRadar(int segments, glm::vec3 ScaleVector, glm::vec4 ColorMatrixShader, float AngleToUse);
@@ -48,6 +50,17 @@ protected:
 	Shader *S1;
 	GraphicRender Render1;
 	ShaderVision * VS1;
+	float VerticesSolid[9] = {
+		// first triangle 10 triangles
+		0.000873f, 0.1f, 0.0f,  // left
+		0.0f, -0.0f, 0.0f,  // right
+		-0.000873f, 0.1f, 0.0f,  // top
+	};
+	float VerticesDashed[6] = {
+		// first triangle 10 triangles
+		0.000873f, 0.1f, 0.0f,  // p1
+		-0.000873f, 0.1f, 0.0f,  // p2
+	};
 };
 /*
 RDAR LONG SCALE

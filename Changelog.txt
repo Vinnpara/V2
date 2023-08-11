@@ -14,3 +14,8 @@ as a userfacing class for radar
 Added RadarUI with updated features. occassionally, it would draw the radial scale
 (RadarScaleLateral) weird intermittently. Does not seem to be an issue with the 
 individual code when used in V2, likely something with RadarUI
+
+08/10
+Corrected RadarUI behavior, seems pretty reliable now. But still uses two different functions. Should only 
+need one function as only the float array dimension changes. Additionaly, addded telemetry class to display
+accel, gyro data

@@ -37,6 +37,7 @@
 #include <RadarUI.h>
 #include <RadarVirtual.h>
 #include <ResourceHandle.h>
+#include <TelemetryUI.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -157,7 +158,7 @@ int main()
 
     //SUCCEEDING BLOCK WORKS, NEED TO PREPARE TEXT BEFOR WHILE LOOP//
 
-    ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
+    /*ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
     ResourceManager::GetShader("radar").Use().SetInteger("radar", 0);
 
     const int NumberOfTriangles=173; //170
@@ -170,10 +171,13 @@ int main()
     GR12 = new GraphicRender(ResourceManager::GetShader("radar"), SectorVertices, TriangleHalves);
     GR13 = new GraphicRender(ResourceManager::GetShader("radar"), LineSectorVertices, TriangleHalves);
     R12 = new Radar(ResourceManager::GetShader("radar"));
-    T12 = new TextRender();
+    T12 = new TextRender();*/
 
+    //T12 = new TextRender();
 
-    //RadarUI Rad1;
+    RadarUI Rad1;
+
+    TelemetryUI TL1;
 
     //Radar Rtest(S1);
 
@@ -203,13 +207,12 @@ int main()
     //PrepareText(S1Char,CharVAO, CharVBO);
 
     //T12->PrepareTextVS();
-
     //R12->GenerateSegmentArraysBuf();
-    
     //Rtest.GenerateSegmentArraysBuf();
 
-    //Rad1.RadarInitalize();
-    
+    Rad1.RadarInitalize();
+    TL1.InitializeTelemetry();
+
     //Test->ShaderInit("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs");
     
     //Radar1.RadarInitalize();
@@ -228,7 +231,6 @@ int main()
         processInput(window);
 
         //RadarValues[RadarPosition] = RadarValue;
-        
         //arduino.OpenConnection();
         
         // render
@@ -240,8 +242,13 @@ int main()
         // -------------------------------------------------------------------------------
         // S1.use();
 
-        //Rad1.RadarDraw();
+        TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
 
+        Rad1.RadarDraw();
+        
+        TL1.RenderPitch();
+        TL1.RenderRoll();
+        TL1.RenderYaw();
 
         //cout << "\n" << AngleTest;
         // draw our first triangle
@@ -273,24 +280,22 @@ int main()
           RenderText(S1Char, "Yaw", 55.0f, 125.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), CharVAO, CharVBO);
           RenderText(S1Char, YawRead, 155.0f, 125.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), CharVAO, CharVBO);*/
 
-        char RollRead[20];
+        /*char RollRead[20];
         sprintf_s(RollRead, "%f", ConvertedRoll);
-
         char PtchRead[20];
         sprintf_s(PtchRead, "%f", ConvertedPitch);
-
         char YawRead[20];
-        sprintf_s(YawRead, "%f", ConvertedYaw);
+        sprintf_s(YawRead, "%f", ConvertedYaw);*/
 
         //Radar1.RadarDraw();
 
-        T12->RenderTextVS(YawRead, 155.0f, 125.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-        T12->RenderTextVS(PtchRead, 155.0f, 75.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-        T12->RenderTextVS(RollRead, 145.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-        R12->DrawSegmentsBufVS(*GR12);
+        //T12->RenderTextVS(YawRead, 155.0f, 125.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+        //T12->RenderTextVS(PtchRead, 155.0f, 75.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+        //T12->RenderTextVS(RollRead, 145.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+        
+        /*R12->DrawSegmentsBufVS(*GR12);
         R12->DrawScaleLongBufVS(*GR12);
-        R12->DrawScaleBufVS(*GR13);
-
+        R12->DrawScaleBufVS(*GR13);*/
 
         //Rtest.DrawScaleLongBuf();
 
@@ -303,9 +308,8 @@ int main()
         /*DrawSegments2(NumberOfTriangles, S1, SectorVertices);
         DrawRadar2(S1, RadarValues, SectorVertices);
         DrawScale(NumberOfTriangles, S1, LineSectorVertices);*/
-        bool one=0, two=0;
+      
         //ReadBuffer(arduino, REQUEST_PITCH, ValidCommand);
-
 
         RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
 
@@ -343,9 +347,6 @@ int main()
         //T1.PrepareText();
         //T1.RenderText(YawRead, 155.0f, 125.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
-        
-
-
         glfwSwapBuffers(window);
         
         //cout << "\nITERATION DONE";
@@ -355,10 +356,11 @@ int main()
     //glDeleteVertexArrays(1, &VAORadarBackground);
     //glDeleteBuffers(1, &VBORadarBackground);
 
-    delete R12;
+    /*delete R12;
     delete GR12;
-    delete GR13;
-    delete T12;
+    delete GR13;*/
+    
+    //delete T12;
 
     arduino.SerialClose();
     //R1.DeleteVertexBuffers();

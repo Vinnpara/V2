@@ -76,16 +76,40 @@ std::vector<float> RadarVirtual::GenerateVertices(int VerticesNUmber, float * ve
 
 	for (int i = 0; i < VerticesNUmber; i++) {
 
-		for (int j = 0; j <= sizeof(vertices1_1); j++) {
+		for (int j = 0; j < 9; j++) {
 
 			TriangleVertices.push_back(vertices1_1[j]);
 
 
 		}
 	}
-	std::cout << "\nVertices side " << sizeof(vertices1_1);
+	std::cout << "\nVertices side solid lines " << sizeof(vertices1_1);
 	return TriangleVertices;
 
+}
+
+std::vector<float> RadarVirtual::GenerateVertices2(int VerticesNUmber) {
+
+	std::vector<float> TriangleVertices;
+
+	float vertices1_1[] = {
+		// first triangle 10 triangles
+		0.000873f, 0.1f, 0.0f,  // p1
+		-0.000873f, 0.1f, 0.0f,  // p2
+	};
+
+
+	for (int i = 0; i < VerticesNUmber; i++) {
+
+		for (int j = 0; j < 6; j++) {
+
+			TriangleVertices.push_back(vertices1_1[j]);
+
+
+		}
+	}
+	std::cout << "\nVertices side dashed lines " << sizeof(vertices1_1);
+	return TriangleVertices;
 }
 
 void RadarVirtual::GenerateSegments() {
