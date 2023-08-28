@@ -19,6 +19,8 @@ private:
 public:
     SerialPort(char *portName);
     SerialPort(char* portName, int type);
+    SerialPort() 
+    {};
     ~SerialPort();
 
     int readSerialPort(char *buffer, unsigned int buf_size);

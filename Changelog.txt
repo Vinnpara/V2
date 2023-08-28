@@ -1,0 +1,26 @@
+07/08
+Added better code for Accel/gyro receiver. Uses pitch, roll from original code and yaw from newer mpu code.
+This was since old code had lots of yaw drift. New code has inaccurate and slow roll/pitch.  
+
+07/09
+Added serial tranfer function for Pitch Yaw Roll. Needs work, crashes at some values. Also added arduino 
+LCD screen for debugging
+
+08/08
+New Radar function to display Y/P/R values. added new RadarUI class, meant to be used
+as a userfacing class for radar
+
+08/09
+Added RadarUI with updated features. occassionally, it would draw the radial scale
+(RadarScaleLateral) weird intermittently. Does not seem to be an issue with the 
+individual code when used in V2, likely something with RadarUI
+
+08/10
+Corrected RadarUI behavior, seems pretty reliable now. But still uses two different functions. Should only 
+need one function as only the float array dimension changes. Additionaly, addded telemetry class to display
+accel, gyro data
+
+08/27
+New model class to gve 3d visualiztion of car attitudes. Still unable to get gyro + radar in one board. May need 2nd board.
+Oreitation values need a filter and incase 0 value is given, it needs to use interpolation function to "assume"
+a value based on previous values. 
