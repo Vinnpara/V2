@@ -28,4 +28,3 @@ uint16_t uread_i16(SerialPort& serial_port);
 
 int32_t read_i32(SerialPort& serial_port);
 
-

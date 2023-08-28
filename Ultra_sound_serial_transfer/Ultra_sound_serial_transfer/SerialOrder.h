@@ -11,9 +11,18 @@ enum SerialOrder {
   RECEIVED = 5,
   MOTOR_SPEED = 6,
   STOP=7,
-  ARD_ITERATION_TIME=8,
-  RADAR_DISTANCE_2 = 9, //Compound buffer, this means that distance and position for radar are 
-  RADAR_POSITION_2 = 10,//sent in one buffer
+  MEASURED_ROLL=8,
+  MEASURED_PITCH = 9,  
+  MEASURED_YAW = 10,
+  MEASURED_ACCEL_X = 11,
+  MEASURED_ACCEL_Y = 12,
+  MEASURED_ACCEL_Z = 13,
+  REQUEST_ROLL = 18,
+  REQUEST_PITCH = 19,
+  REQUEST_YAW = 20,
+  REQUEST_RADAR = 21,
+  REQUEST_RADAR_POS = 22,
+  PC_NOT_READY=15,
 };
 
 typedef enum SerialOrder SerialOrder;

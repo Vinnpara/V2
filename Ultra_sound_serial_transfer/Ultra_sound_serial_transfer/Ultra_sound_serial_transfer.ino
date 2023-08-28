@@ -14,9 +14,11 @@ float MeasuredDistance;
 int16_t MeasuredDistance_int16, ServoAngleInt16, ProgramIterationTime16;
 unsigned long Time1, Time2, Time3, IterationTime, TimeoutValue, ProgramIterationTime;
 unsigned int DelayTime;
-
+static bool PC_not_Ready=1;
 int8_t Buffer16Int[2];
 
+SerialOrder OrderReceived;
+SerialOrder OrderSent;
 
 Servo serv, serv1;
 float pos_2;
@@ -34,7 +36,11 @@ void setup() {
 }
 
 void loop() {  
-  RadarSweep(171,-1);
+   if(Serial.available()>0){  
+     //ReadSerialRadar();
+     RadarSweep(171,-1);
+     //ReadSerialRadar();
+   }
   //SteeringSweep(105,10);
   //RadarSweepMechanical(170,-1);
 }
@@ -79,6 +85,7 @@ void RadarSweepMechanical(int MaxRightValue, int MaxLeftValue){
     for(ServoRightValue=0; ServoRightValue < 170; ServoRightValue++){
     //PingUltraSoundSensor();
     serv.write(ServoRightValue);
+  
     //delay(10);
     Serial.print("Servo angle Written: ");
     Serial.println(ServoRightValue);
@@ -93,7 +100,42 @@ void RadarSweepMechanical(int MaxRightValue, int MaxLeftValue){
     }    
   
 }
-   
+
+enum SerialOrder read_order()
+{
+  return (SerialOrder) Serial.read();
+} 
+
+void ReadSerialRadar(){
+
+ //if(Serial.available()>0){   
+    SerialOrder order_received = read_order();
+    OrderReceived=order_received;
+    
+    switch(order_received){
+      
+     case PC_NOT_READY:
+      {    
+        PC_not_Ready=0;
+        break;
+      }
+      case REQUEST_RADAR:
+      {
+        PC_not_Ready=1;
+        WriteCommandInt16(RADAR_DISTANCE, MeasuredDistance_int16);
+        break;
+      }
+      case REQUEST_RADAR_POS:
+      {
+        PC_not_Ready=0;
+        WriteCommandInt16(RADAR_POSITION, ServoAngleInt16);
+        break;
+      }
+      
+      }
+ //}
+}
+  
 void PingUltraSoundSensor(){
   
   Time1 = millis();
@@ -131,15 +173,18 @@ void PingUltraSoundSensor(){
   //Serial.print("Iteration Time ");
   //Serial.println(ProgramIterationTime);
 
-  WriteCommandInt16(RADAR_DISTANCE,MeasuredDistance_int16);
-  WriteCommandInt16(RADAR_POSITION,ServoAngleInt16);
-  
+  //WriteCommandInt16(RADAR_DISTANCE,MeasuredDistance_int16);
+  //WriteCommandInt16(RADAR_POSITION,ServoAngleInt16);
+
+  ReadSerialRadar();  
   Time3=millis();
   ProgramIterationTime16= Time3-Time1;
   
   //WriteCommandInt16(ARD_ITERATION_TIME,ProgramIterationTime16);
   //WriteInt16_2Command(RADAR_DISTANCE_2, MeasuredDistance_int16, RADAR_POSITION_2, ServoAngleInt16);
   }
+
+
 
 void WriteOrder(enum SerialOrder CommandOrder)
 {

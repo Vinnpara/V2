@@ -75,11 +75,11 @@ SerialPort::SerialPort(char* portName, int type) {
 
 SerialPort::~SerialPort()
 {
-    if (this->connected){
+    /*if (this->connected){
         this->connected = false;
         CloseHandle(this->handler);
         printf("\nSERIAL CLOSED");
-    }
+    }*/
 }
 
 void SerialPort::OpenConnection() {
