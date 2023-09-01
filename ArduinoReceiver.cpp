@@ -10,6 +10,7 @@
 
 char* ARDPort = "\\\\.\\COM3";
 SerialPort Serial(ARDPort);
+static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos;
 
 ArduinoReceiver::ArduinoReceiver() {
 	
@@ -61,6 +62,18 @@ int32_t ArduinoReceiver::LimitValueInt32(int32_t& Value, int32_t MAX, int32_t MI
     }
     else
         return Value;
+
+}
+
+int16_t ArduinoReceiver::BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue) {
+
+    if (ReadValue <= MinValue)
+        ReadValue = MinValue;
+
+    else if (ReadValue >= MaxValue)
+        ReadValue = MaxValue;
+
+    return ReadValue;
 
 }
 
@@ -159,6 +172,21 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
             //std::cout << "\MEASURED_Y_ACCEL " << Z_Pitch_int16 << " " << ConvertedZAccel << std::endl;
             break;
         }
+        case RADAR_DISTANCE:
+        {   //This sent as an int16_t
+            int16_t MeasuredRadarDistance = read_i16(Serial);
+            RadarValue = MeasuredRadarDistance;
+            BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            std::cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << std::endl;
+            break;
+        }
+        case RADAR_POSITION:
+        {   //This sent as an int16_t
+            int16_t MeasuredRadarPosition = read_i16(Serial);
+            RadarPosition = MeasuredRadarPosition;
+            std::cout << "\nRADAR_POSITION " << MeasuredRadarPosition << std::endl;
+            break;
+        }
         default:
         {
             //The PC is not getting any valid values so do not write into serial on ard.
@@ -194,7 +222,7 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
 
 void ArduinoReceiver::ReadArduino3Attitudes() {
 
-    static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos;
+    
 
     ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
     RequestReadData(Serial, REQUEST_PITCH, ValidCommandRoll);
@@ -218,6 +246,12 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
         ReadBuffer(Serial, REQUEST_YAW, ValidCommandYaw);
     }
 
+
+
+}
+
+void ArduinoReceiver::ReadRadar() {
+
     if (ValidCommandYaw) {
         RequestReadData(Serial, REQUEST_RADAR);
         ReadBuffer(Serial, REQUEST_RADAR, ValidRadarVal);
@@ -227,6 +261,27 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
         ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
     }
 
+}
+
+void ArduinoReceiver::ReadRadar2() {
+    
+    RequestReadData(Serial, REQUEST_RADAR);
+    ReadBuffer(Serial, REQUEST_RADAR, ValidRadarVal);
+
+
+   if (ValidRadarVal) {
+
+      ValidRadarValue = true;
+
+     //RequestReadData(Serial, REQUEST_RADAR_POS);
+     //ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
+     //std::cout << "\n----------------------------------------------------VALID_RADAR_VALUE ------------------------------------------------------" << std::endl;
+   }
+
+   if (ValidRadarValue) {
+       RequestReadData(Serial, REQUEST_RADAR_POS);
+       ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
+   }
 }
 
 float ArduinoReceiver::GetPitch() {
@@ -244,6 +299,16 @@ float ArduinoReceiver::GetYaw() {
 
 void ArduinoReceiver::CloaseSerial() {
     Serial.SerialClose();
+}
+
+int16_t ArduinoReceiver::GetRadarVal() {
+
+    return RadarValue;
+}
+
+int16_t ArduinoReceiver::GetRadarPos() {
+
+    return RadarPosition;
 }
 
 ArduinoReceiver::~ArduinoReceiver() {

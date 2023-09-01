@@ -114,10 +114,23 @@ void TelemetryUI::UpdateValues6Axis(float y, float p, float r, float Ax, float A
 
 }
 
+void TelemetryUI::UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition) {
+    
+    //Ard1.ReadRadar2();
+
+    this->RadarVal = RadarValue;
+    this->RadarPos = RadarPosition;
+
+    Radval = std::to_string(RadarVal);
+    Radpos = std::to_string(RadarPos);
+
+}
+
 void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
     
     Ard1.ReadArduino3Attitudes();
+    //Ard1.ReadRadar();
     
     //FilterVal(180.0f, -180.0f, y);
     //FilterVal(180.0f, -180.0f, p);
@@ -136,6 +149,7 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
     sprintf_s(YawRead, "%f", Yaw);
 
     VM1->UpdateAttitudeValues(Yaw,Pitch,Roll);
+    //UpdateValuesRadar(Ard1.GetRadarVal(), Ard1.GetRadarPos());
 
 }
 
@@ -151,15 +165,7 @@ void TelemetryUI::UpdateValues3Accel(float Ax, float Ay, float Az) {
 
 }
 
-void TelemetryUI::UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition) {
 
-    this->RadarVal = RadarValue;
-    this->RadarPos = RadarPosition;
-
-    Radval = std::to_string(RadarVal);
-    Radpos = std::to_string(RadarPos);
-
-}
 
 int16_t  TelemetryUI::BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue) {
 
