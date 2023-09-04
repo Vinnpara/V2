@@ -46,6 +46,7 @@
     <ClInclude Include="include\RadarUI.h" />
     <ClInclude Include="include\RadarVirtual.h" />
     <ClInclude Include="include\ResourceHandle.h" />
+    <ClInclude Include="include\SerialPortSelection.h" />
     <ClInclude Include="include\ShaderVision.h" />
     <ClInclude Include="include\TelemetryUI.h" />
     <ClInclude Include="include\TextRender.h" />

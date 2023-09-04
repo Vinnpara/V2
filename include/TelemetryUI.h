@@ -32,7 +32,12 @@ public:
 	void UpdateValues3Attitude(float y, float p, float r);
 	void UpdateValues3Accel(float Ax, float Ay, float Az);
 	void UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition);
+	void UpdateValuesRadar();
 	void CloseSerial();
+
+	int16_t GetRadarPos();
+	int16_t GetRadarVal();
+
 
 	~TelemetryUI();
 

@@ -8,12 +8,13 @@
 #include<serial/SerialPort.h>
 #include<serial/SerialOrder.h>
 
-
+#include<SerialPortSelection.h>
 
 
 class ArduinoReceiver {
 public:
 	ArduinoReceiver();
+	ArduinoReceiver(SerialName PortName);
 	void ArdInitialize();
 	void ArduinoFirstPass();
 	~ArduinoReceiver();
@@ -27,6 +28,8 @@ public:
 	void ReadArduino3Attitudes();
 	void ReadRadar();
 	void ReadRadar2();
+	void ReadRadarDefaultPort();
+	void ReadAllVals();
 
 
 private:

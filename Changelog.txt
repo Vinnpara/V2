@@ -27,3 +27,7 @@ a value based on previous values.
 
 08/31
 accel_radar has radar reading and gyro reader. The code can handle either, one at a time.
+
+09/03
+Added 3 board to handle radar, steering & power, gyro each to communicate using its iwn class.
+Gyro sometimes freezes on one axis. Radar doesn't draw but gets the values.

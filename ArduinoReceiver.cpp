@@ -7,15 +7,56 @@
 #include "SerialComms.h"
 
 #include<ArduinoReceiver.h>
+#include<SerialPortSelection.h>
 
 char* ARDPort = "\\\\.\\COM3";
-SerialPort Serial(ARDPort);
-static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos;
+char* ARDPort2 = "\\\\.\\COM1";
+char* ARDPort3 = "\\\\.\\COM5";
+char* ARDPort4 = "\\\\.\\COM4";
+
+
+static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos, ValidYaw;
 
 ArduinoReceiver::ArduinoReceiver() {
 	
 
-	Ard = Serial;
+	//Ard = Serial;
+
+}
+
+ArduinoReceiver::ArduinoReceiver(SerialName PortName) {
+
+
+    switch (PortName)
+    {
+      case COM3:
+        {
+          SerialPort Serial(ARDPort);
+          Ard = Serial;
+          break;
+        }
+
+      case COM1:
+      {
+          SerialPort Serial2(ARDPort2);
+          Ard = Serial2;
+          break;
+      }
+
+      case COM5:
+      {
+          SerialPort Serial3(ARDPort3);
+          Ard = Serial3;
+          break;
+      }
+      case COM4:
+      {
+          SerialPort Serial4(ARDPort4);
+          Ard = Serial4;
+          break;
+      }
+
+    }
 
 }
 
@@ -98,6 +139,13 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
 
         ReceivedType = read_order(Serial);
         //cout << "\nENUM RECEVIED " << ReceivedType << endl;
+
+        if ((Command - 10) == ReceivedType) {
+            ExpectedCommand = true;
+        }
+        else
+            ExpectedCommand = false;
+
         switch (ReceivedType)
         {
         case HELLO:
@@ -207,12 +255,7 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
 
         }
 
-        if ((Command - 10) == ReceivedType) {
-            ExpectedCommand = true;
 
-        }
-        else
-            ExpectedCommand = false;
         //cout << "\nCommand not received   " << Command << endl;
         std::cout << "\nFrom Class ORDER " << ReceivedType << std::endl;
     }
@@ -225,16 +268,16 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
     
 
     ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
-    RequestReadData(Serial, REQUEST_PITCH, ValidCommandRoll);
-    ReadBuffer(Serial, REQUEST_PITCH, ValidCommandRoll);
+    RequestReadData(Ard, REQUEST_PITCH, ValidCommandRoll);
+    ReadBuffer(Ard, REQUEST_PITCH, ValidCommandRoll);
 
     if (ValidCommandRoll)
         ValidRoll = true;
 
     if (ValidRoll) {
         //cout << "VALID ROLL " << ValidRoll;
-        RequestReadData(Serial, REQUEST_ROLL, ValidCommandPitch);
-        ReadBuffer(Serial, REQUEST_ROLL, ValidCommandPitch);
+        RequestReadData(Ard, REQUEST_ROLL, ValidCommandPitch);
+        ReadBuffer(Ard, REQUEST_ROLL, ValidCommandPitch);
     }
 
     if (ValidCommandPitch);
@@ -242,8 +285,8 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
 
     if (ValidPitch) {
 
-        RequestReadData(Serial, REQUEST_YAW, ValidCommandYaw);
-        ReadBuffer(Serial, REQUEST_YAW, ValidCommandYaw);
+        RequestReadData(Ard, REQUEST_YAW, ValidCommandYaw);
+        ReadBuffer(Ard, REQUEST_YAW, ValidCommandYaw);
     }
 
 
@@ -253,35 +296,97 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
 void ArduinoReceiver::ReadRadar() {
 
     if (ValidCommandYaw) {
-        RequestReadData(Serial, REQUEST_RADAR);
-        ReadBuffer(Serial, REQUEST_RADAR, ValidRadarVal);
+        RequestReadData(Ard, REQUEST_RADAR);
+        ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
     }
     if (ValidRadarVal) {
-        RequestReadData(Serial, REQUEST_RADAR_POS);
-        ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
+        RequestReadData(Ard, REQUEST_RADAR_POS);
+        ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
     }
 
 }
 
 void ArduinoReceiver::ReadRadar2() {
     
-    RequestReadData(Serial, REQUEST_RADAR);
-    ReadBuffer(Serial, REQUEST_RADAR, ValidRadarVal);
+    RequestReadData(Ard, REQUEST_RADAR);
+    ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
 
 
    if (ValidRadarVal) {
 
       ValidRadarValue = true;
 
-     //RequestReadData(Serial, REQUEST_RADAR_POS);
-     //ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
-     //std::cout << "\n----------------------------------------------------VALID_RADAR_VALUE ------------------------------------------------------" << std::endl;
    }
 
    if (ValidRadarValue) {
-       RequestReadData(Serial, REQUEST_RADAR_POS);
-       ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
+       RequestReadData(Ard, REQUEST_RADAR_POS);
+       ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
    }
+}
+
+void ArduinoReceiver::ReadRadarDefaultPort() {
+
+    RequestReadData(Ard, REQUEST_RADAR);
+    ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
+
+
+    if (ValidRadarVal) {
+
+        ValidRadarValue = true;
+
+    }
+
+    if (ValidRadarValue) {
+        RequestReadData(Ard, REQUEST_RADAR_POS);
+        ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
+    }
+
+}
+
+void ArduinoReceiver::ReadAllVals() {
+
+    ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
+    RequestReadData(Ard, REQUEST_PITCH, ValidCommandPitch);
+    ReadBuffer(Ard, REQUEST_PITCH, ValidCommandPitch);
+
+    if (ValidCommandPitch)
+        ValidPitch = true;
+
+    if (ValidPitch) {
+        //cout << "VALID ROLL " << ValidRoll;
+        RequestReadData(Ard, REQUEST_ROLL, ValidCommandRoll);
+        ReadBuffer(Ard, REQUEST_ROLL, ValidCommandRoll);
+    }
+
+    if (ValidCommandRoll);
+    ValidRoll = true;
+
+    if (ValidRoll) {
+
+        RequestReadData(Ard, REQUEST_YAW, ValidCommandYaw);
+        ReadBuffer(Ard, REQUEST_YAW, ValidCommandYaw);
+    }
+
+    if (ValidCommandYaw) {
+
+        ValidYaw = true;
+    }
+
+    if (ValidYaw) {
+        RequestReadData(Ard, REQUEST_RADAR);
+        ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
+    }
+
+    if (ValidRadarVal) {
+
+        ValidRadarValue = true;
+
+    }
+
+    if (ValidRadarValue) {
+        RequestReadData(Ard, REQUEST_RADAR_POS);
+        ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
+    }
 }
 
 float ArduinoReceiver::GetPitch() {
@@ -298,7 +403,7 @@ float ArduinoReceiver::GetYaw() {
 }
 
 void ArduinoReceiver::CloaseSerial() {
-    Serial.SerialClose();
+    Ard.SerialClose();
 }
 
 int16_t ArduinoReceiver::GetRadarVal() {

@@ -13,8 +13,10 @@
 #include <streambuf>
 #include <chrono>
 #include <map>
+
 #include<serial/SerialPort.h>
 #include<serial/SerialOrder.h>
+#include<SerialPortSelection.h>
 
 #include <graph\Shader.h>
 #include<vector>
@@ -59,7 +61,7 @@ char input[MAX_DATA_LENGTH];
 #define KEY(c) ( GetAsyncKeyState((int)(c)) & (SHORT)0x8000 )
 using namespace std;
 
-int16_t RadarValue=0, RadarPosition=0;
+
 
 void ReadBuffer(SerialPort& Serial);
 void ReadBuffer(SerialPort& Serial, SerialOrder Command, bool &CommandReceived, bool CommandRecieved);
@@ -318,8 +320,7 @@ int main()
     //Radar Rtest(S1);
 
 
-    RadarPosition = 0;
-    RadarValue = 0;
+
     std::vector<int16_t>RadarValues{0};
 
     for (int i = 0; i < 172; i++) {
@@ -428,9 +429,7 @@ int main()
         //TL1.UpdateValuesRadar(RadarValue, RadarPosition);
         //Rad1.UpdateValues(arduino);
 
-        Rad1.UpdateValues(RadarValue, RadarPosition);
 
-        Rad1.RadarDraw();
 
         LimitAngle(180.0f, -180.0f, ConvertedYaw);
         LimitAngle(180.0f, -180.0f, ConvertedPitch);
@@ -442,11 +441,20 @@ int main()
         TL1.RenderRoll();
         TL1.RenderYaw();
         
-        TL1.UpdateValuesRadar(RadarValue, RadarPosition);
+        TL1.UpdateValuesRadar();
 
         TL1.RenderRadar();
 
         TL1.RenderModel();
+
+        int16_t RadarValue = 0, RadarPosition = 0;
+
+        RadarValue = TL1.GetRadarVal();
+        RadarPosition = TL1.GetRadarPos();
+
+        Rad1.UpdateValues(RadarValue, RadarPosition);
+
+        Rad1.RadarDraw();
 
        // be sure to activate shader when setting uniforms/drawing objects
         /*M1.use();
@@ -733,15 +741,15 @@ void DrawRadar(Shader &S1) {
         float AngleTest2 = glm::radians((float)t);
 
         //transform = glm::scale(transform, glm::vec3(4.0f, 4.0f, 4.0f));
-        transform = glm::scale(transform, glm::vec3(ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue))));
+        //transform = glm::scale(transform, glm::vec3(ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue))));
 
         //float AngleTest = glm::radians(float(RadarPosition));
        //float AngleTest = glm::radians(sin(glfwGetTime() * 10));
        // float AngleTest = glm::radians(float(t));
-        float AngleTest = glm::radians(-ConvertRadarPosition(float(RadarPosition)) - t);
+       //float AngleTest = glm::radians(-ConvertRadarPosition(float(RadarPosition)) - t);
 
-        transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
-        cout << "\nSCALED VALUE " << ConvertRadarPosition(float(RadarValue)) << " " << t << endl;
+        //transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+        //cout << "\nSCALED VALUE " << ConvertRadarPosition(float(RadarValue)) << " " << t << endl;
 
 
         //transform = glm::rotate(transform, AngleTest2, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -758,14 +766,14 @@ void DrawRadar(Shader &S1) {
         //float AngleTest2 = float AngleTest = glm::radians(float(i));;
 
         //transform = glm::scale(transform, glm::vec3(4.0f, 4.0f, 4.0f));
-        transform = glm::scale(transform, glm::vec3(ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue))));
+        //transform = glm::scale(transform, glm::vec3(ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue)), ConvertRadarValue(float(RadarValue))));
         //float AngleTest = glm::radians(float(RadarPosition));
         //float AngleTest = glm::radians(-float(t));
-        float AngleTest = glm::radians(-ConvertRadarPosition(float(RadarPosition)) + t);
+        //float AngleTest = glm::radians(-ConvertRadarPosition(float(RadarPosition)) + t);
 
 
-        transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
-        cout << "\nSCALED VALUE " << ConvertRadarPosition(float(RadarValue)) << " " << t << endl;
+        //transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+        //cout << "\nSCALED VALUE " << ConvertRadarPosition(float(RadarValue)) << " " << t << endl;
         //}
         //transform = glm::rotate(transform, AngleTest2, glm::vec3(0.0f, 0.0f, 1.0f));
 
@@ -1105,7 +1113,7 @@ void ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCo
         case RADAR_DISTANCE:
         {   //This sent as an int16_t
             int16_t MeasuredRadarDistance = read_i16(Serial);
-            RadarValue = MeasuredRadarDistance;
+            //RadarValue = MeasuredRadarDistance;
             BufferFilterInt16(201, 0, MeasuredRadarDistance);
             cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
@@ -1113,7 +1121,7 @@ void ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCo
         case RADAR_POSITION:
         {   //This sent as an int16_t
             int16_t MeasuredRadarPosition = read_i16(Serial);
-            RadarPosition = MeasuredRadarPosition;
+            //RadarPosition = MeasuredRadarPosition;
             cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
             break;
         }
@@ -1236,7 +1244,7 @@ void ReadBuffer(SerialPort& Serial, SerialOrder Command) {
         case RADAR_DISTANCE:
         {   //This sent as an int16_t
             int16_t MeasuredRadarDistance = read_i16(Serial);
-            RadarValue = MeasuredRadarDistance;
+            //RadarValue = MeasuredRadarDistance;
             BufferFilterInt16(201, 0, MeasuredRadarDistance);
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
@@ -1244,7 +1252,7 @@ void ReadBuffer(SerialPort& Serial, SerialOrder Command) {
         case RADAR_POSITION:
         {   //This sent as an int16_t
             int16_t MeasuredRadarPosition = read_i16(Serial);
-            RadarPosition = MeasuredRadarPosition;
+            //RadarPosition = MeasuredRadarPosition;
             //cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
             break;
         }
@@ -1408,7 +1416,7 @@ void ReadBuffer(SerialPort &Serial ) {
         case RADAR_DISTANCE:
         {   //This sent as an int16_t
             int16_t MeasuredRadarDistance = read_i16(Serial);
-            RadarValue = MeasuredRadarDistance;
+           // RadarValue = MeasuredRadarDistance;
             BufferFilterInt16(201, 0, MeasuredRadarDistance);
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
@@ -1416,7 +1424,7 @@ void ReadBuffer(SerialPort &Serial ) {
         case RADAR_POSITION:
         {   //This sent as an int16_t
             int16_t MeasuredRadarPosition = read_i16(Serial);
-            RadarPosition = MeasuredRadarPosition;
+            //RadarPosition = MeasuredRadarPosition;
             //cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
             break;
         }

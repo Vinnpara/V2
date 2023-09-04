@@ -21,6 +21,7 @@
 #include<serial/SerialPort.h>
 #include<serial/SerialOrder.h>
 #include <ArduinoReceiver.h>
+#include<SerialPortSelection.h>
 
 TextRender* T1;
 VehicleModel* VM1;
@@ -30,7 +31,10 @@ VehicleModel* VM1;
 char* Port = "\\\\.\\COM3";
 //char input[MAX_DATA_LENGTH];
 
-ArduinoReceiver Ard1;
+//ArduinoReceiver Ard1;
+
+ArduinoReceiver ArdRadar(COM4);
+ArduinoReceiver ArdGyro(COM3);
 
 TelemetryUI::TelemetryUI() {
 
@@ -39,7 +43,10 @@ TelemetryUI::TelemetryUI() {
 }
 
 void TelemetryUI::InitializeTelemetry() {
-    Ard1.ArdInitialize();
+    //Ard1.ArdInitialize();
+
+    ArdRadar.ArdInitialize();
+    ArdGyro.ArdInitialize();
 
 	T1 = new TextRender();
     VM1 = new VehicleModel();
@@ -116,29 +123,47 @@ void TelemetryUI::UpdateValues6Axis(float y, float p, float r, float Ax, float A
 
 void TelemetryUI::UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition) {
     
-    //Ard1.ReadRadar2();
+    ArdRadar.ReadRadar2();
 
     this->RadarVal = RadarValue;
     this->RadarPos = RadarPosition;
 
-    Radval = std::to_string(RadarVal);
-    Radpos = std::to_string(RadarPos);
+    Radval = std::to_string(ArdRadar.GetRadarVal());
+    Radpos = std::to_string(ArdRadar.GetRadarPos());
 
 }
 
+void TelemetryUI::UpdateValuesRadar() {
+    
+    ArdRadar.ReadRadarDefaultPort();
+
+
+    Radval = std::to_string(ArdRadar.GetRadarVal());
+    Radpos = std::to_string(ArdRadar.GetRadarPos());
+
+}
+
+
 void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
-    
-    Ard1.ReadArduino3Attitudes();
+    ArdGyro.ReadArduino3Attitudes();
+
+    //Ard1.ReadArduino3Attitudes();
     //Ard1.ReadRadar();
-    
+    //Ard1.ReadAllVals();
     //FilterVal(180.0f, -180.0f, y);
     //FilterVal(180.0f, -180.0f, p);
     //FilterVal(180.0f, -180.0f, r);
 
-    this->Yaw = Ard1.GetYaw();
-    this->Roll = Ard1.GetRoll();
-    this->Pitch = Ard1.GetPitch();
+    //this->Yaw = Ard1.GetYaw();
+    //this->Roll = Ard1.GetRoll();
+    //this->Pitch = Ard1.GetPitch();
+
+    float Yaw, Pitch ,Roll;
+
+    Yaw = ArdGyro.GetYaw();
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
 
     FilterVal(180.0f, -180.0f, Yaw);
     FilterVal(180.0f, -180.0f, Pitch);
@@ -419,6 +444,17 @@ void TelemetryUI::RenderRadar() {
     T1->RenderTextVS(OrderFromArd, 605.0f, 25.0f, 1.0f, RadColor);
 }
 
+int16_t TelemetryUI::GetRadarPos() { 
+    
+    return ArdRadar.GetRadarPos(); std::cout << "\nR_POS" << ArdRadar.GetRadarPos();
+}
+
+int16_t TelemetryUI::GetRadarVal() {
+
+    return ArdRadar.GetRadarVal(); std::cout << "\nR_VAL" << ArdRadar.GetRadarVal();
+}
+
+
 void TelemetryUI::RenderModel() {
 
     
@@ -428,7 +464,7 @@ void TelemetryUI::RenderModel() {
 }
 void TelemetryUI::CloseSerial() {
 
-    Ard1.CloaseSerial();
+    //Ard1.CloaseSerial();
 
 }
 

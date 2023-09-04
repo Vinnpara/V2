@@ -41,6 +41,9 @@ SerialPort::SerialPort(char *portName)
                 this->connected = true;
                 PurgeComm(this->handler, PURGE_RXCLEAR | PURGE_TXCLEAR);
                 Sleep(ARDUINO_WAIT_TIME);
+                printf("\nARD PORT CONNECTED\n");
+                printf("\n \n");
+                printf(portName);
             }
         }
     }
