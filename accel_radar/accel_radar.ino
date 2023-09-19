@@ -25,9 +25,10 @@ int8_t Buffer16Int[2];
 
 int16_t ValueSent;
 int32_t val32;
-static int PitchCounter, YawCounter, RollCounter;
+static int PitchCounter, YawCounter, RollCounter, SerialCounter;
 
 static bool FirstPassDone;
+static bool RollSent, PitchSent, YawSent, RadarPosSent, RadarValSent;
 
 SerialOrder OrderReceived;
 SerialOrder OrderSent;
@@ -225,7 +226,16 @@ void loop() {
   //ReadSerial();
   //GetMessages();
   while(Serial.available()>0){
+    
+  RollSent=0; 
+  PitchSent=0; 
+  YawSent=0; 
+  RadarPosSent=0; 
+  RadarValSent=0;
+  SerialCounter=0;
+  
   RadarSweep(171,-1);
+  
   if (!dmpReady) return;
   //MeasureGyro();
   FirstPassDone=1;
@@ -297,7 +307,7 @@ void calculate_IMU_error() {
 void MeasureGyro(){
   
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-  GetMessages();    
+  //GetMessages();    
       
   // display Euler angles in degrees
   mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -380,20 +390,26 @@ void MeasureGyro(){
 void RadarSweep(int MaxRightValue, int MaxLeftValue){
   
     for(ServoRightValue=0; ServoRightValue < MaxRightValue; ServoRightValue++){
-    //MeasureGyro();  
+    MeasureGyro();  
     PingUltraSoundSensor(ServoRightValue);
     MeasuredRadarValues[ServoRightValue]=MeasuredDistance_int16;
     serv.write(ServoRightValue);
+    //ReadAndWrite(ServoLeftValue);
+    //GetMessages();
+    MessageGyro();
     //MeasuredRadarValues[ServoRightValue]=MeasuredDistance_int16;
     //Serial.print("Servo angle Written: ");
     //Serial.println(ServoRightValue);
     }
     
     for(ServoLeftValue=MaxRightValue; ServoLeftValue > MaxLeftValue; ServoLeftValue--){
-    //MeasureGyro();
+    MeasureGyro();
     PingUltraSoundSensor(ServoLeftValue);
     MeasuredRadarValues[ServoLeftValue]=MeasuredDistance_int16;
     serv.write(ServoLeftValue);
+    //ReadAndWrite(ServoLeftValue);
+    //GetMessages();
+    MessageGyro();
     //MeasuredRadarValues[ServoLeftValue]=MeasuredDistance_int16;
     //Serial.print("Servo angle Written: ");
     //Serial.println(ServoLeftValue);
@@ -422,8 +438,9 @@ void PingUltraSoundSensor(int16_t i){
   MeasuredDistance_int16 = duration * 0.034 / 2;
 
   DelayTime=25-IterationTime;
+  MeasuredRadarValues[ServoRightValue]=MeasuredDistance_int16;
   
-  delay(DelayTime);
+  //delay(DelayTime);
   
   /*Serial.print("Distance: ");
   Serial.println(MeasuredDistance_int16);
@@ -442,11 +459,11 @@ void PingUltraSoundSensor(int16_t i){
   //WriteCommandInt16(RADAR_POSITION,ServoAngleInt16);
 
   //ReadSerial();
-  MeasureGyro();  
+  //MeasureGyro();  
   Time3=millis();
   ProgramIterationTime16= Time3-Time1;
   if(FirstPassDone){
-    ReadSerial(i);
+    //ReadSerial(i);
   }
   //WriteCommandInt16(ARD_ITERATION_TIME,ProgramIterationTime16);
   //WriteInt16_2Command(RADAR_DISTANCE_2, MeasuredDistance_int16, RADAR_POSITION_2, ServoAngleInt16);
@@ -494,6 +511,196 @@ void ReadSerial(int16_t i){
       }
  //}
 }
+
+void MessageGyro(){
+  
+    if(Serial.available() > 0)
+  {
+    
+    SerialOrder order_received = read_order();
+    OrderReceived=order_received;
+    
+    switch(order_received){
+      
+      case PC_NOT_READY:
+      {
+          break;
+        
+       }
+      
+      case REQUEST_ROLL:
+      {
+        float TransferValue=roll*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ROLL;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      case REQUEST_PITCH:
+      {
+        
+        float TransferValue=pitch*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_PITCH;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+      case REQUEST_YAW:
+      {
+        float TransferValue=yaw*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_YAW; 
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      }
+  }
+  
+  }
+
+void MessageRadar(int16_t i){
+    if(Serial.available() > 0)
+  {
+
+    SerialOrder order_received = read_order();
+    OrderReceived=order_received;
+    
+    switch(order_received){
+      
+      case PC_NOT_READY:
+      {
+          break;
+        
+       }
+      
+
+      case REQUEST_RADAR:
+      {
+        PC_not_Ready=1;
+        int16_t ValuetoSend=MeasuredRadarValues[i];
+        //WriteCommandInt16(RADAR_DISTANCE, ValuetoSend);
+        if(!RadarValSent && FirstPassDone){          
+           WriteOrder(RADAR_DISTANCE);
+           WriteInt16(ValuetoSend);
+           RadarValSent=1;
+        }
+        break;
+      }
+      case REQUEST_RADAR_POS:
+      {
+        PC_not_Ready=0;
+        //WriteCommandInt16(RADAR_POSITION, ServoAngleInt16);
+        if(!RadarPosSent && FirstPassDone){         
+            WriteOrder(RADAR_POSITION);
+            WriteInt16(ServoAngleInt16);
+            RadarPosSent=1;
+        }
+        break;
+      }
+      
+      }
+
+  }
+  
+  }
+
+void ReadAndWrite(int16_t i){
+  
+  if(Serial.available() > 0)
+  {
+
+    SerialOrder order_received = read_order();
+    OrderReceived=order_received;
+    
+    switch(order_received){
+      
+      case PC_NOT_READY:
+      {
+          break;
+        
+       }
+      
+      case REQUEST_ROLL:
+      {
+        float TransferValue=roll*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ROLL;
+        if(!RollSent){
+           WriteOrder(OrderSent);
+           WriteInt32(ValueToSend);
+           RollSent=1;
+        }
+        break;
+      }
+      
+      case REQUEST_PITCH:
+      {
+        
+        float TransferValue=pitch*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_PITCH;
+         if(!PitchSent){
+            WriteOrder(OrderSent);
+            WriteInt32(ValueToSend);
+            PitchSent=1;
+         }
+        break;
+      }
+
+      case REQUEST_YAW:
+      {
+        float TransferValue=yaw*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_YAW;
+         if(!YawSent){         
+           WriteOrder(OrderSent);
+           WriteInt32(ValueToSend);
+           YawSent=1;           
+         }
+        break;
+      }
+
+      case REQUEST_RADAR:
+      {
+        PC_not_Ready=1;
+        int16_t ValuetoSend=MeasuredRadarValues[i];
+        //WriteCommandInt16(RADAR_DISTANCE, ValuetoSend);
+        if(!RadarValSent && FirstPassDone){          
+           WriteOrder(RADAR_DISTANCE);
+           WriteInt16(ValuetoSend);
+           RadarValSent=1;
+        }
+        break;
+      }
+      case REQUEST_RADAR_POS:
+      {
+        PC_not_Ready=0;
+        //WriteCommandInt16(RADAR_POSITION, ServoAngleInt16);
+        if(!RadarPosSent && FirstPassDone){         
+            WriteOrder(RADAR_POSITION);
+            WriteInt16(ServoAngleInt16);
+            RadarPosSent=1;
+        }
+        break;
+      }
+      
+      }
+
+      SerialCounter= RollSent + PitchSent + YawSent + RadarValSent + RadarPosSent;
+  
+  if(SerialCounter == 5){
+      //ReadAndWrite(i);
+    }
+      
+  }
+  
+  }
 
 
 void WriteOrder(enum SerialOrder CommandOrder)
@@ -593,7 +800,7 @@ void GetMessages(){
         break;
       }
 
-     /*case REQUEST_RADAR:
+     case REQUEST_RADAR:
       {
         
         //WriteCommandInt16(RADAR_DISTANCE, MeasuredDistance_int16);
@@ -608,7 +815,7 @@ void GetMessages(){
         WriteOrder(RADAR_POSITION);
         WriteInt16(ServoAngleInt16);
         break;
-      }*/
+      }
       
       }
   }

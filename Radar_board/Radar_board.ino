@@ -72,9 +72,9 @@ void PingUltraSoundSensor(){
   duration = pulseIn(echoPin, HIGH, TimeoutValue);
   Time2 = millis();    
   // Calculating the distance
-  //delay(200);
+  //delay(20);
   IterationTime=Time2-Time1;
-  if(IterationTime >= 13)
+  if(IterationTime >= 25)
   MeasuredDistance = 200;
   else
   MeasuredDistance = duration * 0.034 / 2;
@@ -82,18 +82,21 @@ void PingUltraSoundSensor(){
   
   DelayTime=25-IterationTime;
   delay(DelayTime);
+
+  MeasuredDistance_int16=(int16_t)MeasuredDistance; 
   
-  //Serial.print("Distance: ");
-  //Serial.println(MeasuredDistance);
-  //Serial.print("Duration: ");
-  //Serial.println(duration);
+  /*Serial.print("Distance: ");
+  Serial.println(MeasuredDistance_int16);
+  Serial.print("Position: ");
+  Serial.println(ServoAngleInt16);*/
+  
   Time3=millis();
   
   //Serial.print("Position ");
   ProgramIterationTime= Time3-Time1;
   //Serial.println(ServoPos);
   
-  MeasuredDistance_int16=(int16_t)MeasuredDistance; 
+
 
   //ReadSerial();
   

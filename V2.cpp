@@ -26,6 +26,13 @@
 
 #include <math.h>
 
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/video.hpp>
+#include <opencv2/objdetect.hpp>
+
 //#include<serial/SerialStream.h>
 //#include<serial/SerialStreamBuf.h>
 #include <glm/glm.hpp>
@@ -43,6 +50,7 @@
 #include <camera.h>
 
 #include <ArduinoReceiver.h>
+#include <Vision.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -356,7 +364,14 @@ int main()
     
     //Radar1.RadarInitalize();
 
-    
+    cv::VideoCapture WebCAm(1);
+
+    Vision V1(WebCAm);
+
+    V1.capt();
+
+    cv::Mat Frame;
+    TL1.OpenSerial();
 
     while (!glfwWindowShouldClose(window) ) {
 
@@ -369,6 +384,20 @@ int main()
         glfwPollEvents();
 
         processInput(window);
+
+        V1.disp();
+
+        int ControllerPresent = glfwJoystickPresent(GLFW_JOYSTICK_1);
+        //cout << "\n COntroller status " << ControllerPresent;
+        const float* axes=0;
+        if (ControllerPresent==1) {
+            int AxesCount;
+            axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &AxesCount);
+            //cout << "\n COntroller Axes " << AxesCount;
+
+
+ 
+        }
 
         static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos;
 
@@ -429,8 +458,6 @@ int main()
         //TL1.UpdateValuesRadar(RadarValue, RadarPosition);
         //Rad1.UpdateValues(arduino);
 
-
-
         LimitAngle(180.0f, -180.0f, ConvertedYaw);
         LimitAngle(180.0f, -180.0f, ConvertedPitch);
         LimitAngle(180.0f, -180.0f, ConvertedRoll);
@@ -447,15 +474,23 @@ int main()
 
         TL1.RenderModel();
 
+        TL1.RenderControllerState(ControllerPresent);
+
         int16_t RadarValue = 0, RadarPosition = 0;
 
         RadarValue = TL1.GetRadarVal();
         RadarPosition = TL1.GetRadarPos();
 
         Rad1.UpdateValues(RadarValue, RadarPosition);
-
         Rad1.RadarDraw();
 
+
+
+        if (ControllerPresent == 1) {
+
+            TL1.RenderAxis(axes);
+            TL1.RenderRawSteerAngle(axes);
+        }
        // be sure to activate shader when setting uniforms/drawing objects
         /*M1.use();
         M1.setVec3("light.position", lightPos);

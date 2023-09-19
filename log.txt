@@ -1,0 +1,109 @@
+2023-06-12
+Need to use glad.c core version with all extensions added. Compile glad.c with solution 
+v2 soln now works
+
+06-25
+Radar sender/receiver functions works ok now, with the current functions. Seemed to be bad HW for servo 
+for the servo whcih caused slow reading. For the radar plotter:
+A hemisphere of 170 degrees
+
+=========RADAR FUNCTION==========
+
+This function will draw and continually update the radar on the screen. Will be three drawing objects.
+One draws the background a hemishpere of 170 degrees. Will be in black.The vertices are constant for 
+this(static). The radar will have its vertices updated by the serial (dynamic). The scale will be drawn over that. 
+Scale goes from 0-2m and 0-170 degrees Will show measurement. 
+
+*Background
+Vetrices plan: Will start at center and the centre, so [0] is 0,0,0 (x,y,z). next point is 0.5,0,0 at 2m zero 
+degrees. so scale is 2m ---> 0.5. 0m--> 0.0. Next point is n=cos(90-theta)*h where theta is angle from 0-170
+degrees and h is 2m radius so h=0.5. 
+
+*Radar
+Vertices plan: Same as Background object. But the radius (h) is the value read by the radar serial as well as 
+and theta is read from the serial. Whats drawn on the screen is a triagle with vertices point n= cos(90-theta)*h
+and the point n-1 and the origin. The color of the triangle depends on the radius. with 2m being blue and 0m being 
+Blue.Two look up tables 
+ 
+*Scale
+Verticesplan: WIll indicate at 10 degree intervals and from 0-50 cm ant 10cm intervals and 50-100 cm at 20 cm and
+100-200cm at 0.4cm intervals.
+ 
+Triangle genrator. The first index is n theta 5 and next is n at theta+1 and final n is the origin 0,0,0.  Where
+n is a three digit  so
+5-175 degrees so 170 triangles to draw. Iterations to load the vector is 170*3.
+
+It needs work. 170 triangles to be drawn. 170*3 vertices and 170*3*3 points
+Add a 000 on these iterations
+1
+4
+7
+10
+13
+16
+
+Once the first is done, add every third iteration
+
+Function to return a vector that has all cordinates to draw a hemisphere of specified angle and radius. Or could draw one
+1 degree segment and thenuse a matrix transform to move it. use provided radius to draw.
+Could draw a triangle and just translate it. But need to this for 170 sectors
+
+The transform works on a shader instance. So, either 170+ shader programs are needed or 
+the respective transformations need to be added to the vertices container fed into glBuffer().
+
+01/07
+Radar is OK. Two Vectors, one with radar angle, and radar position. The are read. Plots 0-175 degress, but updates the 
+distance and so the scale 
+
+Radar function sort of works now. Need firther testing. Need to adjust servo position such that 0 degrees is actually
+the mechanical 0. Once this is done, need to setup test enviornment and verify radar map. need to creat class and genericfy
+dunctions. 
+
+=========ACCEL/GYRO FUNCTION==========
+
+08/07
+Pretty robust cccode on arduino for oreintation is available. Now need a better serial commonication betwwen ard an c++
+code. For this, could be better to send a command to the arduino to first read a value and wait to receive. So, send 
+a command to request for pitch. then ard sends pitch value. Then request for roll, ard will send roll. Need a function to read serial for
+one byte. on the side of arduino.
+
+D2 changed to 7
+
+Int32 handles upto 10000
+
+09/07
+added a more robust serial transfer for pitch, yaw, roll. it can crash tho, need to know why. Seems like it crashes 
+at a yaw value of about 85...
+
+21/07
+Frame buffers might be answer. Look into the the game class in Textbook
+
+22/07
+The BallObject is inherited from GameObject, GameObject uses an object of the SpriteRender class.
+This class has the draw function. This is DrawSprite. TextRender class has its own draw functions.
+Implemented a GraphicRender this will be DrawSprite equaivalent. The radar background + radar use 
+different funtions to draw. Could have a parent Radar class, virtual, and then derive additional 
+RadarBackground +Radar class and a RadarScale class. One radar class that will draw
+
+31/07
+Looking at the breakout game, the SpriteRenderer object Renderer is passed as an argument, so the 
+VAO is initialized in the RenderInit function thats in the Rneder class, to theres is only one VAO
+here  
+
+05/08
+Try Graphicrender with Radar class
+
+07/08
+Using the graphic render class, seems like when the PrepareTextVS() is called, thats when the radar isnt rendered
+Enabling face culling "glEnable(GL_CULL_FACE)" seems to not work with drawing the radar.
+Now it seems to work
+
+14/08
+Use ulstra sound serial transfer as is, you need to request what you want to read and keep requesting until its gotten.
+probs need to do the saem with position. As is, on the V2 and Ultra sound serial transfer function seems to work well. 
+
+=======MOTOR STEERING=============
+
+09/05
+When sending a hard coded servo command in the case of STEERING_COMMAND, it still doesn't work. It seems like its not even getting
+the correct command

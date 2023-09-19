@@ -230,12 +230,12 @@ void RadarUI::RadarDraw() {
    //ScaleLat->Draw();
    //Background->Draw();
 
-
+    RA->Draw(*GR1);
+    RA->DrawFull(*GR1);
     RS->Draw(*GR2);
     RSL->Draw(*GR1);
     RB->Draw(*GR1);
-    RA->Draw(*GR1);
-    RA->DrawFull(*GR1);
+
 }
 
 int16_t RadarUI::RadarVal() {

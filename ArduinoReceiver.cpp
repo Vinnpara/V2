@@ -13,7 +13,8 @@ char* ARDPort = "\\\\.\\COM3";
 char* ARDPort2 = "\\\\.\\COM1";
 char* ARDPort3 = "\\\\.\\COM5";
 char* ARDPort4 = "\\\\.\\COM4";
-
+char* ARDPort5 = "\\\\.\\COM7";
+char* ARDPort6 = "\\\\.\\COM8";
 
 static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos, ValidYaw;
 
@@ -55,6 +56,18 @@ ArduinoReceiver::ArduinoReceiver(SerialName PortName) {
           Ard = Serial4;
           break;
       }
+      case COM7:
+      {
+          SerialPort Serial5(ARDPort5);
+          Ard = Serial5;
+          break;
+      }
+      case COM8:
+      {
+          SerialPort Serial6(ARDPort6);
+          Ard = Serial6;
+          break;
+      }
 
     }
 
@@ -93,6 +106,8 @@ void ArduinoReceiver::RequestReadData(SerialPort& Serial, SerialOrder Command) {
     TransferFail = Serial.writeSerialPort(buff, 1);
 }
 
+
+
 int32_t ArduinoReceiver::LimitValueInt32(int32_t& Value, int32_t MAX, int32_t MIN) {
 
     if (Value > MAX) {
@@ -126,6 +141,77 @@ void ArduinoReceiver::ReTryRequest(SerialPort& Serial, SerialOrder Command) {
     TransferFail = Serial.writeSerialPort(buff, 1);
     //cout << "\n RETRYING COMMAND " << TransferFail << endl;
 
+
+}
+
+void ArduinoReceiver::KeepSerialOpen() {
+    
+    bool TransferFail;
+    char buff[1] = { HELLO };
+    TransferFail = Ard.writeSerialPort(buff, 1);
+}
+
+bool ArduinoReceiver::RequestedCommandReceived(SerialOrder Command) {
+    bool ExpectedCommand = 0;
+
+    SerialOrder ReceivedType;
+
+    if (Ard.isConnected()) {
+
+        ReceivedType = read_order(Ard);
+
+        if (ReceivedType == Command)
+            ExpectedCommand = 1;
+
+        //std::cout << "\n RequestedCommandReceived ARD RETRYING COMMAND " << ReceivedType << std::endl;
+    }
+    return ExpectedCommand;
+
+}
+
+bool ArduinoReceiver::ReadAndSendRequestedData(SerialOrder CommandExpected, int8_t Command) {
+
+    bool ExpectedCommand = 0;
+
+    SerialOrder ReceivedType;
+
+    if (Ard.isConnected()) {
+
+        ReceivedType = read_order(Ard);
+
+        if (ReceivedType == CommandExpected) {
+            ExpectedCommand = 1;
+
+            bool TransferFail, TF2;
+            char buff[1] = { STEER_COMMAND };
+            //char buff2[1] = { Command };
+            TransferFail = Ard.writeSerialPort(buff, 1);
+            //TF2= Ard.writeSerialPort(buff2, 1);
+
+           
+        }
+        std::cout << "\n RequestedCommandReceived ARD RETRYING COMMAND " << ReceivedType - 10 <<" "<< CommandExpected << std::endl;
+    }
+    return ExpectedCommand;
+
+}
+
+void ArduinoReceiver::CheckSentCommand(SerialOrder Command){
+    SerialOrder ReceivedType;
+
+    if (Ard.isConnected()) {
+
+        ReceivedType = read_order(Ard);
+
+        if (ReceivedType == Command) {
+            
+            if(STEER_COMMAND == Command)
+             SteeringAngleSent = read_i8(Ard);
+
+
+        }
+
+    }
 
 }
 
@@ -235,6 +321,7 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
             std::cout << "\nRADAR_POSITION " << MeasuredRadarPosition << std::endl;
             break;
         }
+        
         default:
         {
             //The PC is not getting any valid values so do not write into serial on ard.
@@ -389,6 +476,57 @@ void ArduinoReceiver::ReadAllVals() {
     }
 }
 
+void ArduinoReceiver::SendCommandI8(SerialOrder CommandType, int8_t Command) {
+
+    SerialOrder ReceivedType;
+    bool ExpectedCommand=0;
+
+    if (Ard.isConnected()) {
+
+        ReceivedType = read_order(Ard);
+        //cout << "\nENUM RECEVIED " << ReceivedType << endl;
+
+        if ((Command - 10) == ReceivedType) {
+            ExpectedCommand = true;
+        }
+        else
+            ExpectedCommand = false;
+
+        if (ExpectedCommand) {
+
+            WriteCommandI8(Ard, CommandType);
+            WriteCommandI8(Ard, Command);
+            //std::cout << "\nENUM RECEVIED " << ReceivedType << std::endl;
+        }
+
+    }
+
+}
+
+void ArduinoReceiver::SendCommand2I8(SerialOrder CommandType, int8_t Command) {
+
+
+    Write2CommandsI8(Ard, Command, (int8_t)CommandType); 
+
+}
+
+void ArduinoReceiver::SendCommand4I8(int8_t* Values) {
+
+    Write4CommandsI8(Ard, Values);
+
+}
+
+void ArduinoReceiver::SteeringI8Command(SerialOrder CommandType, int8_t Command) {
+   
+
+   SendCommandI8(CommandType, Command);
+
+}
+
+void ArduinoReceiver::KeepSerialActive() {
+    KeepSerialOpen();
+}
+
 float ArduinoReceiver::GetPitch() {
     return ConvertedPitch;
 }
@@ -414,6 +552,10 @@ int16_t ArduinoReceiver::GetRadarVal() {
 int16_t ArduinoReceiver::GetRadarPos() {
 
     return RadarPosition;
+}
+
+int8_t ArduinoReceiver::GetSteeringSent() {
+    return SteeringAngleSent;
 }
 
 ArduinoReceiver::~ArduinoReceiver() {

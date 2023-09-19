@@ -7,7 +7,8 @@ enum SerialName {
 	COM1 = 1,
 	COM5 = 2,
 	COM4 = 3,
-
+	COM7 = 4,
+	COM8 = 5,
 };
 
 typedef enum SerialName SerialName;

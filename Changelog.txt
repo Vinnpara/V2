@@ -31,3 +31,7 @@ accel_radar has radar reading and gyro reader. The code can handle either, one a
 09/03
 Added 3 board to handle radar, steering & power, gyro each to communicate using its iwn class.
 Gyro sometimes freezes on one axis. Radar doesn't draw but gets the values.
+
+09/18
+Serials work properly now, robot gets gyro data and radar. They seem stable now. Added Vision class and all dependent
+source files. 

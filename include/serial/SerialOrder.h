@@ -22,7 +22,9 @@ enum SerialOrder {
   REQUEST_YAW = 20,
   REQUEST_RADAR = 11,
   REQUEST_RADAR_POS = 12,
-  PC_NOT_READY=15,
+  PC_NOT_READY=111,
+  STEER_COMMAND=13,
+  REQUEST_STEER=23,
 };
 
 typedef enum SerialOrder SerialOrder;
