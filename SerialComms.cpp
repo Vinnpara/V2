@@ -3,7 +3,7 @@
 #include<serial\SerialPort.h>
 #include<serial\SerialOrder.h>
 #include<serial\SerialComms.h>
-
+#include <iostream>
 
 
 using namespace std;
@@ -118,4 +118,35 @@ int32_t read_i32(SerialPort& serial_port)
 		return ValBad;
 	
 }
+
+void WriteCommandI8(SerialPort& Serial, int8_t Value) {
+	
+	bool TransferFail;
+	char buff[1] = { Value };
+	TransferFail = Serial.writeSerialPort(buff, 1);
+
+
+}
+
+void Write2CommandsI8(SerialPort& Serial, int8_t Value, int8_t Value2) {
+
+	bool TransferFail;
+	char buff[2] = { Value , Value2};
+	TransferFail = Serial.writeSerialPort(buff, 2);
+
+}
+
+void Write4CommandsI8(SerialPort& Serial, int8_t Values[4]) {
+
+	bool TransferFail;
+
+	char buff[4] = { Values[1] , Values[2], Values[3], Values[0] };
+
+	//std::cout << "\n " << Values[0] << " " << Values[1];
+	//std::cout << "\nWrite command Vals  ";
+
+	TransferFail = Serial.writeSerialPort(buff, 4);
+
+}
+
 

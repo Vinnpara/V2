@@ -32,7 +32,12 @@ public:
 	void UpdateValues3Attitude(float y, float p, float r);
 	void UpdateValues3Accel(float Ax, float Ay, float Az);
 	void UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition);
+	void UpdateValuesRadar();
 	void CloseSerial();
+
+	int16_t GetRadarPos();
+	int16_t GetRadarVal();
+
 
 	~TelemetryUI();
 
@@ -45,8 +50,14 @@ public:
 	void RenderAccelZ();
 
 	void RenderRadar();
+	void RenderControllerState(int InputDetected);
+	void RenderAxis(const float *AxesArr);
+
+	void RenderRawSteerAngle(const float* AxesArr);
+	void RenderRawSteerAngleAndMotorSpeed(const float* AxesArr);
 
 	void RenderModel();
+	void OpenSerial();
 
 private:
 	
@@ -59,6 +70,7 @@ private:
 	int16_t LimitValueInt32(int32_t MaxValue, int32_t MinValue, int32_t& ReadValue);
 	void ReTryRequest(SerialPort& Serial, SerialOrder Command);
 	int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue);
+	float ConvertValue(float RadarValX, float m, float C);
 
 	int RecType;
 
@@ -84,6 +96,13 @@ private:
 	char AccelXRead[20],
 		 AccelYRead[20],
 		 AccelZRead[20];
+
+	char controllerAxis1[20],
+		controllerAxis2[20],
+		controllerAxis3[20],
+		controllerAxis4[20],
+		controllerAxis5[20],
+		controllerAxis6[20];
 
 	glm::vec3 Color = glm::vec3(0.5, 0.8f, 0.2f);
 	glm::vec3 RadColor = glm::vec3(1.0, 0.8f, 0.2f);

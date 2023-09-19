@@ -22,6 +22,9 @@
     <ClCompile Include="ArduinoReceiver.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphicRender.cpp" />
+    <ClCompile Include="Improc.cpp" />
+    <ClCompile Include="Lane.cpp" />
+    <ClCompile Include="Line.cpp" />
     <ClCompile Include="Radar.cpp" />
     <ClCompile Include="RadarUI.cpp" />
     <ClCompile Include="RadarVirtual.cpp" />
@@ -34,6 +37,7 @@
     <ClCompile Include="TextRender.cpp" />
     <ClCompile Include="V2.cpp" />
     <ClCompile Include="VehicleModel.cpp" />
+    <ClCompile Include="Vision.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GraphicRender.h" />
@@ -42,14 +46,19 @@
     <ClInclude Include="include\GL\GL.h" />
     <ClInclude Include="include\GraphicRender.h" />
     <ClInclude Include="include\graph\Shader.h" />
+    <ClInclude Include="include\Improc.h" />
+    <ClInclude Include="include\Lane.h" />
     <ClInclude Include="include\Radar.h" />
     <ClInclude Include="include\RadarUI.h" />
     <ClInclude Include="include\RadarVirtual.h" />
     <ClInclude Include="include\ResourceHandle.h" />
+    <ClInclude Include="include\SerialPortSelection.h" />
     <ClInclude Include="include\ShaderVision.h" />
     <ClInclude Include="include\TelemetryUI.h" />
     <ClInclude Include="include\TextRender.h" />
     <ClInclude Include="include\VehicleModel.h" />
+    <ClInclude Include="include\Vision.h" />
+    <ClInclude Include="Line.h" />
     <ClInclude Include="Radar.h" />
     <ClInclude Include="RadarUI.h" />
     <ClInclude Include="RadarVirtual.h" />
@@ -168,7 +177,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world452d.lib;opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

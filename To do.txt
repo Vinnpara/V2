@@ -13,3 +13,20 @@ fast radar and accel receiver. This UI could also handle robot commands, as seri
 08/27
 Working model in telemetry. Now need to implement predictive attitude function, radar on second board.
 Now get to OpenCV stuff, and then, motor/steering
+
+08/31
+Accel_radar is the ard file to use, but need to use two boards seems like. because each iteration of the for loop 
+of the arduino moves the radar servo by 1 deg and takes a measurement. If both gyro and radar serial tranfer is done here
+using the switch case, if neither case is met it will not send the value and so it may explain why it "skips" radar pos and
+reading values. Maybe have a function that loops thru the for loop until a command is sent. So the oder of sending/reiving:
+
+	*Radar reading
+	*Radar Pos
+	*Pitch
+	*Yaw
+	*Roll
+	*Acc-x
+	*Acc-z
+	*Acc-y
+
+Essentially, keep trying until the certain value is sent. This may cause delays in the total iteration however. 

@@ -24,3 +24,14 @@ accel, gyro data
 New model class to gve 3d visualiztion of car attitudes. Still unable to get gyro + radar in one board. May need 2nd board.
 Oreitation values need a filter and incase 0 value is given, it needs to use interpolation function to "assume"
 a value based on previous values. 
+
+08/31
+accel_radar has radar reading and gyro reader. The code can handle either, one at a time.
+
+09/03
+Added 3 board to handle radar, steering & power, gyro each to communicate using its iwn class.
+Gyro sometimes freezes on one axis. Radar doesn't draw but gets the values.
+
+09/18
+Serials work properly now, robot gets gyro data and radar. They seem stable now. Added Vision class and all dependent
+source files. 

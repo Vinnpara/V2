@@ -21,6 +21,7 @@
 #include<serial/SerialPort.h>
 #include<serial/SerialOrder.h>
 #include <ArduinoReceiver.h>
+#include<SerialPortSelection.h>
 
 TextRender* T1;
 VehicleModel* VM1;
@@ -30,7 +31,11 @@ VehicleModel* VM1;
 char* Port = "\\\\.\\COM3";
 //char input[MAX_DATA_LENGTH];
 
-ArduinoReceiver Ard1;
+//ArduinoReceiver Ard1;
+
+ArduinoReceiver ArdRadar(COM5);
+ArduinoReceiver ArdGyro(COM3);
+ArduinoReceiver ArdMotorSteer(COM8);
 
 TelemetryUI::TelemetryUI() {
 
@@ -39,7 +44,11 @@ TelemetryUI::TelemetryUI() {
 }
 
 void TelemetryUI::InitializeTelemetry() {
-    Ard1.ArdInitialize();
+    //Ard1.ArdInitialize();
+
+    ArdRadar.ArdInitialize();
+    ArdGyro.ArdInitialize();
+    ArdMotorSteer.ArdInitialize();
 
 	T1 = new TextRender();
     VM1 = new VehicleModel();
@@ -68,6 +77,15 @@ int16_t  TelemetryUI::LimitValueInt32(int32_t MaxValue, int32_t MinValue, int32_
         ReadValue = MaxValue;
 
     return ReadValue;
+
+}
+
+float TelemetryUI::ConvertValue(float RadarValX, float m, float C) {
+    
+    float ConvertedVal = (m * RadarValX) + C;
+
+    return ConvertedVal;
+ 
 
 }
 
@@ -114,18 +132,49 @@ void TelemetryUI::UpdateValues6Axis(float y, float p, float r, float Ax, float A
 
 }
 
+void TelemetryUI::UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition) {
+    
+    ArdRadar.ReadRadar2();
+
+    this->RadarVal = RadarValue;
+    this->RadarPos = RadarPosition;
+
+    Radval = std::to_string(ArdRadar.GetRadarVal());
+    Radpos = std::to_string(ArdRadar.GetRadarPos());
+
+}
+
+void TelemetryUI::UpdateValuesRadar() {
+    
+    ArdRadar.ReadRadarDefaultPort();
+
+
+    Radval = std::to_string(ArdRadar.GetRadarVal());
+    Radpos = std::to_string(ArdRadar.GetRadarPos());
+
+}
+
+
 void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
-    
-    Ard1.ReadArduino3Attitudes();
-    
+    ArdGyro.ReadArduino3Attitudes();
+
+    //Ard1.ReadArduino3Attitudes();
+    //Ard1.ReadRadar();
+    //Ard1.ReadAllVals();
     //FilterVal(180.0f, -180.0f, y);
     //FilterVal(180.0f, -180.0f, p);
     //FilterVal(180.0f, -180.0f, r);
 
-    this->Yaw = Ard1.GetYaw();
-    this->Roll = Ard1.GetRoll();
-    this->Pitch = Ard1.GetPitch();
+    //this->Yaw = Ard1.GetYaw();
+    //this->Roll = Ard1.GetRoll();
+    //this->Pitch = Ard1.GetPitch();
+
+    float Yaw, Pitch ,Roll;
+
+    Yaw = ArdGyro.GetYaw();
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
 
     FilterVal(180.0f, -180.0f, Yaw);
     FilterVal(180.0f, -180.0f, Pitch);
@@ -136,8 +185,11 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
     sprintf_s(YawRead, "%f", Yaw);
 
     VM1->UpdateAttitudeValues(Yaw,Pitch,Roll);
+    //UpdateValuesRadar(Ard1.GetRadarVal(), Ard1.GetRadarPos());
 
 }
+
+
 
 void TelemetryUI::UpdateValues3Accel(float Ax, float Ay, float Az) {
 
@@ -151,15 +203,7 @@ void TelemetryUI::UpdateValues3Accel(float Ax, float Ay, float Az) {
 
 }
 
-void TelemetryUI::UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition) {
 
-    this->RadarVal = RadarValue;
-    this->RadarPos = RadarPosition;
-
-    Radval = std::to_string(RadarVal);
-    Radpos = std::to_string(RadarPos);
-
-}
 
 int16_t  TelemetryUI::BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue) {
 
@@ -325,6 +369,7 @@ void TelemetryUI::RequestReadData(SerialPort& Serial, SerialOrder Command) {
     TransferFail = Serial.writeSerialPort(buff, 1);
 }
 
+
 void TelemetryUI::UpdateValuues(SerialPort& Serial) {
 
 
@@ -413,6 +458,131 @@ void TelemetryUI::RenderRadar() {
     T1->RenderTextVS(OrderFromArd, 605.0f, 25.0f, 1.0f, RadColor);
 }
 
+void TelemetryUI::RenderControllerState(int InputDetected) {
+
+
+    if (InputDetected)
+        T1->RenderTextVS("CNTRL CON", 345.0f, 75.0f, 1.0f, Color);
+    else 
+        T1->RenderTextVS("CNTRL NOT CON", 345.0f, 75.0f, 1.0f, Color);
+}
+
+void TelemetryUI::RenderAxis(const float* AxesArr) {
+
+   
+
+    float Axis1 = AxesArr[0];
+
+    //T1->RenderTextVS(std::to_string(AxesArr[0]), 14.0f, 375.0f, 1.0f, Color); //top left cntrl L-R axis
+    //T1->RenderTextVS(std::to_string(AxesArr[1]), 14.0f, 325.0f, 1.0f, Color); // top left cntrl U-D axis
+    //T1->RenderTextVS(std::to_string(AxesArr[2]), 14.0f, 275.0f, 1.0f, Color); // right cntrl L-R axis
+    //T1->RenderTextVS(std::to_string(AxesArr[3]), 14.0f, 255.0f, 1.0f, Color); // right cntrl U-D axis
+    //T1->RenderTextVS(std::to_string(AxesArr[4]), 14.0f, 225.0f, 1.0f, Color); // LT
+    //T1->RenderTextVS(std::to_string(AxesArr[5]), 14.0f, 200.0f, 1.0f, Color); // LR
+
+}
+
+void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
+
+    float JoyStickSteer = AxesArr[0];
+    float ThrottleAngle = AxesArr[4];
+
+    float RawSteerCommand = ConvertValue(JoyStickSteer, 48.0f, 58.0f);
+    int8_t SteerIn = (int8_t)RawSteerCommand;
+
+    //float RawThrottleCommand = ConvertValue(ThrottleAngle, 127.5f, 127.5f);
+    float RawThrottleCommand = ConvertValue(ThrottleAngle, 50.0f, 50.0f);
+    int8_t ThrottleIn = (int8_t)RawThrottleCommand;
+
+
+
+    //ArdMotorSteer.KeepSerialActive();
+
+    //ArdMotorSteer.SteeringI8Command(STEER_COMMAND, SteerIn);
+
+    bool SteeringReq=0;
+        
+    //SteeringReq = ArdMotorSteer.ReadAndSendRequestedData(REQUEST_STEER, SteerIn);
+
+    int8_t Vals[4];
+
+    Vals[0] = (int8_t)STEER_COMMAND;
+    Vals[1] = SteerIn;
+    Vals[2] = (int8_t)MOTOR_SPEED;
+    Vals[3] = ThrottleIn;
+
+    //Vals[0] = SteerIn;
+    //Vals[1] = (int8_t)STEER_COMMAND;
+    //Vals[2] = ThrottleIn;
+    //Vals[3] = (int8_t)MOTOR_SPEED;
+
+    T1->RenderTextVS(std::to_string(Vals[1]), 14.0f, 375.0f, 1.0f, Color);
+    T1->RenderTextVS(std::to_string(Vals[3]), 14.0f, 415.0f, 1.0f, Color);
+
+    //ArdMotorSteer.SendCommand2I8(STEER_COMMAND, SteerIn);
+    //ArdMotorSteer.SendCommand2I8(MOTOR_SPEED, ThrottleIn);
+
+     ArdMotorSteer.SendCommand4I8(Vals);
+
+    if (SteeringReq) {
+        T1->RenderTextVS("SR", 14.0f, 330.0f, 1.0f, Color);
+        //ArdMotorSteer.SteeringI8Command(STEER_COMMAND, SteerIn);
+        //ArdMotorSteer.CheckSentCommand(STEER_COMMAND);
+
+        //int8_t SteerSent = ArdMotorSteer.GetSteeringSent();
+
+        //T1->RenderTextVS(std::to_string(SteerIn), 14.0f, 285.0f, 1.0f, Color);
+    }
+}
+
+void TelemetryUI::RenderRawSteerAngleAndMotorSpeed(const float* AxesArr) {
+
+    float JoyStickSteer = AxesArr[0];
+
+    float RawSteerCommand = ConvertValue(JoyStickSteer, 48.0f, 58.0f);
+    int8_t SteerIn = (int8_t)RawSteerCommand;
+
+    T1->RenderTextVS(std::to_string(SteerIn), 14.0f, 375.0f, 1.0f, Color);
+
+    //ArdMotorSteer.KeepSerialActive();
+
+    //ArdMotorSteer.SteeringI8Command(STEER_COMMAND, SteerIn);
+
+    bool SteeringReq = 0;
+
+    //SteeringReq = ArdMotorSteer.ReadAndSendRequestedData(REQUEST_STEER, SteerIn);
+
+
+
+    ArdMotorSteer.SendCommand2I8(STEER_COMMAND, SteerIn);
+
+    if (SteeringReq) {
+        T1->RenderTextVS("SR", 14.0f, 330.0f, 1.0f, Color);
+        //ArdMotorSteer.SteeringI8Command(STEER_COMMAND, SteerIn);
+        //ArdMotorSteer.CheckSentCommand(STEER_COMMAND);
+
+        //int8_t SteerSent = ArdMotorSteer.GetSteeringSent();
+
+        //T1->RenderTextVS(std::to_string(SteerIn), 14.0f, 285.0f, 1.0f, Color);
+    }
+
+}
+
+int16_t TelemetryUI::GetRadarPos() { 
+    
+    return ArdRadar.GetRadarPos(); std::cout << "\nR_POS" << ArdRadar.GetRadarPos();
+}
+
+int16_t TelemetryUI::GetRadarVal() {
+
+    return ArdRadar.GetRadarVal(); std::cout << "\nR_VAL" << ArdRadar.GetRadarVal();
+}
+
+void TelemetryUI::OpenSerial() {
+
+    ArdMotorSteer.KeepSerialActive();
+}
+
 void TelemetryUI::RenderModel() {
 
     
@@ -422,7 +592,7 @@ void TelemetryUI::RenderModel() {
 }
 void TelemetryUI::CloseSerial() {
 
-    Ard1.CloaseSerial();
+    //Ard1.CloaseSerial();
 
 }
 

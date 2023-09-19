@@ -28,3 +28,8 @@ uint16_t uread_i16(SerialPort& serial_port);
 
 int32_t read_i32(SerialPort& serial_port);
 
+void WriteCommandI8(SerialPort& Serial, int8_t Value);
+
+void Write2CommandsI8(SerialPort& Serial, int8_t Value, int8_t Value2);
+
+void Write4CommandsI8(SerialPort& Serial, int8_t Values[4]);
