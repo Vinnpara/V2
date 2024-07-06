@@ -22,6 +22,7 @@ public:
 	VehicleModel();
 	void Draw();
 	void UpdateAttitudeValues(float Y, float P, float R);
+	void Update2AttiudeValues(float P, float R);
 	~VehicleModel();
 
 private:

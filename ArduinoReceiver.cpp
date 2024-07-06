@@ -9,14 +9,25 @@
 #include<ArduinoReceiver.h>
 #include<SerialPortSelection.h>
 
+#define MAX_BUFFER 128
+
 char* ARDPort = "\\\\.\\COM3";
 char* ARDPort2 = "\\\\.\\COM1";
 char* ARDPort3 = "\\\\.\\COM5";
 char* ARDPort4 = "\\\\.\\COM4";
 char* ARDPort5 = "\\\\.\\COM7";
 char* ARDPort6 = "\\\\.\\COM8";
+char* ARDPort7 = "\\\\.\\COM9";
 
-static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos, ValidYaw;
+static bool ValidCommandRoll, 
+            ValidCommandPitch, 
+            ValidCommandYaw, 
+            ValidRadarVal, 
+            ValidRadarPos, 
+            ValidYaw,
+            ValidCommandAccelX,
+            ValidCommandAccelY,
+            ValidCommandAccelZ;
 
 ArduinoReceiver::ArduinoReceiver() {
 	
@@ -68,8 +79,238 @@ ArduinoReceiver::ArduinoReceiver(SerialName PortName) {
           Ard = Serial6;
           break;
       }
+      case COM9:
+      {
+          SerialPort Serial6(ARDPort7);
+          Ard = Serial6;
+          break;
+      }
 
     }
+
+}
+
+void ArduinoReceiver::AssignPort(SerialName PortName, SerialSpeed BaudRate) {
+    switch (PortName)
+    {
+    case COM3:
+    {
+        SerialPort Serial(ARDPort, BaudRate);
+        Ard = Serial;
+        break;
+    }
+
+    case COM1:
+    {
+        SerialPort Serial2(ARDPort, BaudRate);
+        Ard = Serial2;
+        break;
+    }
+
+    case COM5:
+    {
+        SerialPort Serial3(ARDPort, BaudRate);
+        Ard = Serial3;
+        break;
+    }
+    case COM4:
+    {
+        SerialPort Serial4(ARDPort, BaudRate);
+        Ard = Serial4;
+        break;
+    }
+    case COM7:
+    {
+        SerialPort Serial5(ARDPort, BaudRate);
+        Ard = Serial5;
+        break;
+    }
+    case COM8:
+    {
+        SerialPort Serial6(ARDPort, BaudRate);
+        Ard = Serial6;
+        break;
+    }
+    case COM9:
+    {
+        SerialPort Serial6(ARDPort, BaudRate);
+        Ard = Serial6;
+        break;
+    }
+
+    }
+
+}
+
+ArduinoReceiver::ArduinoReceiver(SerialName PortName, SerialSpeed BaudRate) {
+
+
+    switch (PortName)
+    {
+    case COM3:
+    {
+        SerialPort Serial(ARDPort , BaudRate);
+        Ard = Serial;
+        break;
+    }
+
+    case COM1:
+    {
+        SerialPort Serial2(ARDPort, BaudRate);
+        Ard = Serial2;
+        break;
+    }
+
+    case COM5:
+    {
+        SerialPort Serial3(ARDPort, BaudRate);
+        Ard = Serial3;
+        break;
+    }
+    case COM4:
+    {
+        SerialPort Serial4(ARDPort, BaudRate);
+        Ard = Serial4;
+        break;
+    }
+    case COM7:
+    {
+        SerialPort Serial5(ARDPort, BaudRate);
+        Ard = Serial5;
+        break;
+    }
+    case COM8:
+    {
+        SerialPort Serial6(ARDPort, BaudRate);
+        Ard = Serial6;
+        break;
+    }
+    case COM9:
+    {
+        SerialPort Serial6(ARDPort, BaudRate);
+        Ard = Serial6;
+        break;
+    }
+
+    }
+
+}
+
+void ArduinoReceiver::AssignPort(SerialName PortName) {
+
+
+
+    switch (PortName)
+    {
+    case COM3:
+    {
+        SerialPort Serial(ARDPort);
+        Ard = Serial;
+        break;
+    }
+
+    case COM1:
+    {
+        SerialPort Serial2(ARDPort2);
+        Ard = Serial2;
+        break;
+    }
+
+    case COM5:
+    {
+        SerialPort Serial3(ARDPort3);
+        Ard = Serial3;
+        break;
+    }
+    case COM4:
+    {
+        SerialPort Serial4(ARDPort4);
+        Ard = Serial4;
+        break;
+    }
+    case COM7:
+    {
+        SerialPort Serial5(ARDPort5);
+        Ard = Serial5;
+        break;
+    }
+    case COM8:
+    {
+        SerialPort Serial6(ARDPort6);
+        Ard = Serial6;
+        break;
+    }
+    case COM9:
+    {
+        SerialPort Serial6(ARDPort7);
+        Ard = Serial6;
+        break;
+    }
+
+    }
+
+
+}
+
+void ArduinoReceiver::SetArdPort(SerialName PortName) {
+
+
+
+    switch (PortName)
+    {
+    case COM3:
+    {
+        //SerialPort Serial(ARDPort);
+        Ard.InitializeSerial(ARDPort);
+        break;
+    }
+
+    case COM1:
+    {
+        //SerialPort Serial2(ARDPort2);
+        Ard.InitializeSerial(ARDPort2);
+        break;
+    }
+
+    case COM5:
+    {
+        //SerialPort Serial3(ARDPort3);
+        Ard.InitializeSerial(ARDPort3);
+        break;
+    }
+    case COM4:
+    {
+        //SerialPort Serial4(ARDPort4);
+        Ard.InitializeSerial(ARDPort4);
+        break;
+    }
+    case COM7:
+    {
+        //SerialPort Serial5(ARDPort5);
+        Ard.InitializeSerial(ARDPort5);
+        break;
+    }
+    case COM8:
+    {
+        //SerialPort Serial6(ARDPort6);
+        Ard.InitializeSerial(ARDPort6);
+        break;
+    }
+    case COM9:
+    {
+        //SerialPort Serial6(ARDPort7);
+        Ard.InitializeSerial(ARDPort7);
+        break;
+    }
+
+    }
+
+
+}
+
+void ArduinoReceiver::SetBaudRate(SerialSpeed BaudRate) {
+
+    Ard.SetBaudRate(BaudRate);
 
 }
 
@@ -78,6 +319,9 @@ void ArduinoReceiver::ArdInitialize() {
     FirstPass = true;
     ValidRoll = false;
     ValidPitch = false;
+    ValidAccelX = false;
+    ValidAccelY = false;
+    ValidAccelZ = false;
 }
 
 void ArduinoReceiver::ArduinoFirstPass(){
@@ -92,9 +336,13 @@ void ArduinoReceiver::RequestReadData(SerialPort& Serial, SerialOrder Command, s
 
         TransferFail = Serial.writeSerialPort(buff, 1);
 
-        std::cout << "\n " << TransferFail << std::endl;
-
+        /*if(TransferFail)
+           std::cout << "\n " << Command <<" Transfer Fail" << std::endl;
+        else
+           std::cout << "\n " << Command << " Transfer Fail False" << std::endl;*/
     }
+    /*else
+       std::cout << "\n " << Command << " PCNOTReady" << std::endl;*/
 
 }
 
@@ -190,7 +438,7 @@ bool ArduinoReceiver::ReadAndSendRequestedData(SerialOrder CommandExpected, int8
 
            
         }
-        std::cout << "\n RequestedCommandReceived ARD RETRYING COMMAND " << ReceivedType - 10 <<" "<< CommandExpected << std::endl;
+        //std::cout << "\n RequestedCommandReceived ARD RETRYING COMMAND " << ReceivedType - 10 <<" "<< CommandExpected << std::endl;
     }
     return ExpectedCommand;
 
@@ -279,31 +527,35 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
         }
         case MEASURED_ACCEL_X:
         {   //This sent as an int16_t
-            int16_t X_Accel_Int16 = read_i16(Serial);
+            int32_t AC_x_Int32 = read_i32(Serial);
+            int32_t AC_x_Int32_limit = LimitValueInt32(AC_x_Int32, Max, Min);
             //RadarValue = MeasuredRadarDistance;
             //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedXAccel = float(X_Accel_Int16) / 10000;
+            ConvertedXAccel = float(AC_x_Int32_limit) / 10000;
             //std::cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << std::endl;
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
         }
         case MEASURED_ACCEL_Y:
         {   //This sent as an int16_t
-            int16_t Y_Pitch_Int16 = read_i16(Serial);
+            int32_t AC_y_Int32 = read_i32(Serial);
+            int32_t AC_y_Int32_limit = LimitValueInt32(AC_y_Int32, Max, Min);
             //RadarValue = MeasuredRadarDistance;
             //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedYAccel = float(Y_Pitch_Int16) / 10000;
-            //std::cout << "\MEASURED_Y_ACCEL " << Y_Pitch_Int16 << " " << ConvertedYAccel << std::endl;
+            ConvertedYAccel = float(AC_y_Int32_limit) / 10000;
+            //std::cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << std::endl;
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
         }
         case MEASURED_ACCEL_Z:
         {   //This sent as an int16_t
-            int16_t Z_Pitch_int16 = read_i16(Serial);
+            int32_t AC_z_Int32 = read_i32(Serial);
+            int32_t AC_z_Int32_limit = LimitValueInt32(AC_z_Int32, Max, Min);
             //RadarValue = MeasuredRadarDistance;
             //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedZAccel = float(Z_Pitch_int16) / 10000;
-            //std::cout << "\MEASURED_Y_ACCEL " << Z_Pitch_int16 << " " << ConvertedZAccel << std::endl;
+            ConvertedZAccel = float(AC_z_Int32_limit) / 10000;
+            //std::cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << std::endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
         }
         case RADAR_DISTANCE:
@@ -311,14 +563,14 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
             int16_t MeasuredRadarDistance = read_i16(Serial);
             RadarValue = MeasuredRadarDistance;
             BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            std::cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << std::endl;
+            //std::cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << std::endl;
             break;
         }
         case RADAR_POSITION:
         {   //This sent as an int16_t
             int16_t MeasuredRadarPosition = read_i16(Serial);
             RadarPosition = MeasuredRadarPosition;
-            std::cout << "\nRADAR_POSITION " << MeasuredRadarPosition << std::endl;
+            //std::cout << "\nRADAR_POSITION " << MeasuredRadarPosition << std::endl;
             break;
         }
         
@@ -344,10 +596,52 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
 
 
         //cout << "\nCommand not received   " << Command << endl;
-        std::cout << "\nFrom Class ORDER " << ReceivedType << std::endl;
+        //std::cout << "\nFrom Class ORDER " << ReceivedType << std::endl;
     }
-    else
-        std::cout << "\nARDUINO DISCONNECTED " << std::endl;
+    /*else
+        std::cout << "\nARDUINO DISCONNECTED " << std::endl;*/
+}
+
+void ArduinoReceiver::ReadBufferArduino3Accel2Attitude() {
+    char BufferIn[MAX_BUFFER];
+
+    Ard.readSerialPort(BufferIn, 12);
+
+    char *BuffPointer, 
+         *BuffPointer2;
+
+    int *OrderPointerPitch,
+        *OrderPointerRoll;
+
+    int32_t *PitchValuePointer,
+            *RollValuePointer;
+
+    BuffPointer2 = BufferIn;
+    BuffPointer = BuffPointer2;
+
+    OrderPointerPitch = (int*)BuffPointer;
+    int EnumReadFromBufferAsInt = *OrderPointerPitch;
+    BuffPointer += sizeof(int);
+
+    PitchValuePointer = (int32_t*)BuffPointer;
+    int32_t ValueReadFromBufferPitch = *PitchValuePointer;
+    BuffPointer += sizeof(int32_t);
+
+    OrderPointerRoll = (int*)BuffPointer;
+    int EnumReadFromBufferAsIntRoll = *OrderPointerRoll;
+    BuffPointer += sizeof(int);
+
+    RollValuePointer = (int32_t*)BuffPointer;
+    int32_t ValueReadFromBufferRoll = *RollValuePointer;
+
+    ReadOrder1 = (SerialOrder)EnumReadFromBufferAsInt;
+    ReadOrder2 = (SerialOrder)EnumReadFromBufferAsIntRoll;
+
+    ConvertedPitch = (float)(ValueReadFromBufferPitch / 1000);
+    ConvertedRoll = (float)(ValueReadFromBufferRoll / 1000);
+
+
+
 }
 
 void ArduinoReceiver::ReadArduino3Attitudes() {
@@ -358,11 +652,12 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
     RequestReadData(Ard, REQUEST_PITCH, ValidCommandRoll);
     ReadBuffer(Ard, REQUEST_PITCH, ValidCommandRoll);
 
-    if (ValidCommandRoll)
+    if (ValidCommandRoll) {
         ValidRoll = true;
+    }
+
 
     if (ValidRoll) {
-        //cout << "VALID ROLL " << ValidRoll;
         RequestReadData(Ard, REQUEST_ROLL, ValidCommandPitch);
         ReadBuffer(Ard, REQUEST_ROLL, ValidCommandPitch);
     }
@@ -377,6 +672,109 @@ void ArduinoReceiver::ReadArduino3Attitudes() {
     }
 
 
+}
+
+void ArduinoReceiver::ReadArduinoAttitudeAccel() {
+
+
+    ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
+    RequestReadData(Ard, REQUEST_PITCH, ValidCommandRoll);
+    ReadBuffer(Ard, REQUEST_PITCH, ValidCommandRoll);
+
+    if (ValidCommandRoll) {
+        ValidRoll = true;
+    }
+
+
+    if (ValidRoll) {
+        RequestReadData(Ard, REQUEST_ROLL, ValidCommandPitch);
+        ReadBuffer(Ard, REQUEST_ROLL, ValidCommandPitch);
+    }
+
+    if (ValidCommandPitch);
+    ValidPitch = true;
+
+    if (ValidPitch) {
+
+        RequestReadData(Ard, REQUEST_YAW, ValidCommandYaw);
+        ReadBuffer(Ard, REQUEST_YAW, ValidCommandYaw);
+    }
+
+    if (ValidCommandYaw);
+    ValidAccelX = true;
+
+    if (ValidAccelX) {
+
+        RequestReadData(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
+        ReadBuffer(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
+    }
+
+    if (ValidCommandAccelX);
+    ValidAccelY = true;
+
+    if (ValidAccelY) {
+
+        RequestReadData(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
+        ReadBuffer(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
+    }
+
+    if (ValidCommandAccelZ);
+    ValidAccelZ = true;
+
+    if (ValidAccelZ) {
+
+        RequestReadData(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
+        ReadBuffer(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
+
+    }
+
+}
+
+void  ArduinoReceiver::ReadArduino3Accel2Attitude() {
+
+    RequestReadData(Ard, REQUEST_ROLL, true);
+    ReadBuffer(Ard, REQUEST_ROLL, ValidCommandRoll);
+
+    if (ValidCommandRoll) {
+        ValidRoll = true;
+    }
+
+
+    if (ValidRoll) {
+        RequestReadData(Ard, REQUEST_PITCH, ValidRoll);
+        ReadBuffer(Ard, REQUEST_PITCH, ValidCommandPitch);
+    }
+
+    /*if (ValidCommandPitch);
+     ValidPitch = true;
+
+    if (ValidPitch);
+     ValidAccelX = true;
+
+    if (ValidAccelX) {
+
+        RequestReadData(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
+        ReadBuffer(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
+    }
+
+    if (ValidCommandAccelX);
+     ValidAccelY = true;
+
+    if (ValidAccelY) {
+
+        RequestReadData(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
+        ReadBuffer(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
+    }
+
+    if (ValidCommandAccelZ);
+     ValidAccelZ = true;
+
+    if (ValidAccelZ) {
+
+        RequestReadData(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
+        ReadBuffer(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
+
+    }*/
 
 }
 
@@ -538,6 +936,18 @@ float ArduinoReceiver::GetRoll() {
 float ArduinoReceiver::GetYaw() {
 
     return ConvertedYaw;
+}
+
+float ArduinoReceiver::GetAccelX() {
+    return ConvertedXAccel;
+}
+
+float ArduinoReceiver::GetAccelY() {
+    return ConvertedYAccel;
+}
+
+float ArduinoReceiver::GetAccelZ() {
+    return ConvertedZAccel;
 }
 
 void ArduinoReceiver::CloaseSerial() {

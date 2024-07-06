@@ -1,15 +1,15 @@
 
 #include<Servo.h> 
 #include <Arduino.h>
-#define echoPin 4 // attach pin D2 Arduino to pin Echo of HC-SR04
-#define trigPin 5
+#define echoPin 6 // attach pin D2 Arduino to pin Echo of HC-SR04
+#define trigPin 7
 #define MAX_RADAR_ANGLE 170
 
 #include "SerialOrder.h"
 #include "ArduinoReceiver.h"
 #include "SerialParameters.h"
 
-long duration;
+float duration;
 int distance, ServoRightValue, ServoLeftValue;
 float MeasuredDistance;
 unsigned long Time1, Time2, Time3, IterationTime, TimeoutValue, ProgramIterationTime;
@@ -37,7 +37,10 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
  if(Serial.available()>0){
+  //PingUltraSoundSensor();
   RadarSweep();
+  //PingUltraSoundSensor();
+
  }
 }
 
@@ -60,6 +63,21 @@ void RadarSweep(){
   }
    
 void PingUltraSoundSensor(){
+  
+  /*digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH);
+  distance = (duration*.0343)/2;
+  Serial.print("Distance: ");
+  Serial.println(distance);
+  delay(100);*/
+  
+  //Serial.print("Distance: ");
+  //Serial.println(duration);
   
   Time1 = millis();
   digitalWrite(trigPin, LOW);
@@ -85,18 +103,21 @@ void PingUltraSoundSensor(){
 
   MeasuredDistance_int16=(int16_t)MeasuredDistance; 
   
-  /*Serial.print("Distance: ");
-  Serial.println(MeasuredDistance_int16);
-  Serial.print("Position: ");
-  Serial.println(ServoAngleInt16);*/
+  //Serial.print("Distance: ");
+  //Serial.println(MeasuredDistance_int16);
+  //Serial.print("Position: ");
+  //Serial.println(ServoAngleInt16);
+  //Serial.print("\n");
+  //Serial.print(MeasuredDistance); 
   
   Time3=millis();
   
-  //Serial.print("Position ");
+  /*Serial.print("Position ");
   ProgramIterationTime= Time3-Time1;
-  //Serial.println(ServoPos);
+  Serial.println(ServoPos);
   
-
+  Serial.print("Dist ");
+  Serial.println(MeasuredDistance_int16);*/
 
   //ReadSerial();
   

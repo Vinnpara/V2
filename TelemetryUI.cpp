@@ -22,6 +22,10 @@
 #include<serial/SerialOrder.h>
 #include <ArduinoReceiver.h>
 #include<SerialPortSelection.h>
+#include <SerialConnectionSpeed.h>
+
+#include <TestWindow.h>
+#include <Windows.h>
 
 TextRender* T1;
 VehicleModel* VM1;
@@ -33,13 +37,157 @@ char* Port = "\\\\.\\COM3";
 
 //ArduinoReceiver Ard1;
 
-ArduinoReceiver ArdRadar(COM5);
-ArduinoReceiver ArdGyro(COM3);
-ArduinoReceiver ArdMotorSteer(COM8);
+//ArduinoReceiver ArdRadar(COM8);
+//ArduinoReceiver ArdGyro(COM9);
+//ArduinoReceiver ArdMotorSteer(COM5);
+
+ArduinoReceiver ArdRadar;
+ArduinoReceiver ArdGyro;
+ArduinoReceiver ArdMotorSteer;
 
 TelemetryUI::TelemetryUI() {
 
 
+
+}
+
+void TelemetryUI::AssignBoards() {
+
+    TestWindow* tWindow = new TestWindow();
+
+    bool run = true;
+
+    while (run)
+    {
+        tWindow->Assignments();
+
+        if (!tWindow->ProcessMessages())
+        {
+            run = false;
+            std::cout << "Close window";
+            std::cout << "\nBOARD_1 " << tWindow->board1;
+            std::cout << "\nBOARD_2 " << tWindow->board2;
+            std::cout << "\nBOARD_3 " << tWindow->board3;
+
+        }
+
+        Sleep(1);
+
+    }
+    int ArdBoard1 = tWindow->board1;
+    int ArdBoard2 = tWindow->board2;
+    int ArdBoard3 = tWindow->board3;
+
+    ArdMotorSteer.AssignPort((SerialName)ArdBoard1);
+    ArdRadar.AssignPort((SerialName)ArdBoard2);
+
+    //ArdGyro.AssignPort((SerialName)ArdBoard3, BAUD_RATE_57600);
+    ArdGyro.SetArdPort((SerialName)ArdBoard3);
+    ArdGyro.SetBaudRate(BAUD_RATE_115200);
+
+    delete tWindow;
+
+
+}
+
+void TelemetryUI::ViewDiagnostics() {
+
+    //TestWindow* tWindow = new TestWindow(Diagnostic);
+
+   /*bool windowrun = true;
+
+    if (windowrun)
+    {
+        //tWindow->Assignments();
+
+        double RollVal = Yaw;
+        //DiagWindow->UpdateDaignostcs(RollVal);
+        DiagWindow->DisplayDiagnostics();
+        
+        if (!DiagWindow->ProcessMessages())
+        {
+            windowrun = false;
+            //std::cout << "Close window";
+            //std::cout << "\nBOARD_1 " << tWindow->board1;
+            //std::cout << "\nBOARD_2 " << tWindow->board2;
+           // std::cout << "\nBOARD_3 " << tWindow->board3;
+
+        }
+
+        //Sleep(10);
+
+    }*/
+
+
+}
+
+void TelemetryUI::UpdateDiagnosticsWindow(TestWindow window) {
+
+    double PitchVal = Pitch;
+    double RollVal = Roll;
+    double YawVal = Yaw;
+
+    window.UpdateDaignostcs(PitchVal,RollVal,YawVal);
+
+
+}
+
+void TelemetryUI::DrawDiagnosticsData(TestWindow window) {
+
+    
+    
+    //DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
+
+
+    RECT PitchText;
+    PitchText.left = 30,
+    PitchText.top = 10,
+        PitchText.right = 100,
+        PitchText.bottom = 25
+        ;
+
+    RECT RollText;
+    RollText.left = 30,
+        RollText.top = 40,
+        RollText.right = 100,
+        RollText.bottom = 25
+        ;
+
+    RECT YawText;
+    YawText.left = 30,
+        YawText.top = 70,
+        YawText.right = 100,
+        YawText.bottom = 25
+        ;
+
+    RECT rect;
+    rect.left = PitchText.left + 210; //where is appears
+    rect.top = PitchText.top;
+    rect.right = PitchText.right;
+    rect.bottom = PitchText.bottom;
+
+    RECT rect1;
+    rect1.left = RollText.left + 210; //where is appears
+    rect1.top = RollText.top + 35;
+    rect1.right = RollText.right;
+    rect1.bottom = RollText.bottom;
+
+    RECT rect2;
+    rect2.left = YawText.left + 210; //where is appears
+    rect2.top = YawText.top + 60;
+    rect2.right = YawText.right;
+    rect2.bottom = YawText.bottom;
+
+
+    HWND hWnd  = window.ReturnWindowHandle();
+    HDC dc = GetDC(hWnd);
+    RECT rc;
+    GetClientRect(hWnd, &rc);
+    /*DrawText(dc, window.GetPitchWritten(), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawText(dc, window.GetRollWritten(), -1, &rect1, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawText(dc, window.GetYawWritten(), -1, &rect2, DT_CENTER | DT_VCENTER | DT_SINGLELINE);*/
+    ReleaseDC(hWnd, dc);
+    std::cout << "\nWINDOW PITCH VALUE.......  " << window.GetPitchWritten();
 
 }
 
@@ -157,7 +305,8 @@ void TelemetryUI::UpdateValuesRadar() {
 
 void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
-    ArdGyro.ReadArduino3Attitudes();
+    ArdGyro.ReadArduinoAttitudeAccel();
+    //ArdGyro.ReadArduino3Attitudes();
 
     //Ard1.ReadArduino3Attitudes();
     //Ard1.ReadRadar();
@@ -170,11 +319,15 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
     //this->Roll = Ard1.GetRoll();
     //this->Pitch = Ard1.GetPitch();
 
-    float Yaw, Pitch ,Roll;
+    //float Yaw, Pitch ,Roll;
 
     Yaw = ArdGyro.GetYaw();
     Pitch = ArdGyro.GetPitch();
     Roll = ArdGyro.GetRoll();
+
+    AccelX = ArdGyro.GetAccelX();
+    AccelY = ArdGyro.GetAccelY();
+    AccelZ = ArdGyro.GetAccelZ();
 
     FilterVal(180.0f, -180.0f, Yaw);
     FilterVal(180.0f, -180.0f, Pitch);
@@ -189,7 +342,55 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
 }
 
+void TelemetryUI::Update2Axis3Accel() {
 
+    ArdGyro.ReadArduino3Accel2Attitude();
+
+    //Yaw = ArdGyro.GetYaw();
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
+
+    AccelX = ArdGyro.GetAccelX();
+    AccelY = ArdGyro.GetAccelY();
+    AccelZ = ArdGyro.GetAccelZ();
+
+    PitchValid = ArdGyro.GetValidPitch();
+    RollValid = ArdGyro.GetValidRoll();
+
+    //FilterVal(180.0f, -180.0f, Yaw);
+    FilterVal(180.0f, -180.0f, Pitch);
+    FilterVal(180.0f, -180.0f, Roll);
+
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    //sprintf_s(YawRead, "%f", Yaw);
+    VM1->Update2AttiudeValues(Pitch, Roll);
+}
+
+void TelemetryUI::Update2Axis3AccelFromBuffer() {
+
+    ArdGyro.ReadBufferArduino3Accel2Attitude();
+    //Yaw = ArdGyro.GetYaw();
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
+
+    AccelX = ArdGyro.GetAccelX();
+    AccelY = ArdGyro.GetAccelY();
+    AccelZ = ArdGyro.GetAccelZ();
+
+    PitchValid = ArdGyro.GetValidPitch();
+    RollValid = ArdGyro.GetValidRoll();
+
+    //FilterVal(180.0f, -180.0f, Yaw);
+    FilterVal(180.0f, -180.0f, Pitch);
+    FilterVal(180.0f, -180.0f, Roll);
+
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    //sprintf_s(YawRead, "%f", Yaw);
+    VM1->Update2AttiudeValues(Pitch, Roll);
+
+}
 
 void TelemetryUI::UpdateValues3Accel(float Ax, float Ay, float Az) {
 
@@ -486,6 +687,10 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
 
     float JoyStickSteer = AxesArr[0];
     float ThrottleAngle = AxesArr[4];
+    float ReversAngle = AxesArr[5];
+
+    SteerAngle = JoyStickSteer;
+    TrothleAngle = ThrottleAngle;
 
     float RawSteerCommand = ConvertValue(JoyStickSteer, 48.0f, 58.0f);
     int8_t SteerIn = (int8_t)RawSteerCommand;
@@ -494,7 +699,11 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
     float RawThrottleCommand = ConvertValue(ThrottleAngle, 50.0f, 50.0f);
     int8_t ThrottleIn = (int8_t)RawThrottleCommand;
 
+    float RawReverseCommand = ConvertValue(ReversAngle, 50.0f, 50.0f);
+    int8_t ReverseIn = (int8_t)RawReverseCommand;
 
+    SteerAngle = SteerIn;
+    TrothleAngle = ThrottleIn;
 
     //ArdMotorSteer.KeepSerialActive();
 
@@ -504,12 +713,16 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
         
     //SteeringReq = ArdMotorSteer.ReadAndSendRequestedData(REQUEST_STEER, SteerIn);
 
-    int8_t Vals[4];
+    //int8_t Vals[4];
+    int8_t Vals[6];
 
     Vals[0] = (int8_t)STEER_COMMAND;
     Vals[1] = SteerIn;
     Vals[2] = (int8_t)MOTOR_SPEED;
     Vals[3] = ThrottleIn;
+
+    Vals[4] = (int8_t)MOTOR_REVERSE;
+    Vals[5] = ReverseIn;
 
     //Vals[0] = SteerIn;
     //Vals[1] = (int8_t)STEER_COMMAND;
@@ -518,6 +731,7 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
 
     T1->RenderTextVS(std::to_string(Vals[1]), 14.0f, 375.0f, 1.0f, Color);
     T1->RenderTextVS(std::to_string(Vals[3]), 14.0f, 415.0f, 1.0f, Color);
+    //T1->RenderTextVS(std::to_string(Vals[5]), 14.0f, 455.0f, 1.0f, Color);
 
     //ArdMotorSteer.SendCommand2I8(STEER_COMMAND, SteerIn);
     //ArdMotorSteer.SendCommand2I8(MOTOR_SPEED, ThrottleIn);
@@ -570,17 +784,18 @@ void TelemetryUI::RenderRawSteerAngleAndMotorSpeed(const float* AxesArr) {
 
 int16_t TelemetryUI::GetRadarPos() { 
     
-    return ArdRadar.GetRadarPos(); std::cout << "\nR_POS" << ArdRadar.GetRadarPos();
+    return ArdRadar.GetRadarPos(); 
 }
 
 int16_t TelemetryUI::GetRadarVal() {
 
-    return ArdRadar.GetRadarVal(); std::cout << "\nR_VAL" << ArdRadar.GetRadarVal();
+    return ArdRadar.GetRadarVal(); 
 }
 
 void TelemetryUI::OpenSerial() {
 
     ArdMotorSteer.KeepSerialActive();
+    ArdRadar.KeepSerialActive();
 }
 
 void TelemetryUI::RenderModel() {

@@ -9,24 +9,40 @@
 #include<serial/SerialOrder.h>
 
 #include<SerialPortSelection.h>
-
+#include <SerialConnectionSpeed.h>
 
 class ArduinoReceiver {
 public:
 	ArduinoReceiver();
 	ArduinoReceiver(SerialName PortName);
+	ArduinoReceiver(SerialName PortName, SerialSpeed BaudRate);
+	void AssignPort(SerialName PortName);
+	void AssignPort(SerialName PortName, SerialSpeed BaudRate);
+	void SetArdPort(SerialName PortName);
+	void SetBaudRate(SerialSpeed BaudRate);
+
 	void ArdInitialize();
 	void ArduinoFirstPass();
 	~ArduinoReceiver();
 	void CloaseSerial();
+
 	float GetPitch();
 	float GetRoll();
 	float GetYaw();
+
+	float GetAccelX();
+	float GetAccelY();
+	float GetAccelZ();
+
 	int16_t GetRadarPos();
 	int16_t GetRadarVal();
 	int8_t GetSteeringSent();
 
 	void ReadArduino3Attitudes();
+	void ReadArduinoAttitudeAccel();
+	void ReadArduino3Accel2Attitude();
+
+	void ReadBufferArduino3Accel2Attitude();
 
 	void ReadRadar();
 	void ReadRadar2();
@@ -42,6 +58,14 @@ public:
 
 	void SendCommand2I8(SerialOrder CommandType, int8_t Command);
 	void SendCommand4I8(int8_t* Values);
+
+	bool GetValidPitch() {
+		return ValidPitch;
+	}
+	bool GetValidRoll() {
+		return ValidRoll;
+	}
+
 
 private:
 	void RequestReadData(SerialPort& Serial, SerialOrder Command, static bool PCReady);
@@ -60,19 +84,32 @@ private:
 	SerialPort Ard;
 
 	bool FirstPass,
-	            ValidRoll,
-	            ValidPitch,
-		        ValidRadarValue;
+	     ValidRoll,
+	     ValidPitch,
+		 ValidRadarValue,
+		 ValidAccelX,
+		 ValidAccelY,
+		 ValidAccelZ;
 
 	float ConvertedRoll,
 		  ConvertedYaw,
-		  ConvertedPitch;
+		  ConvertedPitch,
+		  ConvertedXAccel,
+		  ConvertedYAccel,
+		  ConvertedZAccel;
 
 	int16_t RadarValue,
 		    RadarPosition;
 
 	int8_t SteeringAngleSent,
 		   MotorValue;
+
+	SerialOrder ReadOrder1,
+		        ReadOrder2,
+		        ReadOrder3,
+		        ReadOrder4,
+		        ReadOrder5,
+		        ReadOrder6;
 
 };
 

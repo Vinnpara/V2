@@ -10,7 +10,6 @@ enum SerialOrder {
   SERIAL_ERROR = 4,
   RECEIVED = 5,
   MOTOR_SPEED = 6,
-  MOTOR_REVERSE = 66,
   STOP=7,
   MEASURED_ROLL = 8,
   MEASURED_PITCH = 9,

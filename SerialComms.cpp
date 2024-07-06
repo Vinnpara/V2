@@ -5,6 +5,8 @@
 #include<serial\SerialComms.h>
 #include <iostream>
 
+#define SIZE_OF_BUFF 6*sizeof(int8_t)
+
 
 using namespace std;
 void write_i8(std::fstream& file, int8_t num)
@@ -135,17 +137,27 @@ void Write2CommandsI8(SerialPort& Serial, int8_t Value, int8_t Value2) {
 	TransferFail = Serial.writeSerialPort(buff, 2);
 
 }
-
-void Write4CommandsI8(SerialPort& Serial, int8_t Values[4]) {
+//int8_t Values[4]
+void Write4CommandsI8(SerialPort& Serial, int8_t Values[6]) {
 
 	bool TransferFail;
+	//char buff[4] = { Values[0] , Values[1], Values[2], Values[4] };
+	char buff[6] = { Values[4], Values[1] , Values[2], Values[3], Values[0] , Values[5] };
 
+	/*
+	* Original:
 	char buff[4] = { Values[1] , Values[2], Values[3], Values[0] };
+
+    TransferFail = Serial.writeSerialPort(buff, 4);
+	*/
+
+	//char buff[6] = { Values[1] , Values[2], Values[3], Values[0], Values[5], Values[4] };
+	//char buff[SIZE_OF_BUFF] = { Values[1] , Values[2], Values[3], Values[0], Values[5], Values[4] };
 
 	//std::cout << "\n " << Values[0] << " " << Values[1];
 	//std::cout << "\nWrite command Vals  ";
 
-	TransferFail = Serial.writeSerialPort(buff, 4);
+	TransferFail = Serial.writeSerialPort(buff, 6);
 
 }
 

@@ -1,25 +1,25 @@
 /*
 
-     VEHICHLE FRONT
-     
-           /\
-          /  \
-         /    \
-           ||
-           
-          USER
+        VEHICHLE FRONT
+		      /\
+			 /  \
+			/    \
+			  ||
 
 
-[Motor Left]   [Motor right]
+  [Motor Left]   [Motor right]
   
 */
+
+
+
 
 #include<Servo.h> // include server library
 #include <Arduino.h>
 
-/*#define enA 8
-#define in1 6
-#define in2 7*/
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+
 #define enA 5
 #define in1 6
 #define in2 7
@@ -28,9 +28,6 @@
 #define in3 2
 #define in4 3
 
-#include <LiquidCrystal.h>
-//#define echoPin 4 // attach pin D2 Arduino to pin Echo of HC-SR04
-//#define trigPin 5
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -38,6 +35,7 @@
 #include "SerialOrder.h"
 #include "ArduinoReceiver.h"
 #include "SerialParameters.h"
+#include "I2Cdev.h"
 
 SerialOrder OrderReceived;
 SerialOrder OrderReceived2;
@@ -52,14 +50,12 @@ int pos_lim;
 long duration;
 int distance, inches;
 
-int8_t SteerRawCommand, ThrottleLever, ThrottleLever2;
+int8_t SteerRawCommand, ThrottleLever;
 
 int MAX_ANGLE = 106;
 int MIN_ANGLE = 10;
 
 int motor_speed=0;
-int motor_speed_rev=0;
-
 int i_r, i_l, Command=0, SteerVal=0;
 int8_t ZeroSteer=58;
 
@@ -67,7 +63,9 @@ const int BUFFER_SIZE = 50;
 char SteerBuff[BUFFER_SIZE];
 
 //LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-LiquidCrystal_I2C Scrn(0x27,16,2);
+//LiquidCrystal_I2C Scrn(0x27,16,2);
+
+LiquidCrystal_I2C lcd(0x27,  16, 2);
 
 void setup() {
   // put your setup code here, to run once:
@@ -85,6 +83,7 @@ pinMode(in3, OUTPUT);
 pinMode(in4, OUTPUT);
 
 // Set initial rotation direction
+
 digitalWrite(in1, LOW);
 digitalWrite(in2, LOW);
 analogWrite(enA,0);
@@ -93,20 +92,25 @@ digitalWrite(in3, LOW);
 digitalWrite(in4, LOW);
 analogWrite(enB,0);
 
-//pinMode(trigPin, OUTPUT);
-//pinMode(echoPin, INPUT);
+/*digitalWrite(in1, LOW);
+digitalWrite(in2, HIGH);
 
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);*/
 
- /*
-LCD setup for debug
-*/ 
-  
-Scrn.init();
-Scrn.backlight();
-  // Print a message to the LCD.
+ 
 
 poser=44;
 ZeroSteering();
+
+ /*
+LCD setup for debug
+*/
+//initialize lcd screen
+lcd.init();
+// turn on the backlight
+lcd.backlight();
+
 }
 
 
@@ -127,32 +131,39 @@ void loop() {
 if (Serial.available()){
 
   RequestCommand(REQUEST_STEER);
-  //ReadSerial();
   ReadSerial2();
+
+  //val = Serial.read();
+  //ManualControl();
+
+  
   //ReadDirectSerial();
   //SerialTest();
   //SerialSteeringControl();
   //TestSweepSteering();
-
-  /*Scrn.clear();
+  //TestSweepSteering();
+  //DriveMotorFullForward();
+  //DriveMotorFullBack();
+  //TestSweepSteering();
+  
+  lcd.clear();
  
-  Scrn.setCursor(0,0);
-  Scrn.print(OrderReceived); 
-  Scrn.setCursor(0,1);
-  Scrn.print(SteerRawCommand);*/
+  lcd.setCursor(0,0);
+  lcd.print(OrderReceived);
+  lcd.setCursor(0,1);
+  lcd.print(SteerRawCommand);
 
-  /*Scrn.setCursor(5,0);
-  Scrn.print(OrderReceived2);
-  Scrn.setCursor(5,1);
-  Scrn.print(motor_speed);*/
+  lcd.setCursor(5,0);
+  lcd.print(OrderReceived2);
+  lcd.setCursor(5,1);
+  lcd.print(motor_speed);
 
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
+  lcd.setCursor(10,0);
+  lcd.print(OrderReceived3);
+  lcd.setCursor(10,1);
+  lcd.print(motor_speed);
 
-
-  //delay(75);
+  delay(75);
 
 }
 
@@ -249,7 +260,7 @@ void ReadSerial(enum SerialOrder RequestedOrder){
 
 void ReadSerial(){
 
-    int sent=Serial.readBytes(SteerBuff, 4*sizeof(int8_t));
+    int sent=Serial.readBytes(SteerBuff, 6*sizeof(int8_t));
 
     OrderReceived=(SerialOrder)SteerBuff[0];
     OrderReceived2=(SerialOrder)SteerBuff[2];
@@ -286,7 +297,7 @@ void ReadSerial(){
         //SteerRawCommand =10;
         //SerialSteeringControl();
         ThrottleLever=(int8_t)SteerBuff[3];
-        motor_speed=ConvertValue(ThrottleLever,3.55f,0);
+        motor_speed=ConvertValue(ThrottleLever,0.465f,208.488);
         //DriveMotorForward();
         //SerialSteeringControl();
         //SendCommandReceived(STEER_COMMAND,SteerRawCommand);
@@ -299,117 +310,26 @@ void ReadSerial(){
 
 void ReadSerial2(){
   int sent=Serial.readBytes(SteerBuff, 6*sizeof(int8_t));
-  //int sent=Serial.readBytes(SteerBuff, 4*sizeof(int8_t));
 
-  /*
-    Scrn.setCursor(0,0);
-  Scrn.print(OrderReceived); //SteerBuff[0]: motor reverse value
-  Scrn.setCursor(0,1);
-  Scrn.print(SteerRawCommand); //SteerBuff[3]: motor command indentifier
-
-  Scrn.setCursor(5,0);
-  Scrn.print(OrderReceived2); //SteerBuff[1]: motor reverse indentifier
-  Scrn.setCursor(5,1);
-  Scrn.print(ThrottleLever); //SteerBuff[4]: motor value
-
-  Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3); //SteerBuff[2]: Steering Value
-  Scrn.setCursor(10,1);
-  Scrn.print(ThrottleLever2); //SteerBuff[5] Steering identifier
-
-  
-  */
-  
-    OrderReceived=(SerialOrder)SteerBuff[5];
-    OrderReceived2=(SerialOrder)SteerBuff[3];
-
-    OrderReceived3=(SerialOrder)SteerBuff[1];
-
-    /*OrderReceived=(SerialOrder)SteerBuff[0];
-    OrderReceived2=(SerialOrder)SteerBuff[1];
-    OrderReceived3=(SerialOrder)SteerBuff[2];
-    SteerRawCommand=(int8_t)SteerBuff[3];  
-    ThrottleLever=(int8_t)SteerBuff[4];
-    ThrottleLever2=(int8_t)SteerBuff[5]; */        
-
-   if(STEER_COMMAND==OrderReceived)
-   {
-    //SteerRawCommand=(int8_t)SteerBuff[1];
-    SteerRawCommand=(int8_t)SteerBuff[2];    
+    OrderReceived=(SerialOrder)SteerBuff[0];
+    OrderReceived2=(SerialOrder)SteerBuff[2];
+    //OrderReceived3=(SerialOrder)SteerBuff[4];
+    
+   if(STEER_COMMAND==OrderReceived){
+    SteerRawCommand=(int8_t)SteerBuff[1];
     SerialSteeringControl();
     }
-   /*if(MOTOR_SPEED==OrderReceived2)
-   {
-    //ThrottleLever=(int8_t)SteerBuff[3];
-    ThrottleLever=(int8_t)SteerBuff[4];
-     if(ThrottleLever > 0)
-      {   
-       motor_speed=ConvertValue(ThrottleLever, 2.55f, 0);
-       DriveMotorForward();
-      }
-    
-     else
-      {
-       DriveMotorStop();
-      }
-   }
-
-    if(MOTOR_REVERSE==OrderReceived3)
-    {
-    //ThrottleLever=(int8_t)SteerBuff[5];
-    ThrottleLever2=(int8_t)SteerBuff[0];
-     if(ThrottleLever2 > 0)
-     {       
-       motor_speed_rev=ConvertValue(ThrottleLever2, 2.55f, 0);
-       DriveMotorReverse();
-     }
-     else
-     {
-       DriveMotorStop();
-      }
-    }*/
-
-    if(MOTOR_REVERSE==OrderReceived3 && MOTOR_SPEED==OrderReceived2)
-    {
-    ThrottleLever=(int8_t)SteerBuff[4];
-    ThrottleLever2=(int8_t)SteerBuff[0];
-     if(ThrottleLever2 > ThrottleLever)
-     {
-       //motor_speed_rev=ConvertValue(ThrottleLever2, 2.55f, 0);
-     motor_speed=ConvertValue(ThrottleLever2, 2.55f, 0);
-     
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, HIGH);
-      digitalWrite(in3, HIGH);
-      digitalWrite(in4, LOW);
-       
-       //DriveMotorReverse();
-     }
-     else if(ThrottleLever2 < ThrottleLever)
-     {
-       //motor_speed=ConvertValue(ThrottleLever, 2.55f, 0);
-      motor_speed=ConvertValue(ThrottleLever, 2.55f, 0);
-      
-     digitalWrite(in1, HIGH);
-     digitalWrite(in2, LOW);
-     digitalWrite(in3, LOW);
-     digitalWrite(in4, HIGH);
-      
-       //DriveMotorForward();
-     }
-     else
-     {
-      motor_speed=ConvertValue(0, 2.55f, 0);
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, LOW);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, LOW);
-       //DriveMotorStop();
-     }
-
-     DriveMotorsCommand(motor_speed);
-      
+   if(MOTOR_SPEED==OrderReceived2){
+    ThrottleLever=(int8_t)SteerBuff[3];
+    motor_speed=ConvertValue(ThrottleLever,2.55f,0);
+    DriveMotorForward();
     }
+
+    /*if(MOTOR_REVERSE==OrderReceived3){
+    ThrottleLever=(int8_t)SteerBuff[5];
+    motor_speed=ConvertValue(ThrottleLever,2.55f,0);
+    DriveMotorReverse();
+    }*/
   
   }
 
@@ -479,120 +399,53 @@ void SerialSteeringControl(){
 
 void DriveMotorForward(){
       
-      analogWrite(enA, 255);
-      //digitalWrite(in1, HIGH);
-      //digitalWrite(in2, LOW);
-
-      analogWrite(enB, 255);
-      //digitalWrite(in3, LOW);
-      //digitalWrite(in4, HIGH);
-
-      /*
       analogWrite(enA, motor_speed);
       digitalWrite(in1, LOW);
       digitalWrite(in2, HIGH);
 
       analogWrite(enB, motor_speed);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);
-      */
-
-      /*
-      analogWrite(enB, motor_speed);
       digitalWrite(in3, HIGH);
       digitalWrite(in4, LOW);
-      
-      */
-
-  /*Scrn.setCursor(5,0);
-  Scrn.print(OrderReceived2);
-  Scrn.setCursor(5,1);
-  Scrn.print(motor_speed);*/
-
-  
-  } 
-
-void DriveMotorReverse(){
-      
-      analogWrite(enA, 255);
-      //digitalWrite(in1, HIGH);
-      //digitalWrite(in2, LOW);
-
-      analogWrite(enB, 255);
-      //digitalWrite(in3, LOW);
-      //digitalWrite(in4, HIGH);
-      
-      /*analogWrite(enA, motor_speed_rev);
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);*/
-
-      /*analogWrite(enB, motor_speed_rev);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);*/
-
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
-      
-  
-  }
-
-void DriveMotorsCommand(int Speed){
-      
-      analogWrite(enA, Speed);
-      //digitalWrite(in1, HIGH);
-      //digitalWrite(in2, LOW);
-
-      analogWrite(enB, Speed);
-      //digitalWrite(in3, LOW);
-      //digitalWrite(in4, HIGH);
-      
-      /*analogWrite(enA, motor_speed_rev);
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);*/
-
-      /*analogWrite(enB, motor_speed_rev);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);*/
-
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
       
   
   }  
 
-
-void DriveMotorStop(){
+void DriveMotorReverse(){
       
-      analogWrite(enA, 0);
-      digitalWrite(in1, LOW);
+      analogWrite(enA, motor_speed);
+      digitalWrite(in1, HIGH);
       digitalWrite(in2, LOW);
 
-      analogWrite(enB, 0);
+      analogWrite(enB, motor_speed);
       digitalWrite(in3, LOW);
-      digitalWrite(in4, LOW);
-      
-      /*analogWrite(enA, motor_speed_rev);
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);*/
-
-      /*analogWrite(enB, motor_speed_rev);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);*/
-
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
+      digitalWrite(in4, HIGH);
       
   
-  } 
+  }   
+
+void DriveMotorFullForward(){
+      
+      analogWrite(enA, 355);
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, HIGH);
+
+      analogWrite(enB, 355);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
+  
+  }
+
+void DriveMotorFullBack(){
+      
+      analogWrite(enA, 355);
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, LOW);
+
+      analogWrite(enB, 355);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+  
+  }   
 
 void ManualControl(){
   
@@ -637,6 +490,10 @@ void ManualControl(){
       analogWrite(enA, motor_speed);
       digitalWrite(in1, LOW);
       digitalWrite(in2, HIGH);
+
+      analogWrite(enB, motor_speed);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
         
       }
 
@@ -646,6 +503,23 @@ void ManualControl(){
       analogWrite(enA, motor_speed);
       digitalWrite(in1, LOW);
       digitalWrite(in2, HIGH);
+
+      analogWrite(enB, motor_speed);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+        
+      }
+
+     if(val=='g'){//motor increment
+        
+      motor_speed-=5;
+      analogWrite(enA, motor_speed);
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, HIGH);
+
+      analogWrite(enB, motor_speed);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
         
       }
 
@@ -654,7 +528,12 @@ void ManualControl(){
       motor_speed=355;
       analogWrite(enA, motor_speed);
       digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);      
+      digitalWrite(in2, LOW);    
+
+      motor_speed=355;
+      analogWrite(enB, motor_speed);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);  
   
       }
 
@@ -664,15 +543,20 @@ void ManualControl(){
       analogWrite(enA, motor_speed);
       digitalWrite(in1, HIGH);
       digitalWrite(in2, LOW);
-        
+      
+      motor_speed=0;
+      analogWrite(enB, motor_speed);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+
       }
    
 
-/*Serial.print("\nSteer Value read ");
+Serial.print("\nSteer Value read ");
 Serial.print(poser);
 
 Serial.print("\nmotor Value read ");
-Serial.print(motor_speed);*/
+Serial.print(motor_speed);
 
 //Serial.print("\nservo Value read pos_2 ");
 //Serial.print(pos_2);

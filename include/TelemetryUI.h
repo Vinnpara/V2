@@ -20,24 +20,92 @@
 #include "SerialComms.h"
 #include <serial/SerialPort.h>
 #include <serial/SerialOrder.h>
+#include <SerialConnectionSpeed.h>
 
 #include <VehicleModel.h>
+#include <TestWindow.h>
+#include <Windows.h>
 
 class TelemetryUI {
 public:
+
+
 	TelemetryUI();
+	void AssignBoards();
 	void InitializeTelemetry();
 	void UpdateValuues(SerialPort& Serial);
+
 	void UpdateValues6Axis(float y, float p, float r, float Ax, float Ay, float Az);
 	void UpdateValues3Attitude(float y, float p, float r);
 	void UpdateValues3Accel(float Ax, float Ay, float Az);
+	void Update2Axis3Accel();
+	void Update2Axis3AccelFromBuffer();
+
 	void UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition);
+
+
 	void UpdateValuesRadar();
 	void CloseSerial();
+
+	void ViewDiagnostics();
+	void UpdateDiagnosticsWindow(TestWindow window);
+	void DrawDiagnosticsData(TestWindow window);
+
+	float ReturnPitch() 
+	{
+		return Pitch;
+	}
+	float ReturnRoll()
+	{
+		return Roll;
+	}
+	float ReturnYaw()
+	{
+		return Yaw;
+	}
+	float ReturnAccelX() {
+
+		return AccelX;
+	}
+
+	float ReturnAccelY() {
+
+		return AccelY;
+	}
+
+	float ReturnAccelZ() {
+
+		return AccelZ;
+	}
+
+	bool GetPitchValid() {
+		return PitchValid;
+	}
+
+	bool GetRollValid() {
+		return RollValid;
+	}
 
 	int16_t GetRadarPos();
 	int16_t GetRadarVal();
 
+	int ReturnRadarVal() 
+	{
+		return (int)RadarVal;
+	};
+	int ReturnRadarPos()
+	{
+		return (int)RadarPos;
+	};
+
+	int16_t ReturnSteerAngle()
+	{
+		return (int16_t)SteerAngle;
+	};
+	int16_t ReturnThrottleAngle()
+	{
+		return (int16_t)TrothleAngle;
+	};
 
 	~TelemetryUI();
 
@@ -71,6 +139,7 @@ private:
 	void ReTryRequest(SerialPort& Serial, SerialOrder Command);
 	int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue);
 	float ConvertValue(float RadarValX, float m, float C);
+	TestWindow* DiagWindow = new TestWindow(true);
 
 	int RecType;
 
@@ -82,10 +151,14 @@ private:
 		  AccelZ,
 		  ConvertedRoll,
 		  ConvertedPitch,
-		  ConvertedYaw;
+		  ConvertedYaw
+		  ;
 
 	int16_t RadarVal, 
-		    RadarPos;
+		    RadarPos,
+		    SteerAngle,
+		    TrothleAngle
+		    ;
 
 	std::string Radval, Radpos, OrderFromArd;
 
@@ -108,6 +181,9 @@ private:
 	glm::vec3 RadColor = glm::vec3(1.0, 0.8f, 0.2f);
 
 	bool CommandNotReady;
+
+	bool PitchValid,
+		 RollValid;
 
 };
 

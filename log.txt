@@ -107,3 +107,8 @@ probs need to do the saem with position. As is, on the V2 and Ultra sound serial
 09/05
 When sending a hard coded servo command in the case of STEERING_COMMAND, it still doesn't work. It seems like its not even getting
 the correct command
+
+///////2024////////
+
+07/06
+Whole lotta change. Two motor setip, and diagnosis window. And new gyroscope code
