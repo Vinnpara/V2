@@ -27,7 +27,8 @@ static bool ValidCommandRoll,
             ValidYaw,
             ValidCommandAccelX,
             ValidCommandAccelY,
-            ValidCommandAccelZ;
+            ValidCommandAccelZ,
+            ValidCommandTime;
 
 ArduinoReceiver::ArduinoReceiver() {
 	
@@ -558,6 +559,17 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
             //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
             break;
         }
+        case MEASURED_TIME:
+        {   //This sent as an int16_t
+            int32_t Time = read_i32(Serial);
+            //int32_t AC_z_Int32_limit = LimitValueInt32(AC_z_Int32, Max, Min);
+            //RadarValue = MeasuredRadarDistance;
+            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
+            ElapsedTime = (unsigned long)Time;
+            //std::cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << std::endl;
+            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
+            break;
+        }
         case RADAR_DISTANCE:
         {   //This sent as an int16_t
             int16_t MeasuredRadarDistance = read_i16(Serial);
@@ -749,13 +761,13 @@ void  ArduinoReceiver::ReadArduino3Accel2Attitude() {
      ValidPitch = true;
 
     if (ValidPitch);
-     ValidAccelX = true;
+     ValidAccelX = true;*/
 
-    if (ValidAccelX) {
+    //if (ValidAccelX) {
 
         RequestReadData(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
         ReadBuffer(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
-    }
+    //}
 
     if (ValidCommandAccelX);
      ValidAccelY = true;
@@ -766,7 +778,7 @@ void  ArduinoReceiver::ReadArduino3Accel2Attitude() {
         ReadBuffer(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
     }
 
-    if (ValidCommandAccelZ);
+    if (ValidCommandAccelY);
      ValidAccelZ = true;
 
     if (ValidAccelZ) {
@@ -774,7 +786,17 @@ void  ArduinoReceiver::ReadArduino3Accel2Attitude() {
         RequestReadData(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
         ReadBuffer(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
 
-    }*/
+    }
+
+    if (ValidCommandAccelZ);
+     ValidTime = true;
+
+    if (ValidTime) {
+
+        RequestReadData(Ard, REQUEST_TIME, ValidCommandTime);
+        ReadBuffer(Ard, REQUEST_TIME, ValidCommandTime);
+
+    }
 
 }
 
@@ -966,6 +988,10 @@ int16_t ArduinoReceiver::GetRadarPos() {
 
 int8_t ArduinoReceiver::GetSteeringSent() {
     return SteeringAngleSent;
+}
+
+unsigned long ArduinoReceiver::GetTime() {
+    return ElapsedTime;
 }
 
 ArduinoReceiver::~ArduinoReceiver() {

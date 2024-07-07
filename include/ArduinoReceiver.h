@@ -34,6 +34,8 @@ public:
 	float GetAccelY();
 	float GetAccelZ();
 
+	unsigned long GetTime();
+
 	int16_t GetRadarPos();
 	int16_t GetRadarVal();
 	int8_t GetSteeringSent();
@@ -89,7 +91,8 @@ private:
 		 ValidRadarValue,
 		 ValidAccelX,
 		 ValidAccelY,
-		 ValidAccelZ;
+		 ValidAccelZ,
+		 ValidTime;
 
 	float ConvertedRoll,
 		  ConvertedYaw,
@@ -109,7 +112,10 @@ private:
 		        ReadOrder3,
 		        ReadOrder4,
 		        ReadOrder5,
-		        ReadOrder6;
+		        ReadOrder6,
+		        ReadOrder7;
+
+	unsigned long ElapsedTime;
 
 };
 

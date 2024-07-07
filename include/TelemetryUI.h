@@ -26,6 +26,9 @@
 #include <TestWindow.h>
 #include <Windows.h>
 
+#define MS_2_TO_CMS_2 100
+#define MILISEC_TO_SEC 0.001
+
 class TelemetryUI {
 public:
 
@@ -106,6 +109,9 @@ public:
 	{
 		return (int16_t)TrothleAngle;
 	};
+	unsigned long ReturnTime() {
+		return ElapsedTime;
+	}
 
 	~TelemetryUI();
 
@@ -123,6 +129,8 @@ public:
 
 	void RenderRawSteerAngle(const float* AxesArr);
 	void RenderRawSteerAngleAndMotorSpeed(const float* AxesArr);
+
+	void CalcVelocity();
 
 	void RenderModel();
 	void OpenSerial();
@@ -153,6 +161,12 @@ private:
 		  ConvertedPitch,
 		  ConvertedYaw
 		  ;
+
+	float VelocityX,
+		  VelocityY,
+		  VelocityZ;
+
+	unsigned long ElapsedTime;
 
 	int16_t RadarVal, 
 		    RadarPos,

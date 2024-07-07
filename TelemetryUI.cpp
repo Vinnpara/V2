@@ -126,8 +126,9 @@ void TelemetryUI::UpdateDiagnosticsWindow(TestWindow window) {
     double PitchVal = Pitch;
     double RollVal = Roll;
     double YawVal = Yaw;
+    unsigned long TimeVal = ElapsedTime;
 
-    window.UpdateDaignostcs(PitchVal,RollVal,YawVal);
+    window.UpdateDaignostcs(PitchVal,RollVal,YawVal, TimeVal);
 
 
 }
@@ -183,11 +184,13 @@ void TelemetryUI::DrawDiagnosticsData(TestWindow window) {
     HDC dc = GetDC(hWnd);
     RECT rc;
     GetClientRect(hWnd, &rc);
+
     /*DrawText(dc, window.GetPitchWritten(), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     DrawText(dc, window.GetRollWritten(), -1, &rect1, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     DrawText(dc, window.GetYawWritten(), -1, &rect2, DT_CENTER | DT_VCENTER | DT_SINGLELINE);*/
     ReleaseDC(hWnd, dc);
-    std::cout << "\nWINDOW PITCH VALUE.......  " << window.GetPitchWritten();
+
+    //std::cout << "\nWINDOW PITCH VALUE.......  " << window.GetPitchWritten();
 
 }
 
@@ -356,6 +359,8 @@ void TelemetryUI::Update2Axis3Accel() {
 
     PitchValid = ArdGyro.GetValidPitch();
     RollValid = ArdGyro.GetValidRoll();
+
+    ElapsedTime = ArdGyro.GetTime();
 
     //FilterVal(180.0f, -180.0f, Yaw);
     FilterVal(180.0f, -180.0f, Pitch);
@@ -780,6 +785,15 @@ void TelemetryUI::RenderRawSteerAngleAndMotorSpeed(const float* AxesArr) {
         //T1->RenderTextVS(std::to_string(SteerIn), 14.0f, 285.0f, 1.0f, Color);
     }
 
+}
+
+void TelemetryUI::CalcVelocity(){
+
+    float AccelXCMPS = AccelX * MS_2_TO_CMS_2;
+    float TimeInSec = ElapsedTime * MILISEC_TO_SEC;
+
+    VelocityX = VelocityX + AccelXCMPS * TimeInSec;
+    std::cout << "\nVELOCITY X " << VelocityX;
 }
 
 int16_t TelemetryUI::GetRadarPos() { 

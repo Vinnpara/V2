@@ -112,3 +112,6 @@ the correct command
 
 07/06
 Whole lotta change. Two motor setip, and diagnosis window. And new gyroscope code
+
+07/07
+Added time in micro sec, and calibration for Accx

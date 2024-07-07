@@ -73,8 +73,8 @@ public:
 	void Assignments();
 	bool ProcessMessages();
 
-	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val);
-	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll);
+	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, unsigned long time);
+	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll, unsigned long Time);
 	void UpdateAccelDiag(double AccelX_val, double AccelY_val, double AccelZ_val);
 	void UpdateRadarDaignostcs(int Val, int Pos);
 	void UpdateMotorSteering(int Steer, int Throttle);
@@ -122,7 +122,8 @@ private:
 	ThrottlePos,
     AccelXWritten,
 	AccelYWritten,
-    AccelZWritten
+    AccelZWritten,
+	ElapsedTimeWritten
 	;
 	bool PitchValid,
 		 RollValid;

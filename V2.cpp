@@ -248,19 +248,19 @@ int main()
 
         //TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
         TL1.Update2Axis3Accel();
-
+        TL1.CalcVelocity();
         //TL1.Update2Axis3AccelFromBuffer();
        
 
         //TL1.UpdateDiagnosticsWindow(DiagWindow);
         //TL1.DrawDiagnosticsData(DiagWindow);
         
-        DiagWindow->UpdateDaignostcs(TL1.ReturnPitch(),TL1.ReturnRoll(),TL1.ReturnYaw(), TL1.GetPitchValid(), TL1.GetRollValid());
+        DiagWindow->UpdateDaignostcs(TL1.ReturnPitch(),TL1.ReturnRoll(),TL1.ReturnYaw(), TL1.GetPitchValid(), TL1.GetRollValid(), TL1.ReturnTime());
         DiagWindow->UpdateAccelDiag(TL1.ReturnAccelX(), TL1.ReturnAccelY(), TL1.ReturnAccelZ());
         DiagWindow->UpdateRadarDaignostcs(TL1.GetRadarVal(), TL1.GetRadarPos());
         DiagWindow->UpdateMotorSteering(TL1.ReturnSteerAngle(), TL1.ReturnThrottleAngle());
         DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
-
+        //std::cout << "\nWINDOW PITCH VALUE.......  " << TL1.ReturnTime();
         //TL1.ViewDiagnostics();
 
         glfwPollEvents();

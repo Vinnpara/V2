@@ -30,8 +30,11 @@ LPWSTR PitchWritten,
        YawWritten,
 	   AccelXWritten,
 	   AccelYWritten,
-	   AccelZWritten
+	   AccelZWritten,
+	   ElapsedTimeWritten
 	   ;
+
+unsigned long ElpasedTime;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -1027,6 +1030,13 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			AccelZText.bottom = 25
 			;
 
+		RECT TimeText;
+		TimeText.left = 265,
+			TimeText.top = 100,
+			TimeText.right = 100,
+			TimeText.bottom = 25
+			;
+
 		CreateWindow(TEXT("STATIC"), TEXT("Pitch"),
 			WS_VISIBLE | WS_CHILD,
 			PitchText.left, PitchText.top,
@@ -1126,6 +1136,16 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			NULL,
 			NULL
 		); //to create buttons, textboxes ect takes 11 args
+
+		CreateWindow(TEXT("STATIC"), TEXT("dt micro Sec"),
+			WS_VISIBLE | WS_CHILD,
+			TimeText.left, TimeText.top,
+			TimeText.right, TimeText.bottom,
+			hWnd,
+			(HMENU)NULL,
+			NULL,
+			NULL
+		);
 
 		/*CreateWindow(TEXT("BUTTON"), TEXT("Update selection"),
 			WS_VISIBLE | WS_CHILD | WS_BORDER, //border is text box specific
@@ -1340,8 +1360,9 @@ bool TestWindow::ProcessMessages()
 	return true;
 }
 
-void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val)
+void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, unsigned long time)
 {
+
 
 	Pitch = Pitc_val;
 	std::string str1 = std::to_string(Pitch);
@@ -1371,12 +1392,21 @@ void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_v
 	size_t outSize3;
 	mbstowcs_s(&outSize3, portName2, size3, const_p3, size3 - 1);
 	YawWritten = portName2;
+
+	ElpasedTime = time;
+	std::string str4 = std::to_string(ElpasedTime);
+	size_t size4 = str4.size() + 1;
+	const char* const_p4 = str4.c_str();
+	wchar_t* portName3 = new wchar_t[size4];
+	size_t outSize4;
+	mbstowcs_s(&outSize4, portName3, size4, const_p4, size4 - 1);
+	ElapsedTimeWritten = portName3;
 
 
 	//std::cout << "\nWINDOW PITCH VALUE.......  " << PitchWritten;
 }
 
-void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll) {
+void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll, unsigned long Time) {
 
 	Pitch = Pitc_val;
 	std::string str1 = std::to_string(Pitch);
@@ -1406,6 +1436,15 @@ void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_v
 	size_t outSize3;
 	mbstowcs_s(&outSize3, portName2, size3, const_p3, size3 - 1);
 	YawWritten = portName2;
+
+	ElpasedTime = Time;
+	std::string str4 = std::to_string(ElpasedTime);
+	size_t size4 = str4.size() + 1;
+	const char* const_p4 = str4.c_str();
+	wchar_t* portName3 = new wchar_t[size4];
+	size_t outSize4;
+	mbstowcs_s(&outSize4, portName3, size4, const_p4, size4 - 1);
+	ElapsedTimeWritten = portName3;
 
 	PitchValid = ValidPitch;
 	RollValid = ValidRoll;
@@ -1576,6 +1615,13 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 		AccelZText.bottom = 25
 		;
 
+	RECT TimeText;
+	    TimeText.left = 265,
+		TimeText.top = 100,
+		TimeText.right = 100,
+		TimeText.bottom = 25
+		;
+
 	RECT rect;
 	rect.left = PitchText.left + 210; //where is appears
 	rect.top = PitchText.top;
@@ -1648,6 +1694,12 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 	rect11.right = RollText.right;
 	rect11.bottom = RollText.bottom;
 
+	RECT rect12;
+	rect12.left = TimeText.left + 375; //where is appears
+	rect12.top = TimeText.top + 85;
+	rect12.right = TimeText.right;
+	rect12.bottom = TimeText.bottom;
+
 	HDC dc = GetDC(hWnd);
 	RECT rc;
 	GetClientRect(hWnd, &rc);
@@ -1659,12 +1711,14 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 	DrawText(dc, RadarPos, -1, &rect3, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, RadarVal, -1, &rect4, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
+	//SteerPos
 	DrawText(dc, SteerPos, -1, &rect5, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, ThrottlePos, -1, &rect6, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	DrawText(dc, AccelXWritten, -1, &rect7, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, AccelYWritten, -1, &rect8, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, AccelZWritten, -1, &rect9, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	DrawText(dc, ElapsedTimeWritten, -1, &rect12, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	if(PitchValid)
 		DrawText(dc, L"P-Y", -1, &rect10, DT_CENTER | DT_VCENTER | DT_SINGLELINE);

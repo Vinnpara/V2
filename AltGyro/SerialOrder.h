@@ -17,6 +17,7 @@ enum SerialOrder {
   MEASURED_ACCEL_X = 24,
   MEASURED_ACCEL_Y = 25,
   MEASURED_ACCEL_Z = 26,
+  MEASURED_TIME = 31,
   REQUEST_ROLL = 18,
   REQUEST_PITCH = 19,
   REQUEST_YAW = 20,
@@ -27,7 +28,8 @@ enum SerialOrder {
   REQUEST_STEER = 23,
   REQUEST_ACCEL_X = 34,
   REQUEST_ACCEL_Y = 35,
-  REQUEST_ACCEL_Z = 36
+  REQUEST_ACCEL_Z = 36,
+  REQUEST_TIME = 41
 };
 
 typedef enum SerialOrder SerialOrder;
