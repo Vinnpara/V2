@@ -123,7 +123,6 @@ void loop() {
   lcd.setCursor(1, 4);*/
   //lcd.print(SteerRawCommand);
   //TestSweepSteering();
-
 if (Serial.available()){
 
   RequestCommand(REQUEST_STEER);

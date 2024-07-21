@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ArduinoReceiver.cpp" />
+    <ClCompile Include="FileEditor.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphicRender.cpp" />
     <ClCompile Include="Improc.cpp" />
@@ -44,6 +45,7 @@
     <ClInclude Include="GraphicRender.h" />
     <ClInclude Include="include\ArduinoReceiver.h" />
     <ClInclude Include="include\camera.h" />
+    <ClInclude Include="include\FileEditor.h" />
     <ClInclude Include="include\GL\GL.h" />
     <ClInclude Include="include\GraphicRender.h" />
     <ClInclude Include="include\graph\Shader.h" />

@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <fstream>
 
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
@@ -44,6 +45,14 @@ char* Port = "\\\\.\\COM3";
 ArduinoReceiver ArdRadar;
 ArduinoReceiver ArdGyro;
 ArduinoReceiver ArdMotorSteer;
+
+//static float TotalElapsedTime;
+
+float TelemetryUI::ReturnTotalTime() {
+
+    return TotalElapsedTime;
+
+}
 
 TelemetryUI::TelemetryUI() {
 
@@ -346,7 +355,10 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 }
 
 void TelemetryUI::Update2Axis3Accel() {
-
+    
+    float TempTime,
+          TimeInSeconds;
+    
     ArdGyro.ReadArduino3Accel2Attitude();
 
     //Yaw = ArdGyro.GetYaw();
@@ -362,6 +374,9 @@ void TelemetryUI::Update2Axis3Accel() {
 
     ElapsedTime = ArdGyro.GetTime();
 
+    /*if (ElapsedTime >= 1000 || ElapsedTime <= -1000)
+        ElapsedTime = 0;*/
+
     //FilterVal(180.0f, -180.0f, Yaw);
     FilterVal(180.0f, -180.0f, Pitch);
     FilterVal(180.0f, -180.0f, Roll);
@@ -370,6 +385,12 @@ void TelemetryUI::Update2Axis3Accel() {
     sprintf_s(PtchRead, "%f", Pitch);
     //sprintf_s(YawRead, "%f", Yaw);
     VM1->Update2AttiudeValues(Pitch, Roll);
+
+    TempTime = (float)ElapsedTime;
+    TimeInSeconds = (TempTime / 100);
+
+
+    TotalElapsedTime += TimeInSeconds;
 }
 
 void TelemetryUI::Update2Axis3AccelFromBuffer() {
@@ -789,11 +810,25 @@ void TelemetryUI::RenderRawSteerAngleAndMotorSpeed(const float* AxesArr) {
 
 void TelemetryUI::CalcVelocity(){
 
-    float AccelXCMPS = AccelX * MS_2_TO_CMS_2;
+    //float AccelXCMPS = AccelX * MS_2_TO_CMS_2;
     float TimeInSec = ElapsedTime * MILISEC_TO_SEC;
 
-    VelocityX = VelocityX + AccelXCMPS * TimeInSec;
-    std::cout << "\nVELOCITY X " << VelocityX;
+    float AccelXInertia = (AccelX * cos(Pitch)) - (AccelY * sin(Roll) * sin(Pitch)) - (AccelZ * cos(Roll) * sin(Pitch));
+    float AccelYInertia = (AccelY * cos(Roll)) + (AccelZ * cos(Pitch) * sin(Roll)) - (AccelX *sin(Pitch) *sin(Roll));
+    //float AccelZInertia = ;
+
+    //AccelXInertia = (AccelXInertia-1) * MS_2_TO_CMS_2;
+    //AccelYInertia = (AccelYInertia - 1) * MS_2_TO_CMS_2;
+
+    //VelocityX = VelocityX + AccelXInertia * TimeInSec;
+    //VelocityY = VelocityY + AccelYInertia * TimeInSec;
+    VelocityX = AccelXInertia;
+    VelocityY = AccelYInertia;
+
+    VelocityCombined = sqrt((VelocityX * VelocityX) + (VelocityY * VelocityY));
+
+
+    //std::cout << "\nVELOCITY X " << VelocityX;
 }
 
 int16_t TelemetryUI::GetRadarPos() { 
@@ -810,6 +845,8 @@ void TelemetryUI::OpenSerial() {
 
     ArdMotorSteer.KeepSerialActive();
     ArdRadar.KeepSerialActive();
+
+    TotalElapsedTime = 0;
 }
 
 void TelemetryUI::RenderModel() {
@@ -822,6 +859,106 @@ void TelemetryUI::RenderModel() {
 void TelemetryUI::CloseSerial() {
 
     //Ard1.CloaseSerial();
+
+}
+
+/*
+void TelemetryUI::RecordData(std::ofstream DataFile) {
+
+    if (DataFile.is_open()) {
+
+        DataFile << Pitch;
+        DataFile << ",";
+        DataFile << TotalElapsedTime;
+        DataFile << "\n";
+
+    }
+
+}
+
+void TelemetryUI::OpenFile(std::ofstream DataFile) {
+
+    DataFile.open("Pitch");
+}
+
+void TelemetryUI::CloseFile(std::ofstream DataFile) {
+
+    DataFile.close();
+
+}
+*/
+
+void TelemetryUI::GetRecStartStopCommand(bool start, bool stop)
+{
+    RecStart = start;
+    RecStop = stop;
+
+    //std::cout << "\n START  " << RecStart;
+    //std::cout << "\n STOP  " << RecStop;
+
+}
+
+void TelemetryUI::InitializeDataFile()
+{
+    PitchData.SetName(PitchFile);
+    PitchData.OpenFileStr();
+
+    RollData.SetName(RollFile);
+    RollData.OpenFileStr();
+
+    AccXData.SetName(AccXFile);
+    AccXData.OpenFileStr();
+
+    AccYData.SetName(AccYFile);
+    AccYData.OpenFileStr();
+
+    AccZData.SetName(AccZFile);
+    AccZData.OpenFileStr();
+
+    SteerData.SetName(SteerCommandFile);
+    SteerData.OpenFileStr();
+
+    ThrottleData.SetName(ThrottleCommandFile);
+    ThrottleData.OpenFileStr();
+}
+
+void TelemetryUI::RecordData() {
+
+    if(RecStart && !RecStop)
+    {
+    
+        PitchData.RecordDataFloat(TotalElapsedTime,Pitch);
+        RollData.RecordDataFloat(TotalElapsedTime, Roll);
+
+        AccXData.RecordDataFloat(TotalElapsedTime, AccelX);
+        AccYData.RecordDataFloat(TotalElapsedTime, AccelY);
+        AccZData.RecordDataFloat(TotalElapsedTime, AccelZ);
+       
+        SteerFloat = (float)SteerAngle;
+        ThrottleFloat = (float)TrothleAngle;
+
+        SteerData.RecordDataFloat(TotalElapsedTime, SteerFloat);
+        ThrottleData.RecordDataFloat(TotalElapsedTime, ThrottleFloat);
+
+
+        //std::cout << "\n START  " << SteerFloat;
+        //std::cout << "\n STOP  " << ThrottleFloat;
+
+    }
+
+}
+
+void TelemetryUI::CloseDataFile() {
+
+    PitchData.CloseFile();
+    RollData.CloseFile();
+
+    AccXData.CloseFile();
+    AccYData.CloseFile();
+    AccZData.CloseFile();
+
+    SteerData.CloseFile();
+    ThrottleData.CloseFile();
 
 }
 

@@ -13,11 +13,36 @@
 #include "ArduinoReceiver.h"
 #include "SerialParameters.h"
 #include "I2Cdev.h"
+#include "MPU6050_6Axis_MotionApps20.h"
+
+#define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
+
+/*
+Specific to yaw angle, will be using MPU6050 class
+*/
+float YawMeasured,
+      YawPitchRoll[3];
+      
+MPU6050 mpu;
+
+const int MPU = 0x68; 
+      
+bool dmpReady = false;  // set true if DMP init was successful
+uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
+uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
+uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
+uint16_t fifoCount;     // count of all bytes currently in FIFO
+uint8_t fifoBuffer[64]; // FIFO storage buffer 
+
+Quaternion q;           // [w, x, y, z]         quaternion container
+VectorFloat gravity;    // [x, y, z]            gravity vector
+volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
+      
 
 float RateRoll, 
       RatePitch, 
       RateYaw;
-      
+
 float RateCalibrationRoll, 
       RateCalibrationPitch, 
       RateCalibrationYaw,
@@ -173,7 +198,7 @@ void setup() {
    
   LoopTimer=micros();
 
- 
+ //SetupYawMeasurement();
  //LCD setup for debug
  
   //initialize lcd screen
@@ -210,6 +235,7 @@ void loop() {
   //delay(5);
   
   if(Serial.available()){
+    
   //ReadGyroValues();
   //UpdateGyroAttitudes();
   //UpdateKalman();
@@ -266,10 +292,15 @@ void loop() {
   
   //while (micros() - LoopTimer < 4000);
   //LoopTimer=micros();
+  
   }
 }
 
-///KALMAN FILTER/////
+/*
+ 
+********KALMAN FILTER*********
+
+*/
 
 void UpdateKalmanSetup(){
 
@@ -318,7 +349,11 @@ void Kalman1DFilter(float KalmanState, float KalmanUncertainty, float KalmanInpu
   
 }
 
-///READ GYRO VALUES/////
+/*
+ 
+********READ GYRO VALUES*********
+
+*/
 
 void ReadGyroValues(void) {
   
@@ -442,7 +477,61 @@ void UpdateGyroAttitudes(){
   
 }
 
-///SERIAL SEND RECEIVE/////
+/*Yaw specific funcs*/
+
+void dmpDataReady() {
+    mpuInterrupt = true;
+}
+
+void SetupYawMeasurement()
+{
+    mpu.initialize();
+    pinMode(INTERRUPT_PIN, INPUT);
+
+    devStatus = mpu.dmpInitialize();
+
+   
+    mpu.setXGyroOffset(220);
+    mpu.setYGyroOffset(76);
+    mpu.setZGyroOffset(-85);
+    mpu.setZAccelOffset(1788); 
+
+    if (devStatus == 0) {
+        mpu.CalibrateAccel(60);
+        mpu.CalibrateGyro(60);
+        mpu.PrintActiveOffsets();
+        mpu.setDMPEnabled(true);
+        attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+        mpuIntStatus = mpu.getIntStatus();
+        dmpReady = true;
+        packetSize = mpu.dmpGetFIFOPacketSize();
+    } 
+}
+
+void MeasureYaw()
+{
+  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+    
+  mpu.dmpGetQuaternion(&q, fifoBuffer);
+  mpu.dmpGetGravity(&gravity, &q);
+  mpu.dmpGetYawPitchRoll(YawPitchRoll, &q, &gravity);
+
+  YawMeasured =YawPitchRoll[0] * 180/M_PI;
+
+  }
+  else
+  {
+   YawMeasured = -10000; 
+  }
+}
+
+/*
+ 
+********SERIAL FULCTIONS*********
+
+*/
+
+/*  Serial helpers*/
 enum SerialOrder read_order()
 {
   return (SerialOrder) Serial.read();
@@ -460,25 +549,7 @@ void WriteInt32( int32_t num)
   Serial.write((char*)buffer, 4 * sizeof(int8_t));
 }
 
-///MAIN FUNCTIONS/////
-
-void MeasureGyro(){
-
-  ReadGyroValues();
-  UpdateGyroAttitudes();
-  UpdateKalman();
-  
-}
-
-void MeasureGyroSetup(){
-  
-  ReadGyroValuesSetup();
-  UpdateGyroAttitudes();
-  //MeasureAccelAngles();
-  UpdateKalmanSetup();
-  
-}
-
+/*  Main serial*/
 void MessageGyro(){
   
   if(Serial.available() > 0){
@@ -633,5 +704,28 @@ void ReadFromBuffer(){
  RollValuePointer = (int32_t *)BuffPointer;
  ValueReadFromBufferRoll = *RollValuePointer; 
  
+  
+}
+
+/*
+
+MAIN FUNCTIONS
+
+*/
+
+void MeasureGyro(){
+
+  ReadGyroValues();
+  UpdateGyroAttitudes();
+  UpdateKalman();
+  
+}
+
+void MeasureGyroSetup(){
+  
+  ReadGyroValuesSetup();
+  UpdateGyroAttitudes();
+  //MeasureAccelAngles();
+  UpdateKalmanSetup();
   
 }

@@ -26,8 +26,12 @@
 #include <TestWindow.h>
 #include <Windows.h>
 
-#define MS_2_TO_CMS_2 100
+#include <FileEditor.h>
+
+#define MS_2_TO_CMS_2 981
 #define MILISEC_TO_SEC 0.001
+
+static float TotalElapsedTime;
 
 class TelemetryUI {
 public:
@@ -112,6 +116,20 @@ public:
 	unsigned long ReturnTime() {
 		return ElapsedTime;
 	}
+	float ReturnVelx()
+	{
+		return VelocityX;
+	}
+	float ReturnVely()
+	{
+		return VelocityY;
+	}
+	float ReturnVelocityCombined()
+	{
+		return VelocityCombined;
+	}
+	static float ReturnTotalTime();
+
 
 	~TelemetryUI();
 
@@ -134,9 +152,25 @@ public:
 
 	void RenderModel();
 	void OpenSerial();
+    
+	/*void RecordData(std::ofstream DataFile);
+	void OpenFile(std::ofstream DataFile);
+	void CloseFile(std::ofstream DataFile);*/
+
+	void GetRecStartStopCommand(bool start, bool stop);
+	void InitializeDataFile();
+	void RecordData();
+	void CloseDataFile();
 
 private:
 	
+	string PitchFile ="Pitch.csv",
+	       RollFile = "Roll.csv",
+		   AccXFile = "AccX.csv",
+	       AccYFile = "AccY.csv",
+	       AccZFile = "AccZ.csv",
+		   SteerCommandFile = "SteerCommand.csv",
+		   ThrottleCommandFile = "ThrottleCommand.csv";
 
 	float maxval(float max, float min, float& val);
 	void FilterVal(float max, float min, float& val);
@@ -149,7 +183,17 @@ private:
 	float ConvertValue(float RadarValX, float m, float C);
 	TestWindow* DiagWindow = new TestWindow(true);
 
+	FileEditor PitchData,
+		       RollData, 
+		       AccXData,
+		       AccYData,
+		       AccZData,
+		       SteerData,
+		       ThrottleData;
+
 	int RecType;
+
+	//extern static float TotalElapsedTime;
 
 	float Yaw,
 		  Roll,
@@ -159,12 +203,15 @@ private:
 		  AccelZ,
 		  ConvertedRoll,
 		  ConvertedPitch,
-		  ConvertedYaw
+		  ConvertedYaw,
+		  SteerFloat,
+          ThrottleFloat 
 		  ;
 
 	float VelocityX,
 		  VelocityY,
-		  VelocityZ;
+		  VelocityZ,
+		  VelocityCombined;
 
 	unsigned long ElapsedTime;
 
@@ -197,8 +244,11 @@ private:
 	bool CommandNotReady;
 
 	bool PitchValid,
-		 RollValid;
+		 RollValid,
+		 RecStart,
+		 RecStop;
 
+	//std::ofstream DataFile("Pitch_v_time.csv");
 };
 
 #endif

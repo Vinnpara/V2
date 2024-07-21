@@ -27,6 +27,8 @@
 #define ID_BUTTON_12 13
 #define ID_BUTTON_13 14
 #define ID_BUTTON_14 15
+#define ID_BUTTON_START_RECORD 16
+#define ID_BUTTON_STOP_RECORD 17
 
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -76,9 +78,13 @@ public:
 	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, unsigned long time);
 	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll, unsigned long Time);
 	void UpdateAccelDiag(double AccelX_val, double AccelY_val, double AccelZ_val);
+	void UpdateVelDiag( float velx, float vely, float velcomp);
+	void UpdateElapsedTime(float ElapsedTime);
 	void UpdateRadarDaignostcs(int Val, int Pos);
 	void UpdateMotorSteering(int Steer, int Throttle);
 	void DisplayDiagnostics();
+
+
 
 	LPWSTR GetPitchWritten()
 	{
@@ -100,6 +106,10 @@ public:
 
 	void DrawDiagnostic(HWND hWnd);
 
+	void RecordCommandButtons();
+
+	bool RecStartStatus();
+	bool RecStopStatus();
 
 private:
 	HINSTANCE m_hInstance; //connected to application
@@ -123,7 +133,10 @@ private:
     AccelXWritten,
 	AccelYWritten,
     AccelZWritten,
-	ElapsedTimeWritten
+	ElapsedTimeWritten,
+	VelxWritten,
+	VelyWritten,
+	VelcWritten
 	;
 	bool PitchValid,
 		 RollValid;

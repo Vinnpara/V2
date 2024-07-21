@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <iostream>
+
 #include <windows.h>
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
@@ -229,6 +230,10 @@ int main()
 
     TestWindow* DiagWindow = new TestWindow(true);
 
+    TL1.InitializeDataFile();
+
+    //TL1.OpenFile(Pitch("Data_pitch"));
+
     while (!glfwWindowShouldClose(window) ) {
 
         LimitAngle(180.0f, -180.0f, ConvertedYaw);
@@ -259,7 +264,12 @@ int main()
         DiagWindow->UpdateAccelDiag(TL1.ReturnAccelX(), TL1.ReturnAccelY(), TL1.ReturnAccelZ());
         DiagWindow->UpdateRadarDaignostcs(TL1.GetRadarVal(), TL1.GetRadarPos());
         DiagWindow->UpdateMotorSteering(TL1.ReturnSteerAngle(), TL1.ReturnThrottleAngle());
+        DiagWindow->UpdateVelDiag(TL1.ReturnVelx(), TL1.ReturnVely(), TL1.ReturnVelocityCombined());
+        DiagWindow->UpdateElapsedTime(TL1.ReturnTotalTime());
         DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
+
+        DiagWindow->RecordCommandButtons();
+
         //std::cout << "\nWINDOW PITCH VALUE.......  " << TL1.ReturnTime();
         //TL1.ViewDiagnostics();
 
@@ -302,6 +312,8 @@ int main()
         TL1.RenderModel();
         TL1.RenderControllerState(ControllerPresent);
 
+        TL1.GetRecStartStopCommand(DiagWindow->RecStartStatus(), DiagWindow->RecStopStatus());
+
         int16_t RadarValue = 0, RadarPosition = 0;
 
         RadarValue = TL1.GetRadarVal();
@@ -315,6 +327,8 @@ int main()
             TL1.RenderAxis(axes);
             TL1.RenderRawSteerAngle(axes);
         }
+
+        TL1.RecordData();
 
         //TL1.UpdateDiagnosticsWindow();
         //TL1.ViewDiagnostics();*/
@@ -331,6 +345,7 @@ int main()
 
     //ARD1.CloaseSerial();
     TL1.CloseSerial();
+    TL1.CloseDataFile();
     //delete tWindow;
     
     glfwTerminate();

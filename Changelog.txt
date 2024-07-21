@@ -35,3 +35,6 @@ Gyro sometimes freezes on one axis. Radar doesn't draw but gets the values.
 09/18
 Serials work properly now, robot gets gyro data and radar. They seem stable now. Added Vision class and all dependent
 source files. 
+
+21/07/2024
+New Gyro stuff, prints all ACC values and pitch roll, and control commands

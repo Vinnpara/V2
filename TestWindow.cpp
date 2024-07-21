@@ -9,12 +9,17 @@ static int Board1,
            Board3
            ;
 
+static float TotalElapsedTime;
+
 double Yaw,
 	   Pitch,
 	   Roll,
 	   AccelX,
 	   AccelY,
-	   AccelZ
+	   AccelZ,
+	   VelX,
+	   VelY,
+	   VelComp
 	   ;
 
 bool  YawValid,
@@ -31,10 +36,17 @@ LPWSTR PitchWritten,
 	   AccelXWritten,
 	   AccelYWritten,
 	   AccelZWritten,
-	   ElapsedTimeWritten
+	   ElapsedTimeWritten,
+	   VelxWritten,
+	   VelyWritten,
+	   VelcWritten,
+	   TotalTimeElapsedWritten
 	   ;
 
 unsigned long ElpasedTime;
+
+static bool RecStart,
+            RecStop;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -1037,6 +1049,35 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			TimeText.bottom = 25
 			;
 
+		RECT VelX;
+		VelX.left = 265,
+			VelX.top = 130,
+			VelX.right = 100,
+			VelX.bottom = 25
+			;
+
+		RECT VelY;
+		VelY.left = 265,
+			VelY.top = 160,
+			VelY.right = 100,
+			VelY.bottom = 25
+			;
+
+		RECT VelCom;
+		VelCom.left = 265,
+			VelCom.top = 190,
+			VelCom.right = 100,
+			VelCom.bottom = 25
+			;
+
+		RECT TotalTime;
+		TotalTime.left = 265,
+			TotalTime.top = 220,
+			TotalTime.right = 100,
+			TotalTime.bottom = 25
+			;
+
+
 		CreateWindow(TEXT("STATIC"), TEXT("Pitch"),
 			WS_VISIBLE | WS_CHILD,
 			PitchText.left, PitchText.top,
@@ -1147,6 +1188,66 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			NULL
 		);
 
+		CreateWindow(TEXT("STATIC"), TEXT("Vel X"),
+			WS_VISIBLE | WS_CHILD,
+			VelX.left, VelX.top,
+			VelX.right, VelX.bottom,
+			hWnd,
+			(HMENU)NULL,
+			NULL,
+			NULL
+		);
+
+		CreateWindow(TEXT("STATIC"), TEXT("Vel Y"),
+			WS_VISIBLE | WS_CHILD,
+			VelY.left, VelY.top,
+			VelY.right, VelY.bottom,
+			hWnd,
+			(HMENU)NULL,
+			NULL,
+			NULL
+		);
+
+		CreateWindow(TEXT("STATIC"), TEXT("Vel Comp"),
+			WS_VISIBLE | WS_CHILD,
+			VelCom.left, VelCom.top,
+			VelCom.right, VelCom.bottom,
+			hWnd,
+			(HMENU)NULL,
+			NULL,
+			NULL
+		);
+
+		CreateWindow(TEXT("STATIC"), TEXT("Tot. time"),
+			WS_VISIBLE | WS_CHILD,
+			TotalTime.left, TotalTime.top,
+			TotalTime.right, TotalTime.bottom,
+			hWnd,
+			(HMENU)NULL,
+			NULL,
+			NULL
+		);
+
+		CreateWindow(TEXT("BUTTON"), TEXT("Start Rec."),
+			WS_VISIBLE | WS_CHILD | WS_BORDER, //border is text box specific
+			300, 280,
+			115, 25,
+			hWnd,
+			(HMENU)ID_BUTTON_START_RECORD,
+			NULL,
+			NULL
+		);
+		
+		CreateWindow(TEXT("BUTTON"), TEXT("Stop Rec."),
+			WS_VISIBLE | WS_CHILD | WS_BORDER, //border is text box specific
+			430, 280,
+			115, 25,
+			hWnd,
+			(HMENU)ID_BUTTON_STOP_RECORD,
+			NULL,
+			NULL
+		);
+
 		/*CreateWindow(TEXT("BUTTON"), TEXT("Update selection"),
 			WS_VISIBLE | WS_CHILD | WS_BORDER, //border is text box specific
 			350, 10,
@@ -1160,6 +1261,25 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		break;
 
 	};
+
+	case WM_COMMAND:
+	{
+		if (LOWORD(wParam) == ID_BUTTON_START_RECORD) {
+			RecStart = 1;
+			RecStop = 0;
+			//std::cout << "\n START  " << RecStart;
+			//std::cout << "\n STOP  " << RecStop;
+		}
+
+		if (LOWORD(wParam) == ID_BUTTON_STOP_RECORD) {
+			RecStart = 0;
+			RecStop = 1;
+			//std::cout << "\n STOP  " << RecStop;
+			//std::cout << "\n START  " << RecStart;
+		}
+
+		break;
+	}
 
 	case WM_CLOSE:
 		DestroyWindow(hWnd);
@@ -1406,6 +1526,40 @@ void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_v
 	//std::cout << "\nWINDOW PITCH VALUE.......  " << PitchWritten;
 }
 
+void TestWindow::UpdateVelDiag(float velx, float vely, float velcomp) {
+
+	VelX = velx;
+	std::string str1 = std::to_string(VelX);
+	size_t size = str1.size() + 1;
+	const char* const_p = str1.c_str();
+	wchar_t* portName = new wchar_t[size];
+	size_t outSize;
+	mbstowcs_s(&outSize, portName, size, const_p, size - 1);
+	VelxWritten = portName;
+	//std::cout << "\nWINDOW PITCH VALUE.......  " << PitchWritten;
+
+	VelX = vely;
+	std::string str2 = std::to_string(VelX);
+	size_t size2 = str2.size() + 1;
+	const char* const_p2 = str2.c_str();
+	wchar_t* portName1 = new wchar_t[size2];
+	size_t outSize2;
+	mbstowcs_s(&outSize2, portName1, size2, const_p2, size2 - 1);
+	VelyWritten = portName1;
+
+
+	VelComp = velcomp;
+	std::string str3 = std::to_string(Yaw);
+	size_t size3 = str3.size() + 1;
+	const char* const_p3 = str3.c_str();
+	wchar_t* portName2 = new wchar_t[size2];
+	size_t outSize3;
+	mbstowcs_s(&outSize3, portName2, size3, const_p3, size3 - 1);
+	VelcWritten = portName2;
+
+
+}
+
 void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll, unsigned long Time) {
 
 	Pitch = Pitc_val;
@@ -1543,6 +1697,20 @@ void TestWindow::UpdateMotorSteering(int Steer, int Throttle)
 
 }
 
+void TestWindow::UpdateElapsedTime(float ElapsedTime) {
+
+	TotalElapsedTime = ElapsedTime;
+	std::string str1 = std::to_string(TotalElapsedTime);
+	size_t size = str1.size() + 1;
+	const char* const_p = str1.c_str();
+	wchar_t* portName = new wchar_t[size];
+	size_t outSize;
+	mbstowcs_s(&outSize, portName, size, const_p, size - 1);
+	TotalTimeElapsedWritten = portName;
+
+
+}
+
 void TestWindow::DrawDiagnostic(HWND hWnd) {
 
 	RECT PitchText;
@@ -1622,6 +1790,34 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 		TimeText.bottom = 25
 		;
 
+	RECT VelX;
+		VelX.left = 415,
+		VelX.top = 190,
+		VelX.right = 100,
+		VelX.bottom = 25
+			;
+
+	RECT VelY;
+		VelY.left = 415,
+		VelY.top = 210,
+		VelY.right = 100,
+		VelY.bottom = 25
+			;
+
+	RECT VelCom;
+		VelCom.left = 415,
+		VelCom.top = 285,
+		VelCom.right = 100,
+		VelCom.bottom = 25
+			;
+
+	RECT TotalTime;
+		 TotalTime.left = 415,
+		 TotalTime.top = 300,
+		 TotalTime.right = 100,
+		 TotalTime.bottom = 25
+			;
+
 	RECT rect;
 	rect.left = PitchText.left + 210; //where is appears
 	rect.top = PitchText.top;
@@ -1700,6 +1896,30 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 	rect12.right = TimeText.right;
 	rect12.bottom = TimeText.bottom;
 
+	RECT rect13;
+	rect13.left = VelX.left + 285; //where is appears
+	rect13.top = VelX.top +75;
+	rect13.right = VelX.right;
+	rect13.bottom = VelX.bottom;
+
+	RECT rect14;
+	rect14.left = VelY.left + 285; //where is appears
+	rect14.top = VelY.top + 105;
+	rect14.right = VelY.right;
+	rect14.bottom = VelY.bottom;
+
+	RECT rect15;
+	rect15.left = VelCom.left + 285; //where is appears
+	rect15.top = VelCom.top + 100;
+	rect15.right = VelCom.right;
+	rect15.bottom = VelCom.bottom;
+
+	RECT rect16;
+	rect16.left = TotalTime.left + 285; //where is appears
+	rect16.top = TotalTime.top + 150;
+	rect16.right = TotalTime.right;
+	rect16.bottom = TotalTime.bottom;
+
 	HDC dc = GetDC(hWnd);
 	RECT rc;
 	GetClientRect(hWnd, &rc);
@@ -1719,6 +1939,12 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 	DrawText(dc, AccelYWritten, -1, &rect8, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, AccelZWritten, -1, &rect9, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, ElapsedTimeWritten, -1, &rect12, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	DrawText(dc, VelxWritten, -1, &rect13, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	DrawText(dc, VelyWritten, -1, &rect14, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	DrawText(dc, VelcWritten, -1, &rect15, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	DrawText(dc, TotalTimeElapsedWritten, -1, &rect16, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	if(PitchValid)
 		DrawText(dc, L"P-Y", -1, &rect10, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
@@ -1740,4 +1966,33 @@ void TestWindow::Assignments()
 	board2 = Board2;
 	board3 = Board3;
 
+}
+
+void TestWindow::RecordCommandButtons() {
+
+	/*if (ID_BUTTON_START_RECORD) {
+		RecStart = 1;
+		RecStop = 0;
+		std::cout << "\n START  " << RecStart;
+	}
+	if (ID_BUTTON_STOP_RECORD) {
+		RecStart = 0;
+		RecStop = 1;
+		std::cout << "\n STOP  " << RecStop;
+	}*/
+
+	//std::cout << "\n START  " << RecStart;
+	//std::cout << "\n STOP  " << RecStop;
+}
+
+bool TestWindow::RecStartStatus()
+{
+	bool status = RecStart;
+	return status;
+}
+
+bool TestWindow::RecStopStatus()
+{
+	bool status = RecStop;
+	return status;
 }
