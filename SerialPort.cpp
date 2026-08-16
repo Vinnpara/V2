@@ -1,5 +1,7 @@
 #include <serial\SerialPort.h>
 #include <SerialConnectionSpeed.h>
+#include <iostream>
+#include <windows.h>
 
 SerialPort::SerialPort(char *portName)
 {
@@ -222,7 +224,12 @@ void SerialPort::SetBaudRate(SerialSpeed BaudRate) {
                 Sleep(ARDUINO_WAIT_TIME);
                 printf("\nARD PORT CONNECTED\n");
                 printf("\n \n");
-                printf(Port);
+                if (Port != nullptr)
+                {
+                    printf(Port);
+                }
+                else
+                    printf("UNDEFINED PORT ");
             }
         }
     }
@@ -312,5 +319,64 @@ void SerialPort::SerialClose() {
         CloseHandle(this->handler);
         printf("\nSERIAL CLOSED");
     }
+
+}
+
+int SerialPort::ReadSerialPortAfterPeek(char* buffer, unsigned int buf_size)
+{
+    DWORD bytesRead;
+    unsigned int toRead = 0;
+
+    if (!connected) return 0;
+
+    // 1. If a peek() happened before this, consume and clear the cache
+    if (isCacheFull) {
+        isCacheFull = false;
+        return (unsigned char)peekCache;
+    }
+    // 2. Otherwise, do a normal standard hardware read
+    
+    /*char incomingByte;
+    if (ReadFile(this->handler, &incomingByte, 1, &bytesRead, NULL) && bytesRead > 0) {
+        return (unsigned char)incomingByte;
+    }*/
+
+    if (this->status.cbInQue > 0) {
+        if (this->status.cbInQue > buf_size) {
+            toRead = buf_size;
+        }
+        else toRead = this->status.cbInQue;
+    }
+
+    if (ReadFile(this->handler, buffer, toRead, &bytesRead, NULL)) return bytesRead;
+
+    return 0;
+}
+
+unsigned char SerialPort::Peek(char* buffer)
+{
+    if (!this->connected) return 0;
+
+    if (isCacheFull) {
+        return (unsigned char)peekCache;
+    }
+
+    DWORD errors,
+          bytesRead;
+    COMSTAT status;
+
+    ClearCommError(this->handler, &this->errors, &this->status);
+
+    if (this->status.cbInQue > 0) 
+    {
+        // Destructively pull 1 byte out of the Windows hardware queue
+        if (ReadFile(this->handler, &peekCache, 1, &bytesRead, NULL) && bytesRead > 0) {
+            //buffer = &peekCache;
+            isCacheFull = true; // Lock it into our software layer
+            return (unsigned char)peekCache;
+        }
+    }
+
+    return 0; // Buffer was totally empty
 
 }

@@ -5,7 +5,7 @@
 enum SerialName {
 	COM1 = 1,
 	COM2 = 7,
-	COM3 = 0,
+	COM3 = 14,
 	COM5 = 2,
 	COM4 = 3,
 	COM6 = 13,

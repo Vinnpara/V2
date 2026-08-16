@@ -79,6 +79,8 @@ std::vector<float> GenerateVertices( int VerticesNumber);
 std::vector<float> GenerateVertices2(int VerticesNUmber);
 
 using timer = std::chrono::system_clock;
+using namespace std::chrono_literals;
+
 timer::time_point clock_wait;
 timer::time_point clock_check;
 timer::duration elapsed_time;
@@ -200,8 +202,27 @@ int main()
     }
     static bool FirstPass;
     FirstPass = true;
-    static bool ValidRoll=false;
-    static bool ValidPitch = false;
+
+    static bool RollReceived=false,
+                PitchReceived = false,
+                GyroArduinoReady = false,
+                GyroArduinoCommsEstablished = false,
+                GyroFirstReading = true,
+                GyroHeartBeatTimerElapsed =false,
+                GyroArduinoCommunicationsEstablished = false,
+                GyroArduinoCommsLost =0;
+
+    static bool RadarArduinoReady = false,
+                RadarArduinoCommsEstablished = false,
+                RadarFirstReading = true,
+                RadarHeartBeatTimerElapsed = false,
+                RadarBoardReady = false,
+                RadarBoardReadinessTimerElapsed = false,
+                RadarArduinoCommsLost = 0;
+
+    static int GyroHeartBeatCounter =0,
+               RadarHeartBeatCounter = 0,
+               RadarBoardReadyCounter = 0;
 
 
     unsigned int CharVAO, CharVBO=0, CommonVBO=0;
@@ -233,12 +254,56 @@ int main()
     TL1.InitializeDataFile();
 
     //TL1.OpenFile(Pitch("Data_pitch"));
+    int TimerDuration = 1;
+ 
+    //const std::chrono::seconds interval(TimerDuration);
+    //std::chrono::steady_clock::time_point last_reset = std::chrono::steady_clock::now();
+    TL1.TimerAnchorPoint();
 
     while (!glfwWindowShouldClose(window) ) {
 
+        
         LimitAngle(180.0f, -180.0f, ConvertedYaw);
         LimitAngle(180.0f, -180.0f, ConvertedPitch);
         LimitAngle(180.0f, -180.0f, ConvertedRoll);
+
+        
+
+        //std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        //TL1.TimerFunction(TimerDuration);
+        
+        if (GyroFirstReading || !GyroArduinoCommsEstablished)
+        {
+            TL1.EstablishedCommunicationsArdGyro(GyroArduinoCommsEstablished);
+
+        }
+
+        if (RadarFirstReading || !RadarArduinoCommsEstablished || !RadarBoardReady)
+        {
+            TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished);
+
+        }
+
+        if (!RadarBoardReady)
+        {
+            TL1.ListenForArduinoReadiness(RadarBoardReady);
+        }
+
+        //TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished);
+        TL1.SendHeartBeat();
+
+        //if(!GyroFirstReading && GyroArduinoCommsEstablished)
+         //TL1.DetectGyroHeartBeat(TimerDuration, GyroHeartBeatTimerElapsed, GyroHeartBeatCounter);
+         
+        //TL1.SendHeartBeat(20);
+
+        //if (now - last_reset >= interval) {
+            // 5. Trigger the reset event
+            //std::cout << "[Reset] 2 seconds have passed!\n";
+
+            // 6. Advance the time_point anchor by adding the duration
+           // last_reset += interval;
+        //}
 
         int ControllerPresent = glfwJoystickPresent(GLFW_JOYSTICK_1);
         //cout << "\n COntroller status " << ControllerPresent;
@@ -252,7 +317,25 @@ int main()
         }
 
         //TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
-        TL1.Update2Axis3Accel();
+        //TL1.Update2Axis3Accel();
+        if (!GyroFirstReading && GyroArduinoCommsEstablished)
+        {
+            bool HBdetected = 0;
+            TL1.Update2Axis3Accel(RollReceived, PitchReceived, HBdetected, GyroArduinoCommsEstablished, GyroFirstReading);
+            TL1.DetectGyroHeartBeat(TimerDuration, GyroHeartBeatTimerElapsed, HBdetected, GyroHeartBeatCounter);
+        }
+
+
+        if (!RadarFirstReading && RadarArduinoCommsEstablished && RadarBoardReady)
+        {
+            bool HBdetected = 0,
+                 BoardReadyDetect =0;
+
+            TL1.UpdateValuesRadar(HBdetected, BoardReadyDetect, RadarArduinoCommsEstablished);
+            TL1.DetectHeartBeat(TimerDuration, RadarHeartBeatTimerElapsed, HBdetected,  RadarHeartBeatCounter);
+            TL1.DetectBoardReadiness(TimerDuration, RadarBoardReadinessTimerElapsed, BoardReadyDetect, RadarBoardReadyCounter);
+        }
+
         TL1.CalcVelocity();
         //TL1.Update2Axis3AccelFromBuffer();
        
@@ -302,12 +385,12 @@ int main()
         LimitAngle(180.0f, -180.0f, ConvertedPitch);
         LimitAngle(180.0f, -180.0f, ConvertedRoll);
 
-        TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
+        //TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
 
         TL1.RenderPitch();
         TL1.RenderRoll();
         TL1.RenderYaw();
-        TL1.UpdateValuesRadar();
+        //TL1.UpdateValuesRadar();
         TL1.RenderRadar();
         TL1.RenderModel();
         TL1.RenderControllerState(ControllerPresent);
@@ -339,7 +422,8 @@ int main()
 
 
 
-
+        GyroFirstReading = 0;
+        RadarFirstReading = 0;
 
     }
 
@@ -347,7 +431,7 @@ int main()
     TL1.CloseSerial();
     TL1.CloseDataFile();
     //delete tWindow;
-    
+    delete DiagWindow;
     glfwTerminate();
     return 0;
 }

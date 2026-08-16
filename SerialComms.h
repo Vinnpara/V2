@@ -6,6 +6,8 @@
 #include<serial\SerialPort.h>
 #include<serial\SerialOrder.h>
 
+#include <vector>
+
 void write_order(std::fstream& file, enum SerialOrder order);
 
 void write_i8(std::fstream& file, int8_t num);
@@ -27,6 +29,8 @@ void read_i16_compound(SerialPort& serial_port, SerialOrder OrderExpected, int16
 uint16_t uread_i16(SerialPort& serial_port);
 
 int32_t read_i32(SerialPort& serial_port);
+
+std::vector<int32_t> read_i32(SerialPort& serial_port, int num);
 
 void WriteCommandI8(SerialPort& Serial, int8_t Value);
 

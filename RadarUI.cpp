@@ -107,11 +107,11 @@ void RadarUI::ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& E
         {
             //The PC is not getting any valid values so do not write into serial on ard.
 
-            SerialOrder OrderWait = PC_NOT_READY;
+            //SerialOrder OrderWait = PC_NOT_READY;
 
-            char buff[1] = { OrderWait };
+            //char buff[1] = { OrderWait };
             //bool TransferReceived = false;
-            bool TransferFail = Serial.writeSerialPort(buff, 1);
+            //bool TransferFail = Serial.writeSerialPort(buff, 1);
 
             ReTryRequest(Serial, Command);
         }

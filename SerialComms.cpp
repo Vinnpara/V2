@@ -4,6 +4,7 @@
 #include<serial\SerialOrder.h>
 #include<serial\SerialComms.h>
 #include <iostream>
+#include <vector>
 
 #define SIZE_OF_BUFF 6*sizeof(int8_t)
 
@@ -119,6 +120,26 @@ int32_t read_i32(SerialPort& serial_port)
 	else
 		return ValBad;
 	
+}
+
+std::vector<int32_t> read_i32(SerialPort& serial_port, int num) 
+{
+	int32_t nums[3];
+
+	std::vector<int32_t> ReturnVal;
+
+	char buffer[MAX_DATA_LENGTH];
+	serial_port.readSerialPort(buffer, 8);
+	if (sizeof(buffer) >= 4) {
+		nums[0] = (((int32_t)buffer[0]) & 0xff) | (((int32_t)buffer[1]) << 8 & 0xff00) | (((int32_t)buffer[2]) << 16 & 0xff0000) | (((int32_t)buffer[3]) << 24 & 0xff000000);
+		nums[1] = (((int32_t)buffer[4]) << 32 & 0xff) | (((int32_t)buffer[5]) << 40 & 0xff00) | (((int32_t)buffer[6]) << 48 & 0xff0000) | (((int32_t)buffer[7]) << 56 & 0xff000000);
+	}
+
+	for(int i =0; i<2; i++)
+	 ReturnVal.push_back(nums[i]);
+
+	return ReturnVal;
+
 }
 
 void WriteCommandI8(SerialPort& Serial, int8_t Value) {

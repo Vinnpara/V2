@@ -2,6 +2,8 @@
 #define TELEMETRY_UI_H
 
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
@@ -21,6 +23,7 @@
 #include <serial/SerialPort.h>
 #include <serial/SerialOrder.h>
 #include <SerialConnectionSpeed.h>
+#include <BoardSelection.h>
 
 #include <VehicleModel.h>
 #include <TestWindow.h>
@@ -33,6 +36,9 @@
 
 static float TotalElapsedTime;
 
+using timer = std::chrono::system_clock;
+using namespace std::chrono_literals;
+
 class TelemetryUI {
 public:
 
@@ -42,13 +48,36 @@ public:
 	void InitializeTelemetry();
 	void UpdateValuues(SerialPort& Serial);
 
+	void EstablishedCommunicationsArdGyro (static bool &GyroArduinoCommsEstablished);
+	void EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished);
+
+	void ListenForArduinoReadiness(static bool& RadarArduinoReady);
+
+	void DetectGyroHeartBeat(int Duration, static bool &TimerElapsed, static int& HeartBeatCounter);
+	void DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter);
+	void DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter);
+
+	void DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter);
+
+	void SendHeartBeat(int Duration);
+	void SendHeartBeat();
+	void RequestData(SerialOrder DataRequest);
+
+
 	void UpdateValues6Axis(float y, float p, float r, float Ax, float Ay, float Az);
 	void UpdateValues3Attitude(float y, float p, float r);
 	void UpdateValues3Accel(float Ax, float Ay, float Az);
 	void Update2Axis3Accel();
 	void Update2Axis3AccelFromBuffer();
+	void Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
+	void Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, bool &HBDetected, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
 
-	void UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition);
+	
+	void UpdateValuesRadar(bool& HBDetected, static bool& RadarArduinoCommsEstablished);
+	void UpdateValuesRadar(bool& HBDetected, bool& BoardReadiness, static bool& RadarArduinoCommsEstablished);
+	
+	void TimerAnchorPoint();
+	void TimerFunction(int Duration);
 
 
 	void UpdateValuesRadar();
@@ -57,6 +86,8 @@ public:
 	void ViewDiagnostics();
 	void UpdateDiagnosticsWindow(TestWindow window);
 	void DrawDiagnosticsData(TestWindow window);
+
+	void EstablishComms(static bool& CommsEstablished, static bool &ReadyforFirstReading);
 
 	float ReturnPitch() 
 	{
@@ -247,6 +278,17 @@ private:
 		 RollValid,
 		 RecStart,
 		 RecStop;
+
+	std::chrono::steady_clock::time_point LastReset,
+		                                  LastReset2,
+		                                  LastReset3,
+		                                  LastReset4,
+		                                  LastReset5,
+	                                      Now,
+		                                  ArdGyroHeartbeat,
+		                                  ArdRadarHeartBeat,
+		                                  ArdRadarBoardReadniess;
+
 
 	//std::ofstream DataFile("Pitch_v_time.csv");
 };

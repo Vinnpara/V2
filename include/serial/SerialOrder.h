@@ -4,11 +4,11 @@
 // Define the orders that can be sent and received
 enum SerialOrder {
   HELLO = 0,
-  RADAR_DISTANCE = 1,
+  RADAR_DISTANCE = 3,
   RADAR_POSITION = 2,
-  ALREADY_CONNECTED = 3,
-  SERIAL_ERROR = 4,
-  RECEIVED = 5,
+  //ALREADY_CONNECTED = 3,
+  ARDUINO_READY = 4,
+  PC_READY = 5,
   MOTOR_SPEED = 6,
   STOP=7,
   MEASURED_ROLL = 8,
@@ -23,14 +23,16 @@ enum SerialOrder {
   REQUEST_YAW = 20,
   REQUEST_RADAR = 11,
   REQUEST_RADAR_POS = 12,
-  PC_NOT_READY = 111,
+  PC_COMMS_EST = 111,
+  ARD_COMMS_EST = 115,
   STEER_COMMAND = 13,
   REQUEST_STEER = 23,
   REQUEST_ACCEL_X = 34,
   REQUEST_ACCEL_Y = 35,
   REQUEST_ACCEL_Z = 36,
   REQUEST_TIME = 41,
-  MOTOR_REVERSE = 66
+  MOTOR_REVERSE = 66,
+  PC_HEARTBEAT = 55
 };
 
 typedef enum SerialOrder SerialOrder;

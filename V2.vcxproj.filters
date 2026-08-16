@@ -185,5 +185,11 @@
     <ClInclude Include="include\FileEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CircularBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BoardSelection.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

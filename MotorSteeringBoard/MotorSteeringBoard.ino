@@ -17,9 +17,7 @@
 #include<Servo.h> // include server library
 #include <Arduino.h>
 
-/*#define enA 8
-#define in1 6
-#define in2 7*/
+
 #define enA 5
 #define in1 6
 #define in2 7
@@ -27,6 +25,7 @@
 #define enB 11
 #define in3 2
 #define in4 3
+
 
 #include <LiquidCrystal.h>
 //#define echoPin 4 // attach pin D2 Arduino to pin Echo of HC-SR04
