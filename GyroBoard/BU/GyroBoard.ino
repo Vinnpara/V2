@@ -18,9 +18,9 @@
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 
 #define MAX_PAYLOAD_SIZE 64
-#define MAX_PACKET_SIZE 7
 
 bool blinkState = false;
+int8_t Buffer16Int[2];
 
 int16_t ValueSent;
 int32_t val32;
@@ -28,8 +28,7 @@ static int PitchCounter,
            YawCounter, 
            RollCounter, 
            SerialCounter,
-           ValidPCHeartBeatCounter = 0,
-           ValidPCReadyCounter =0;
+           ValidPCHeartBeatCounter = 0;
 
 static bool FirstPassDone = false,
             RollRequest = false, 
@@ -45,8 +44,6 @@ SerialOrder OrderReceived;
 SerialOrder OrderSent;
 
 char buffin[MAX_PAYLOAD_SIZE];
-char DataPacketReceived[MAX_PACKET_SIZE];
-
 unsigned int bufferIndex = 0;
 bool isReceiving = false;
 
@@ -118,18 +115,12 @@ static bool PC_not_Ready=1,
             ValidHeartBeatPC = 0;
 
 unsigned long previousMillis = 0,
-              previousMillis2 = 0,
-              previousMillis3 = 0; 
+              previousMillis2 = 0; 
 const long interval = 50,
            IntervalPCHBMonitoring = 2000; // Interval in milliseconds
 
 const char START_MARKER = '[',
            END_MARKER = ']';
-///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// ================================================================
-// ===                    SETUP FUNCTION                       ===
-// ================================================================
-//***************************************************************\\
 
 void setup() {
   // put your setup code here, to run once:
@@ -244,13 +235,6 @@ void setup() {
      
 }
 
-///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// ================================================================
-// ===                    LOOP FUNCTION                         ===
-// ================================================================
-//***************************************************************\\
-
-
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -259,37 +243,45 @@ MeasureGyro();
 
 if(Serial.available()>0)
 {
-  FlashBulb(15);
+  //First, signal arduino readiness
+  //SignalArduinoReadiness();
+  //SendHeartBeat();
+
+  //Peek functions will monitor for anything incomining,
+  //incl. PC readiness, heartbeat, and commands
+  //PeekMessage();
+  SignalArdReady();
+  SendHeartBeat();
+  //SendDataPackets(MEASURED_PITCH, pitch);
+  //SendDataPackets(MEASURED_ROLL, roll);
+
+  
+  //SendDataPacketsPitchRoll();  
+  BulbON();
 }
 
-ReadAndParseData();
-ProcessInformation();
-MonitorPCHeartBeat();
-MonitorPCReadiness();
-DeterminePCReadiness();
+//Determine the availability of a HB and handle the Comms
+//established flag
+//MonitorPCHeartBeat();
+//DeterminePCReadiness();
 
-SignalArdReady();
-SendDataPacketHB();
-
-if(CommsEstablished)
+if(CommsEstablished && Serial.available()>0)
 {
-
-   SendDataPackets(MEASURED_PITCH,pitch);
-   SendDataPackets(MEASURED_ROLL,roll);
-   BulbON();
+  //Communications are established and device can start transmitting data
+  //FlashBulb(750);
+  //MessageGyro(MeasurementRequested);
+  //SendDataPackets(MEASURED_PITCH, pitch);
+  //BulbON();
 }
 
 if(!Serial.available())
 {
-  FlashBulb(500);
+  FlashBulb(25);
 }
 
 }
-  ////_______________\\\\
- ////*****************\\\\
-////  ACCEL/GYRO FUNC  \\\\
-\\\\*******************////
 
+///ACCEL/GYRO FUNC///
 void calculate_IMU_error() {
   // We can call this funtion in the setup section to calculate the accelerometer and gyro data error. From here we will get the error values used in the above equations printed on the Serial Monitor.
   // Note that we should place the IMU flat in order to get the proper values, so that we then can the correct values
@@ -397,6 +389,8 @@ void MeasureGyro(){
   roll = 0.96 * gyroAngleX + 0.04 * accAngleX;
   pitch = 0.96 * gyroAngleY + 0.04 * accAngleY;
 
+  //roll=gyroAngleX;
+  //pitch=gyroAngleY;
 
   RollTransfer=roll*TransferGain;
   PitchTransfer=pitch*TransferGain;
@@ -404,11 +398,17 @@ void MeasureGyro(){
   
   PitchCounter ++;
 
+  //Serial.print("\nypr  ");
+  //Serial.print(gyroAngleX);
+  //Serial.print("      ");
+  //Serial.print(roll);
+  //Serial.print("     ");
+  //Serial.println(pitch);
  }
-  ////_______________\\\\
- ////*****************\\\\
-////  ESTABLISH COMMS  \\\\
-\\\\*******************////
+
+ 
+///SERIAL SEND RECEIVE/////
+
 
 void MonitorPCHeartBeat()
 {
@@ -427,33 +427,10 @@ void MonitorPCHeartBeat()
    else
         ValidHeartBeatPC = 0;
     
-   ValidPCHeartBeatCounter = 0;
+  ValidPCHeartBeatCounter = 0;
   }
 
   
-}
-
-void MonitorPCReadiness()
-{
-//A valid PC heartbeat and PC ready flag will trigger the CommsEstablished flag
-//If there is a vaild CommsEstablished and we loose PC heart beat, commsestablished is false
-
-  unsigned long currentMillis = millis();
-  // Check if the interval has passed
-  if (currentMillis - previousMillis3 >= IntervalPCHBMonitoring) 
-  {
-    previousMillis3 = currentMillis; // Save the last time you blinked
-    //IntervalPCHBMonitoring
-    if(ValidPCReadyCounter > 0)
-    {
-        PC_Ready = 1;
-    }
-   else
-        PC_Ready = 0;
-    
-    ValidPCReadyCounter = 0;
-  }
-
 }
 
 void DeterminePCReadiness()
@@ -472,10 +449,396 @@ if(CommsEstablished && !ValidHeartBeatPC)
 }
 
 
-  ////_______________\\\\
- ////*****************\\\\
-////SERIAL SEND RECEIVE\\\\
-\\\\*******************////
+
+void SignalArduinoReadiness()
+{
+  //uint8_t* Order = (uint8_t*) ARDUINO_READY;
+  //Serial.write(Order, sizeof(uint8_t));
+  WriteOrder(ARDUINO_READY);
+}
+
+enum SerialOrder read_order()
+{
+  return (SerialOrder) Serial.read();
+} 
+ 
+void WriteOrder(enum SerialOrder CommandOrder)
+{
+  uint8_t* Order = (uint8_t*) &CommandOrder;
+  Serial.write(Order, sizeof(uint8_t));
+}
+
+void WriteInt32( int32_t num)
+{
+  int8_t buffer[4] = { (int8_t)(num & 0xff), (int8_t)(num >> 8 & 0xff), (int8_t)(num >> 16 & 0xff), (int8_t)(num >> 24 & 0xff) };
+  Serial.write((char*)buffer, 4 * sizeof(int8_t));
+}
+
+void WriteInt32_2val(int32_t num, int32_t num2)
+{
+  int32_t buffer[8] = { (int32_t)(num & 0xff), (int32_t)(num >> 8 & 0xff), (int32_t)(num >> 16 & 0xff), (int32_t)(num >> 24 & 0xff), 
+                       (int32_t)(num2 >> 32 & 0xff), (int32_t)(num2 >> 40 & 0xff), (int32_t)(num2 >> 48 & 0xff), (int32_t)(num2 >> 56 & 0xff)};
+  Serial.write((char*)buffer, 8 * sizeof(int32_t));
+}
+
+void MessagePitchRoll (){
+
+WriteInt32_2val(PitchTransfer, RollTransfer);
+
+}
+
+void MessageGyro(){
+  
+    if(Serial.available() > 0)
+  {
+    
+    SerialOrder order_received = read_order();
+    OrderReceived=order_received;
+    
+    switch(order_received){
+      
+      case PC_NOT_READY:
+      {
+          break;
+        
+       }
+      
+      case REQUEST_ROLL:
+      {
+        float TransferValue=roll*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ROLL;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      case REQUEST_PITCH:
+      {
+        
+        float TransferValue=pitch*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_PITCH;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+      case REQUEST_YAW:
+      {
+        float TransferValue=yaw*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_YAW; 
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+
+      case REQUEST_ACCEL_X:
+      {
+        float TransferValue=AccX*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_X;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      case REQUEST_ACCEL_Y:
+      {
+        float TransferValue=AccY*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_Y;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+      case REQUEST_ACCEL_Z:
+      {
+        float TransferValue=AccZ*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_Z;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      default :
+      {
+        break;
+      }
+      
+      }
+  }
+  
+  }
+
+void MessageGyro(SerialOrder order_received){
+        
+    switch(order_received)
+  {
+      
+      case PC_NOT_READY:
+      {
+          break;
+        
+       }
+      
+      case REQUEST_ROLL:
+      {
+        float TransferValue=roll*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ROLL;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+    
+        MeasurementRequested =0;
+        RollRequest = 0;
+        break;
+      }
+      
+      case REQUEST_PITCH:
+      {
+        
+        float TransferValue=pitch*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_PITCH;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+    
+        MeasurementRequested =0;
+        PitchRequest = 0;   
+        break;
+      }
+
+      case REQUEST_YAW:
+      {
+        float TransferValue=yaw*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_YAW; 
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+    
+        MeasurementRequested =0;
+        YawRequest = 0;   
+        break;
+      }
+
+
+      case REQUEST_ACCEL_X:
+      {
+        float TransferValue=AccX*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_X;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+    
+        MeasurementRequested =0;
+        AccXRequest = 0;
+        break;
+      }
+      
+      case REQUEST_ACCEL_Y:
+      {
+        float TransferValue=AccY*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_Y;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+    
+        MeasurementRequested =0;
+        AccYRequest = 0;
+        break;
+      }
+
+      case REQUEST_ACCEL_Z:
+      {
+        float TransferValue=AccZ*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_Z;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+    
+        MeasurementRequested =0;
+        AccZRequest = 0;
+        break;
+      }
+    
+    default :
+    {
+        break;
+    }
+      
+    }
+  
+  
+  }
+
+void PeekMessage()
+{
+ if(Serial.available() > 0)
+  {
+      char incomingChar = Serial.peek();
+      SerialOrder CommandReceived = (SerialOrder)incomingChar;
+    
+  switch(CommandReceived)
+  {
+
+      case PC_NOT_READY:
+      {
+          Serial.read();
+          break;
+      }
+      case PC_READY:
+      {
+          Serial.read();
+          PC_Ready = 1;
+          //CommsEstablished = 1;
+          break;
+      }
+     case PC_HEARTBEAT:
+      {
+          Serial.read();
+          ValidPCHeartBeatCounter++;
+          break;
+      }
+     case REQUEST_ROLL:
+      {
+          RollRequest = 1;
+          MeasurementRequested = REQUEST_ROLL;
+          break;
+      }   
+     case REQUEST_PITCH:
+      {
+          PitchRequest = 1;
+          MeasurementRequested = REQUEST_PITCH;
+          break;
+      }
+     case REQUEST_YAW:
+      {
+          YawRequest = 1;
+          MeasurementRequested = REQUEST_YAW;
+          break;
+      }
+     case REQUEST_ACCEL_X:
+      {
+          AccXRequest = 1;
+          MeasurementRequested = REQUEST_ACCEL_X;
+          break;
+      }
+     case REQUEST_ACCEL_Y:
+      {
+          AccYRequest = 1;
+          MeasurementRequested = REQUEST_ACCEL_Y;
+          break;
+      }
+     case REQUEST_ACCEL_Z:
+      {
+          AccZRequest = 1;
+          MeasurementRequested = REQUEST_ACCEL_Z;
+          break;
+      }
+     default :
+      {
+      break; 
+    }   
+    
+  }
+  
+  }
+  
+}
+
+
+void PeakAndMessagePC()
+{
+
+    if(Serial.available() > 0)
+  {
+  char incomingChar = Serial.peek();
+  SerialOrder CommandReceived = (SerialOrder)incomingChar;
+
+switch(CommandReceived){
+      
+      case PC_NOT_READY:
+      {
+          Serial.read();
+          break;
+        
+       }
+      
+      case REQUEST_ROLL:
+      {
+        Serial.read();
+        float TransferValue=roll*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ROLL;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      case REQUEST_PITCH:
+      {
+        
+        Serial.read();        
+        float TransferValue=pitch*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_PITCH;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+      case REQUEST_YAW:
+      {
+        Serial.read();
+        float TransferValue=yaw*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_YAW; 
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+
+      case REQUEST_ACCEL_X:
+      {
+        Serial.read();        
+        float TransferValue=AccX*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_X;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      case REQUEST_ACCEL_Y:
+      {
+        Serial.read();        
+        float TransferValue=AccY*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_Y;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+
+      case REQUEST_ACCEL_Z:
+      {
+        Serial.read();        
+        float TransferValue=AccZ*TransferGain;
+        int32_t ValueToSend=TransferValue;
+        OrderSent=MEASURED_ACCEL_Z;
+        WriteOrder(OrderSent);
+        WriteInt32(ValueToSend);
+        break;
+      }
+      
+      }
+  }
+}
 
 void SignalArdReady()
 {
@@ -526,69 +889,53 @@ void SendHeartBeat()
 
 }
 
-void ReadAndParseData()
+void ReadAndParseSerial()
 {
   if(Serial.available())
   {
-   int bytesread = Serial.readBytes(DataPacketReceived,6);
-   DataPacketReceived[7] = '\0';
-   int j =0; //data added
-   for(int i =0; i< 6; i++)
-   {
-    
-    if((IsValidCommand((int)DataPacketReceived[i])) && j < MAX_PACKET_SIZE)
-    {
-      buffin[j] = DataPacketReceived[i];
-      j++;
-    }
-   }
-  }
-  if(!Serial.available())
-  {
-   for(int i =0; i< 6; i++)
-   {
-    //Once the Program exits, there is no serial
-    //so fill the buffer with empty, this
-    //is for the PC ready, HB flags.
-      buffin[i] = '\0';
-   }
+  char currentByte = (char)Serial.read(); // Pulls one byte out of the ring buffer
+
+        // Case A: Detect start marker to sync or reset the frame
+        if (currentByte == START_MARKER) 
+        {
+            bufferIndex = 0;
+            isReceiving = true;
+           
+        }
+
+        // Case B: If we are in the middle of capturing a packet
+        if (isReceiving) {
+            
+            // If we hit the end marker, the packet is whole and complete
+            if (currentByte == END_MARKER) {
+                buffin[bufferIndex] = '\0'; // Manually append null-terminator for string safety
+                
+                // Route the clean text string to your execution logic
+                //executeReceivedCommand(incomingPacketBuffer);
+                
+                // Reset state for the next incoming packet
+                isReceiving = false;
+                bufferIndex = 0;
+            } 
+            // Otherwise, keep appending normal data characters
+            else {
+                // Prevent memory corruption / buffer overflow on the Arduino array
+                if (bufferIndex < (MAX_PAYLOAD_SIZE - 1)) {
+                    buffin[bufferIndex] = currentByte;
+                    bufferIndex++;
+                } 
+                else {
+                    // Error: PC sent a packet larger than MAX_PAYLOAD_SIZE. 
+                    // Force a reset of the parser to clear the corrupted state.
+                    isReceiving = false;
+                    bufferIndex = 0;
+                }
+            }
+
+        
   }
 }
-
-void ProcessInformation()
-{
-  int DataPacketSize = strlen(buffin);
-  int CommandsReceived[DataPacketSize];
-
-   if(DataPacketSize>0)
-   {
-
-    for(int i=0; i < DataPacketSize; i++)
-    {
-      CommandsReceived[i] = (int)buffin[i];
-    }
-   }
-     
-     for(int i=0; i < DataPacketSize; i++)
-    {
-      if(CommandsReceived[i] == PC_HEARTBEAT)
-      {
-             ValidPCHeartBeatCounter++;
-      }
-
-      if(CommandsReceived[i] == PC_READY)
-      {
-            ValidPCReadyCounter++;
-      }
-    }
-   
 }
-
-
-  ////________________\\\\
- ////******************\\\\
-////DIAGNOSIS,INDICATION\\\\
-\\\\*******************////
 
 void FlashBulb(int duration)
 {
@@ -609,69 +956,3 @@ void BulbOFF()
 {
   digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
 }
-
-  ////________________\\\\
- ////******************\\\\
-////  HELPER FUNCTIONS  \\\\
-\\\\*******************////
-
-bool IsValidCommand(int command)
-{
-  SerialOrder CommandRec = (SerialOrder)command;
-
-    
-    switch (CommandRec)
-    {
-    case MEASURED_ROLL:
-    {   
-        return true;
-    }
-    case MEASURED_PITCH:
-    {  
-        return true;
-    }
-    case MEASURED_YAW:
-    {   
-        return true;
-    }
-    case MEASURED_ACCEL_X:
-    {   
-        return true;
-    }
-    case MEASURED_ACCEL_Y:
-    {   
-        return true;
-    }
-    case MEASURED_ACCEL_Z:
-    {   
-        return true;
-    }
-    case ARDUINO_READY:
-    {   
-        return true;
-    }
-    case PC_READY:
-    {   
-        return true;
-    }
-    case PC_HEARTBEAT:
-    {   
-        return true;
-    }    
-    default:
-    {
-        return false; //No valid order has been found.
-    }
-    }
-
-  
-}
-
-/*
-**************************************************************
-**************************************************************
-***-----------UNUSED FUNCTIONS FROM HERE ON----------------***
-***Functions from here on are unused for now, kept for
-***Reference
-*************************************************************
-*/

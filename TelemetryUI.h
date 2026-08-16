@@ -21,6 +21,7 @@
 class TelemetryUI {
 public:
 	TelemetryUI();
+	void AssignArduinos();
 	void InitializeTelemetry();
 
 	void RenderYaw();

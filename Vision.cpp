@@ -315,6 +315,17 @@ double Vision::compare_hu(Mat& img, Mat& img2, double& match, double& Ma) {
 
 }
 
+void Vision::HSVScale(int low_H, int low_S, int low_V, int high_H, int high_S, int high_V) {
+
+	// Convert from BGR to HSV colorspace
+	cvtColor(fr, frHSV, COLOR_BGR2HSV);
+	// Detect the object based on HSV Range Values
+	inRange(frHSV, Scalar(low_H, low_S, low_V), Scalar(high_H, high_S, high_V), frThresh);
+	// Show the frames
+	imshow(window_capture_name, fr);
+	imshow(window_detection_name, frThresh);
+
+}
 
 void Vision::get_back_proj(Mat& color, Mat& color2, Mat& imgtresh, Mat& imgtresh2, int t_l, int t_h, int t_l2, int t_h2) {
 	//Uses a provided histogram (color) and finds the 

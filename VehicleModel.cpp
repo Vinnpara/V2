@@ -88,6 +88,13 @@ void VehicleModel::UpdateAttitudeValues(float Y, float P, float R) {
     this->Roll = R;
 }
 
+void VehicleModel::Update2AttiudeValues(float P, float R) {
+	
+	this->Pitch = P;
+	this->Roll = R;
+	this->Yaw = 0;
+}
+
 void VehicleModel::Draw() {
 
 	Gr1->Draw3D(C1, Pitch, Yaw , Roll);

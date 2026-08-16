@@ -35,3 +35,7 @@ Gyro sometimes freezes on one axis. Radar doesn't draw but gets the values.
 09/18
 Serials work properly now, robot gets gyro data and radar. They seem stable now. Added Vision class and all dependent
 source files. 
+
+2026/08/16
+Major update. Revised serial communication using data packets and a circular buffer on the PC side. Changes made to arduino code.
+Added a Heartbeat and comms established flags, to monitor readiness of both devices.

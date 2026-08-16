@@ -1,4 +1,7 @@
 #include <serial\SerialPort.h>
+#include <SerialConnectionSpeed.h>
+#include <iostream>
+#include <windows.h>
 
 SerialPort::SerialPort(char *portName)
 {
@@ -17,7 +20,7 @@ SerialPort::SerialPort(char *portName)
         }
     else
         {
-            printf("\nERROR!!!");
+            printf("\nERROR!!!_1");
         }
     }
     else {
@@ -67,13 +70,169 @@ SerialPort::SerialPort(char* portName, int type) {
         }
         else
         {
-            printf("\nERROR!!!");
+            printf("\nERROR!!!_2");
         }
     }
     else {
         printf("\nHANDLE NOT INVALID");
     }
 
+}
+
+SerialPort::SerialPort(char* portName, SerialSpeed BaudRate) {
+
+    this->connected = false;
+
+    this->handler = CreateFileA(static_cast<LPCSTR>(portName),
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (this->handler == INVALID_HANDLE_VALUE) {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+            printf("\nERROR: Handle was not attached. Reason: %s not available\n", portName);
+        }
+        else
+        {
+            printf("\nERROR!!!_1");
+        }
+    }
+    else {
+        DCB dcbSerialParameters = { 0 };
+
+        if (!GetCommState(this->handler, &dcbSerialParameters)) {
+            printf("\nfailed to get current serial parameters");
+        }
+        else {
+            switch (BaudRate) {
+               case BAUD_RATE_9600:
+               {
+                   dcbSerialParameters.BaudRate = CBR_9600;
+                   break;
+               }
+               case BAUD_RATE_57600:
+               {
+                   dcbSerialParameters.BaudRate = CBR_57600;
+                   break;
+               }
+               case BAUD_RATE_115200:
+               {
+                   dcbSerialParameters.BaudRate = CBR_115200;
+                   break;
+               }
+               default:
+               {
+                   dcbSerialParameters.BaudRate = CBR_9600;
+                   break;
+               }
+            }
+            dcbSerialParameters.ByteSize = 8;
+            dcbSerialParameters.StopBits = ONESTOPBIT;
+            dcbSerialParameters.Parity = NOPARITY;
+            dcbSerialParameters.fDtrControl = DTR_CONTROL_ENABLE;
+
+            if (!SetCommState(handler, &dcbSerialParameters))
+            {
+                printf("\nALERT: could not set Serial port parameters\n");
+            }
+            else {
+                this->connected = true;
+                PurgeComm(this->handler, PURGE_RXCLEAR | PURGE_TXCLEAR);
+                Sleep(ARDUINO_WAIT_TIME);
+                printf("\nARD PORT CONNECTED\n");
+                printf("\n \n");
+                printf(portName);
+            }
+        }
+    }
+
+
+}
+
+void SerialPort::InitializeSerial(char* portName) {
+
+    this->connected = false;
+
+
+    this->handler = CreateFileA(static_cast<LPCSTR>(portName),
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (this->handler == INVALID_HANDLE_VALUE) {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+            printf("\nERROR: Handle was not attached. Reason: %s not available\n", portName);
+        }
+        else
+        {
+            printf("\nERROR!!!_1");
+        }
+    }
+
+    this->Port = portName;
+}
+
+void SerialPort::SetBaudRate(SerialSpeed BaudRate) {
+
+    if (this->handler != INVALID_HANDLE_VALUE) {
+
+        DCB dcbSerialParameters = { 0 };
+
+        if (!GetCommState(this->handler, &dcbSerialParameters)) {
+            printf("\nfailed to get current serial parameters");
+        }
+        else {
+            switch (BaudRate) {
+            case BAUD_RATE_9600:
+            {
+                dcbSerialParameters.BaudRate = CBR_9600;
+                break;
+            }
+            case BAUD_RATE_57600:
+            {
+                dcbSerialParameters.BaudRate = CBR_57600;
+                break;
+            }
+            case BAUD_RATE_115200:
+            {
+                dcbSerialParameters.BaudRate = CBR_115200;
+                break;
+            }
+            default:
+            {
+                dcbSerialParameters.BaudRate = CBR_9600;
+                break;
+            }
+            }
+            dcbSerialParameters.ByteSize = 8;
+            dcbSerialParameters.StopBits = ONESTOPBIT;
+            dcbSerialParameters.Parity = NOPARITY;
+            dcbSerialParameters.fDtrControl = DTR_CONTROL_ENABLE;
+
+            if (!SetCommState(handler, &dcbSerialParameters))
+            {
+                printf("\nALERT: could not set Serial port parameters\n");
+            }
+            else {
+                this->connected = true;
+                PurgeComm(this->handler, PURGE_RXCLEAR | PURGE_TXCLEAR);
+                Sleep(ARDUINO_WAIT_TIME);
+                printf("\nARD PORT CONNECTED\n");
+                printf("\n \n");
+                if (Port != nullptr)
+                {
+                    printf(Port);
+                }
+                else
+                    printf("UNDEFINED PORT ");
+            }
+        }
+    }
 }
 
 SerialPort::~SerialPort()
@@ -160,5 +319,64 @@ void SerialPort::SerialClose() {
         CloseHandle(this->handler);
         printf("\nSERIAL CLOSED");
     }
+
+}
+
+int SerialPort::ReadSerialPortAfterPeek(char* buffer, unsigned int buf_size)
+{
+    DWORD bytesRead;
+    unsigned int toRead = 0;
+
+    if (!connected) return 0;
+
+    // 1. If a peek() happened before this, consume and clear the cache
+    if (isCacheFull) {
+        isCacheFull = false;
+        return (unsigned char)peekCache;
+    }
+    // 2. Otherwise, do a normal standard hardware read
+    
+    /*char incomingByte;
+    if (ReadFile(this->handler, &incomingByte, 1, &bytesRead, NULL) && bytesRead > 0) {
+        return (unsigned char)incomingByte;
+    }*/
+
+    if (this->status.cbInQue > 0) {
+        if (this->status.cbInQue > buf_size) {
+            toRead = buf_size;
+        }
+        else toRead = this->status.cbInQue;
+    }
+
+    if (ReadFile(this->handler, buffer, toRead, &bytesRead, NULL)) return bytesRead;
+
+    return 0;
+}
+
+unsigned char SerialPort::Peek(char* buffer)
+{
+    if (!this->connected) return 0;
+
+    if (isCacheFull) {
+        return (unsigned char)peekCache;
+    }
+
+    DWORD errors,
+          bytesRead;
+    COMSTAT status;
+
+    ClearCommError(this->handler, &this->errors, &this->status);
+
+    if (this->status.cbInQue > 0) 
+    {
+        // Destructively pull 1 byte out of the Windows hardware queue
+        if (ReadFile(this->handler, &peekCache, 1, &bytesRead, NULL) && bytesRead > 0) {
+            //buffer = &peekCache;
+            isCacheFull = true; // Lock it into our software layer
+            return (unsigned char)peekCache;
+        }
+    }
+
+    return 0; // Buffer was totally empty
 
 }
