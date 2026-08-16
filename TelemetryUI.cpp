@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <fstream>
 
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
@@ -22,6 +23,13 @@
 #include<serial/SerialOrder.h>
 #include <ArduinoReceiver.h>
 #include<SerialPortSelection.h>
+#include <SerialConnectionSpeed.h>
+
+#include <CircularBuffer.h>
+
+#include <TestWindow.h>
+#include <Windows.h>
+#include <BoardSelection.h>
 
 TextRender* T1;
 VehicleModel* VM1;
@@ -33,13 +41,175 @@ char* Port = "\\\\.\\COM3";
 
 //ArduinoReceiver Ard1;
 
-ArduinoReceiver ArdRadar(COM5);
-ArduinoReceiver ArdGyro(COM3);
-ArduinoReceiver ArdMotorSteer(COM8);
+//ArduinoReceiver ArdRadar(COM8);
+//ArduinoReceiver ArdGyro(COM9);
+//ArduinoReceiver ArdMotorSteer(COM5);
+
+ArduinoReceiver ArdRadar;
+ArduinoReceiver ArdGyro;
+ArduinoReceiver ArdMotorSteer;
+
+//static float TotalElapsedTime;
+
+float TelemetryUI::ReturnTotalTime() {
+
+    return TotalElapsedTime;
+
+}
 
 TelemetryUI::TelemetryUI() {
 
 
+
+}
+
+void TelemetryUI::AssignBoards() {
+
+    TestWindow* tWindow = new TestWindow();
+
+    bool run = true;
+
+    while (run)
+    {
+        tWindow->Assignments();
+
+        if (!tWindow->ProcessMessages())
+        {
+            run = false;
+            std::cout << "Close window";
+            std::cout << "\nBOARD_1 " << tWindow->board1;
+            std::cout << "\nBOARD_2 " << tWindow->board2;
+            std::cout << "\nBOARD_3 " << tWindow->board3;
+
+        }
+
+        Sleep(1);
+
+    }
+    int ArdBoard1 = tWindow->board1;
+    int ArdBoard2 = tWindow->board2;
+    int ArdBoard3 = tWindow->board3;
+
+    ArdMotorSteer.AssignPort((SerialName)ArdBoard1);
+
+    //ArdRadar.AssignPort((SerialName)ArdBoard2);
+    //ArdRadar.SetBaudRate(BAUD_RATE_9600);
+
+    ArdRadar.SetArdPort((SerialName)ArdBoard2);
+    ArdRadar.SetBaudRate(BAUD_RATE_9600);
+
+    //std::cout << "\n Board Selected " << (SerialName)ArdBoard2 << " " << tWindow->board2;
+
+    //ArdGyro.AssignPort((SerialName)ArdBoard3, BAUD_RATE_57600);
+    ArdGyro.SetArdPort((SerialName)ArdBoard3);
+    ArdGyro.SetBaudRate(BAUD_RATE_115200);
+
+    delete tWindow;
+
+
+}
+
+void TelemetryUI::ViewDiagnostics() {
+
+    //TestWindow* tWindow = new TestWindow(Diagnostic);
+
+   /*bool windowrun = true;
+
+    if (windowrun)
+    {
+        //tWindow->Assignments();
+
+        double RollVal = Yaw;
+        //DiagWindow->UpdateDaignostcs(RollVal);
+        DiagWindow->DisplayDiagnostics();
+        
+        if (!DiagWindow->ProcessMessages())
+        {
+            windowrun = false;
+            //std::cout << "Close window";
+            //std::cout << "\nBOARD_1 " << tWindow->board1;
+            //std::cout << "\nBOARD_2 " << tWindow->board2;
+           // std::cout << "\nBOARD_3 " << tWindow->board3;
+
+        }
+
+        //Sleep(10);
+
+    }*/
+
+
+}
+
+void TelemetryUI::UpdateDiagnosticsWindow(TestWindow window) {
+
+    double PitchVal = Pitch;
+    double RollVal = Roll;
+    double YawVal = Yaw;
+    unsigned long TimeVal = ElapsedTime;
+
+    window.UpdateDaignostcs(PitchVal,RollVal,YawVal, TimeVal);
+
+
+}
+
+void TelemetryUI::DrawDiagnosticsData(TestWindow window) {
+
+    
+    
+    //DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
+
+
+    RECT PitchText;
+    PitchText.left = 30,
+    PitchText.top = 10,
+        PitchText.right = 100,
+        PitchText.bottom = 25
+        ;
+
+    RECT RollText;
+    RollText.left = 30,
+        RollText.top = 40,
+        RollText.right = 100,
+        RollText.bottom = 25
+        ;
+
+    RECT YawText;
+    YawText.left = 30,
+        YawText.top = 70,
+        YawText.right = 100,
+        YawText.bottom = 25
+        ;
+
+    RECT rect;
+    rect.left = PitchText.left + 210; //where is appears
+    rect.top = PitchText.top;
+    rect.right = PitchText.right;
+    rect.bottom = PitchText.bottom;
+
+    RECT rect1;
+    rect1.left = RollText.left + 210; //where is appears
+    rect1.top = RollText.top + 35;
+    rect1.right = RollText.right;
+    rect1.bottom = RollText.bottom;
+
+    RECT rect2;
+    rect2.left = YawText.left + 210; //where is appears
+    rect2.top = YawText.top + 60;
+    rect2.right = YawText.right;
+    rect2.bottom = YawText.bottom;
+
+
+    HWND hWnd  = window.ReturnWindowHandle();
+    HDC dc = GetDC(hWnd);
+    RECT rc;
+    GetClientRect(hWnd, &rc);
+
+    /*DrawText(dc, window.GetPitchWritten(), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawText(dc, window.GetRollWritten(), -1, &rect1, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawText(dc, window.GetYawWritten(), -1, &rect2, DT_CENTER | DT_VCENTER | DT_SINGLELINE);*/
+    ReleaseDC(hWnd, dc);
+
+    //std::cout << "\nWINDOW PITCH VALUE.......  " << window.GetPitchWritten();
 
 }
 
@@ -55,6 +225,43 @@ void TelemetryUI::InitializeTelemetry() {
 
 	T1->PrepareTextVS();
 
+}
+
+void TelemetryUI::EstablishComms(static bool& CommsEstablished, static bool& ReadyforFirstReading)
+{
+    ArdGyro.EstablishComms(CommsEstablished);
+
+    if (CommsEstablished)
+        ReadyforFirstReading = 1;
+}
+
+void TelemetryUI::EstablishedCommunicationsArdGyro(static bool &GyroArduinoCommsEstablished)
+{
+    std::vector<std::string> DataPackets;
+
+    if (!GyroArduinoCommsEstablished)
+        ArdGyro.EstablishComms(GyroArduinoCommsEstablished, DataPackets);
+
+
+}
+
+void TelemetryUI::EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished)
+{
+    std::vector<std::string> DataPackets;
+
+    if (!RadarArduinoCommsEstablished)
+        ArdRadar.EstablishComms(RadarArduinoCommsEstablished, DataPackets);
+
+    ArdRadar.EstablishComms(RadarArduinoCommsEstablished, DataPackets);
+
+}
+
+void TelemetryUI::ListenForArduinoReadiness(static bool& RadarArduinoReady)
+{
+    std::vector<std::string> DataPackets;
+
+    if (!RadarArduinoReady)
+        ArdRadar.ListenForArduinoReadiness(RadarArduinoReady, DataPackets);
 }
 
 void TelemetryUI::ReTryRequest(SerialPort& Serial, SerialOrder Command) {
@@ -132,21 +339,9 @@ void TelemetryUI::UpdateValues6Axis(float y, float p, float r, float Ax, float A
 
 }
 
-void TelemetryUI::UpdateValuesRadar(int16_t RadarValue, int16_t RadarPosition) {
-    
-    ArdRadar.ReadRadar2();
-
-    this->RadarVal = RadarValue;
-    this->RadarPos = RadarPosition;
-
-    Radval = std::to_string(ArdRadar.GetRadarVal());
-    Radpos = std::to_string(ArdRadar.GetRadarPos());
-
-}
-
 void TelemetryUI::UpdateValuesRadar() {
     
-    ArdRadar.ReadRadarDefaultPort();
+    //ArdRadar.ReadRadarDefaultPort();
 
 
     Radval = std::to_string(ArdRadar.GetRadarVal());
@@ -157,7 +352,8 @@ void TelemetryUI::UpdateValuesRadar() {
 
 void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
-    ArdGyro.ReadArduino3Attitudes();
+    ArdGyro.ReadArduinoAttitudeAccel();
+    //ArdGyro.ReadArduino3Attitudes();
 
     //Ard1.ReadArduino3Attitudes();
     //Ard1.ReadRadar();
@@ -170,11 +366,15 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
     //this->Roll = Ard1.GetRoll();
     //this->Pitch = Ard1.GetPitch();
 
-    float Yaw, Pitch ,Roll;
+    //float Yaw, Pitch ,Roll;
 
     Yaw = ArdGyro.GetYaw();
     Pitch = ArdGyro.GetPitch();
     Roll = ArdGyro.GetRoll();
+
+    AccelX = ArdGyro.GetAccelX();
+    AccelY = ArdGyro.GetAccelY();
+    AccelZ = ArdGyro.GetAccelZ();
 
     FilterVal(180.0f, -180.0f, Yaw);
     FilterVal(180.0f, -180.0f, Pitch);
@@ -189,7 +389,240 @@ void TelemetryUI::UpdateValues3Attitude(float y, float p, float r) {
 
 }
 
+void TelemetryUI::Update2Axis3Accel() {
+    
+    float TempTime,
+          TimeInSeconds;
+    
+    ArdGyro.ReadArduino3Accel2Attitude();
+    //ArdGyro.ReadPitchRoll();
 
+    //Yaw = ArdGyro.GetYaw();
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
+
+    AccelX = ArdGyro.GetAccelX();
+    AccelY = ArdGyro.GetAccelY();
+    AccelZ = ArdGyro.GetAccelZ();
+
+    PitchValid = ArdGyro.GetValidPitch();
+    RollValid = ArdGyro.GetValidRoll();
+
+    ElapsedTime = ArdGyro.GetTime();
+
+    /*if (ElapsedTime >= 1000 || ElapsedTime <= -1000)
+        ElapsedTime = 0;*/
+
+    //FilterVal(180.0f, -180.0f, Yaw);
+    FilterVal(180.0f, -180.0f, Pitch);
+    FilterVal(180.0f, -180.0f, Roll);
+
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    //sprintf_s(YawRead, "%f", Yaw);
+    VM1->Update2AttiudeValues(Pitch, Roll);
+
+    TempTime = (float)ElapsedTime;
+    TimeInSeconds = (TempTime / 100);
+
+
+    TotalElapsedTime += TimeInSeconds;
+}
+
+void TelemetryUI::Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, static bool& GyroArduinoCommsEstablished, static bool& FirstReading)
+{
+    float TempTime,
+        TimeInSeconds;
+
+    CircularBuffer<unsigned char> GyroscopeBufferIn{ 50 };
+    std::vector<std::string> DataPackets;
+    
+    ArdGyro.RequestPitch();
+    ArdGyro.ReadIntoBuffer(GyroscopeBufferIn);
+    ArdGyro.ParseBuffer(GyroscopeBufferIn, DataPackets);
+    ArdGyro.RefineDataPackets(DataPackets);
+    ArdGyro.ProcessDataPackets(DataPackets);
+
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
+
+    if (GyroArduinoCommsEstablished)
+    {
+
+        //ArdGyro.ReadPitchRoll(RollReceived, PitchReceived, FirstReading);
+        //ArdGyro.ReadIntoBuffer();
+
+        //ArdGyro.ReadArduino3Accel2Attitude();
+        //ArdGyro.ReadPitchRoll();
+
+        //Yaw = ArdGyro.GetYaw();
+        //Pitch = ArdGyro.GetPitch();
+        // Roll = ArdGyro.GetRoll();
+
+        AccelX = ArdGyro.GetAccelX();
+        AccelY = ArdGyro.GetAccelY();
+        AccelZ = ArdGyro.GetAccelZ();
+
+        PitchValid = ArdGyro.GetValidPitch();
+        RollValid = ArdGyro.GetValidRoll();
+    }
+
+    ElapsedTime = ArdGyro.GetTime();
+
+    /*if (ElapsedTime >= 1000 || ElapsedTime <= -1000)
+        ElapsedTime = 0;*/
+
+        //FilterVal(180.0f, -180.0f, Yaw);
+    FilterVal(180.0f, -180.0f, Pitch);
+    FilterVal(180.0f, -180.0f, Roll);
+
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    //sprintf_s(YawRead, "%f", Yaw);
+    VM1->Update2AttiudeValues(Pitch, Roll);
+
+    TempTime = (float)ElapsedTime;
+    TimeInSeconds = (TempTime / 100);
+
+
+    TotalElapsedTime += TimeInSeconds;
+}
+
+void TelemetryUI::UpdateValuesRadar(bool& HBDetected, static bool& RadarArduinoCommsEstablished) {
+
+    /*ArdRadar.ReadRadar2();
+
+    this->RadarVal = RadarValue;
+    this->RadarPos = RadarPosition;
+
+    Radval = std::to_string(ArdRadar.GetRadarVal());
+    Radpos = std::to_string(ArdRadar.GetRadarPos());*/
+
+    CircularBuffer<unsigned char> RadarBufferIn{ 50 };
+    std::vector<std::string> DataPackets;
+
+
+    ArdRadar.ReadIntoBuffer(RadarBufferIn);
+    ArdRadar.ParseBufferRad(RadarBufferIn, HBDetected, DataPackets);
+    ArdRadar.RefineDataPackets(DataPackets);
+    ArdRadar.ProcessDataPackets(DataPackets, RADAR_BOARD);
+
+    int RadarDist = ArdRadar.GetRadarVal();
+    int RadarPos = ArdRadar.GetRadarVal();
+
+    //std::cout << "\n Radar Distance, position " << RadarDist << " " << RadarPos;
+
+}
+
+void TelemetryUI::UpdateValuesRadar(bool& HBDetected, bool& BoardReadiness, static bool& RadarArduinoCommsEstablished)
+{
+    /*ArdRadar.ReadRadar2();
+
+     this->RadarVal = RadarValue;
+     this->RadarPos = RadarPosition;
+
+     Radval = std::to_string(ArdRadar.GetRadarVal());
+     Radpos = std::to_string(ArdRadar.GetRadarPos());*/
+
+    CircularBuffer<unsigned char> RadarBufferIn{ 50 };
+    std::vector<std::string> DataPackets;
+
+
+    ArdRadar.ReadIntoBuffer(RadarBufferIn);
+    ArdRadar.ParseBufferRad(RadarBufferIn, HBDetected, BoardReadiness, DataPackets);
+    ArdRadar.RefineDataPackets(DataPackets);
+    ArdRadar.ProcessDataPackets(DataPackets, RADAR_BOARD);
+
+    int RadarDist = ArdRadar.GetRadarVal();
+    int RadarPos = ArdRadar.GetRadarVal();
+
+    //std::cout << "\n Radar Distance, position " << RadarDist << " " << RadarPos;
+
+}
+
+void TelemetryUI::Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, bool& HBDetected, static bool& GyroArduinoCommsEstablished, static bool& FirstReading)
+{
+    float TempTime,
+        TimeInSeconds;
+
+    CircularBuffer<unsigned char> GyroscopeBufferIn{ 50 };
+    std::vector<std::string> DataPackets;
+
+    ArdGyro.RequestPitch();
+    ArdGyro.ReadIntoBuffer(GyroscopeBufferIn);
+    ArdGyro.ParseBuffer(GyroscopeBufferIn, HBDetected, DataPackets);
+    ArdGyro.RefineDataPackets(DataPackets);
+    ArdGyro.ProcessDataPackets(DataPackets);
+
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
+
+    if (GyroArduinoCommsEstablished)
+    {
+
+        //ArdGyro.ReadPitchRoll(RollReceived, PitchReceived, FirstReading);
+        //ArdGyro.ReadIntoBuffer();
+
+        //ArdGyro.ReadArduino3Accel2Attitude();
+        //ArdGyro.ReadPitchRoll();
+
+        //Yaw = ArdGyro.GetYaw();
+        //Pitch = ArdGyro.GetPitch();
+        // Roll = ArdGyro.GetRoll();
+
+        AccelX = ArdGyro.GetAccelX();
+        AccelY = ArdGyro.GetAccelY();
+        AccelZ = ArdGyro.GetAccelZ();
+
+        PitchValid = ArdGyro.GetValidPitch();
+        RollValid = ArdGyro.GetValidRoll();
+    }
+
+    ElapsedTime = ArdGyro.GetTime();
+
+    /*if (ElapsedTime >= 1000 || ElapsedTime <= -1000)
+        ElapsedTime = 0;*/
+
+        //FilterVal(180.0f, -180.0f, Yaw);
+    FilterVal(180.0f, -180.0f, Pitch);
+    FilterVal(180.0f, -180.0f, Roll);
+
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    //sprintf_s(YawRead, "%f", Yaw);
+    VM1->Update2AttiudeValues(Pitch, Roll);
+
+    TempTime = (float)ElapsedTime;
+    TimeInSeconds = (TempTime / 100);
+
+
+    TotalElapsedTime += TimeInSeconds;
+}
+
+void TelemetryUI::Update2Axis3AccelFromBuffer() {
+
+    ArdGyro.ReadBufferArduino3Accel2Attitude();
+    //Yaw = ArdGyro.GetYaw();
+    Pitch = ArdGyro.GetPitch();
+    Roll = ArdGyro.GetRoll();
+
+    AccelX = ArdGyro.GetAccelX();
+    AccelY = ArdGyro.GetAccelY();
+    AccelZ = ArdGyro.GetAccelZ();
+
+    PitchValid = ArdGyro.GetValidPitch();
+    RollValid = ArdGyro.GetValidRoll();
+
+    //FilterVal(180.0f, -180.0f, Yaw);
+    FilterVal(180.0f, -180.0f, Pitch);
+    FilterVal(180.0f, -180.0f, Roll);
+
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    //sprintf_s(YawRead, "%f", Yaw);
+    VM1->Update2AttiudeValues(Pitch, Roll);
+
+}
 
 void TelemetryUI::UpdateValues3Accel(float Ax, float Ay, float Az) {
 
@@ -319,11 +752,11 @@ void TelemetryUI::ReadBuffer(SerialPort& Serial, SerialOrder Command, static boo
         {
             //The PC is not getting any valid values so do not write into serial on ard.
 
-            SerialOrder OrderWait = PC_NOT_READY;
+            //SerialOrder OrderWait = 0;
 
-            char buff[1] = { OrderWait };
+            //char buff[1] = { OrderWait };
             //bool TransferReceived = false;
-            bool TransferFail = Serial.writeSerialPort(buff, 1);
+            //bool TransferFail = Serial.writeSerialPort(buff, 1);
             //cout << "\nBAD ENUM RECEVIED " <<endl;
             //char InternalBuffer[MAX_DATA_LENGTH];
             //Serial.readSerialPort(InternalBuffer, MAX_DATA_LENGTH);
@@ -486,6 +919,10 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
 
     float JoyStickSteer = AxesArr[0];
     float ThrottleAngle = AxesArr[4];
+    float ReversAngle = AxesArr[5];
+
+    SteerAngle = JoyStickSteer;
+    TrothleAngle = ThrottleAngle;
 
     float RawSteerCommand = ConvertValue(JoyStickSteer, 48.0f, 58.0f);
     int8_t SteerIn = (int8_t)RawSteerCommand;
@@ -494,7 +931,11 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
     float RawThrottleCommand = ConvertValue(ThrottleAngle, 50.0f, 50.0f);
     int8_t ThrottleIn = (int8_t)RawThrottleCommand;
 
+    float RawReverseCommand = ConvertValue(ReversAngle, 50.0f, 50.0f);
+    int8_t ReverseIn = (int8_t)RawReverseCommand;
 
+    SteerAngle = SteerIn;
+    TrothleAngle = ThrottleIn;
 
     //ArdMotorSteer.KeepSerialActive();
 
@@ -504,12 +945,16 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
         
     //SteeringReq = ArdMotorSteer.ReadAndSendRequestedData(REQUEST_STEER, SteerIn);
 
-    int8_t Vals[4];
+    //int8_t Vals[4];
+    int8_t Vals[6];
 
     Vals[0] = (int8_t)STEER_COMMAND;
     Vals[1] = SteerIn;
     Vals[2] = (int8_t)MOTOR_SPEED;
     Vals[3] = ThrottleIn;
+
+    Vals[4] = (int8_t)MOTOR_REVERSE;
+    Vals[5] = ReverseIn;
 
     //Vals[0] = SteerIn;
     //Vals[1] = (int8_t)STEER_COMMAND;
@@ -518,6 +963,7 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
 
     T1->RenderTextVS(std::to_string(Vals[1]), 14.0f, 375.0f, 1.0f, Color);
     T1->RenderTextVS(std::to_string(Vals[3]), 14.0f, 415.0f, 1.0f, Color);
+    //T1->RenderTextVS(std::to_string(Vals[5]), 14.0f, 455.0f, 1.0f, Color);
 
     //ArdMotorSteer.SendCommand2I8(STEER_COMMAND, SteerIn);
     //ArdMotorSteer.SendCommand2I8(MOTOR_SPEED, ThrottleIn);
@@ -568,19 +1014,45 @@ void TelemetryUI::RenderRawSteerAngleAndMotorSpeed(const float* AxesArr) {
 
 }
 
+void TelemetryUI::CalcVelocity(){
+
+    //float AccelXCMPS = AccelX * MS_2_TO_CMS_2;
+    float TimeInSec = ElapsedTime * MILISEC_TO_SEC;
+
+    float AccelXInertia = (AccelX * cos(Pitch)) - (AccelY * sin(Roll) * sin(Pitch)) - (AccelZ * cos(Roll) * sin(Pitch));
+    float AccelYInertia = (AccelY * cos(Roll)) + (AccelZ * cos(Pitch) * sin(Roll)) - (AccelX *sin(Pitch) *sin(Roll));
+    //float AccelZInertia = ;
+
+    //AccelXInertia = (AccelXInertia-1) * MS_2_TO_CMS_2;
+    //AccelYInertia = (AccelYInertia - 1) * MS_2_TO_CMS_2;
+
+    //VelocityX = VelocityX + AccelXInertia * TimeInSec;
+    //VelocityY = VelocityY + AccelYInertia * TimeInSec;
+    VelocityX = AccelXInertia;
+    VelocityY = AccelYInertia;
+
+    VelocityCombined = sqrt((VelocityX * VelocityX) + (VelocityY * VelocityY));
+
+
+    //std::cout << "\nVELOCITY X " << VelocityX;
+}
+
 int16_t TelemetryUI::GetRadarPos() { 
     
-    return ArdRadar.GetRadarPos(); std::cout << "\nR_POS" << ArdRadar.GetRadarPos();
+    return ArdRadar.GetRadarPos(); 
 }
 
 int16_t TelemetryUI::GetRadarVal() {
 
-    return ArdRadar.GetRadarVal(); std::cout << "\nR_VAL" << ArdRadar.GetRadarVal();
+    return ArdRadar.GetRadarVal(); 
 }
 
 void TelemetryUI::OpenSerial() {
 
     ArdMotorSteer.KeepSerialActive();
+    //ArdRadar.KeepSerialActive();
+
+    TotalElapsedTime = 0;
 }
 
 void TelemetryUI::RenderModel() {
@@ -592,7 +1064,110 @@ void TelemetryUI::RenderModel() {
 }
 void TelemetryUI::CloseSerial() {
 
-    //Ard1.CloaseSerial();
+    ArdGyro.CloaseSerial();
+    ArdMotorSteer.CloaseSerial();
+    ArdRadar.CloaseSerial();
+
+    std::cout << "\n Arduino Close ";
+}
+
+/*
+void TelemetryUI::RecordData(std::ofstream DataFile) {
+
+    if (DataFile.is_open()) {
+
+        DataFile << Pitch;
+        DataFile << ",";
+        DataFile << TotalElapsedTime;
+        DataFile << "\n";
+
+    }
+
+}
+
+void TelemetryUI::OpenFile(std::ofstream DataFile) {
+
+    DataFile.open("Pitch");
+}
+
+void TelemetryUI::CloseFile(std::ofstream DataFile) {
+
+    DataFile.close();
+
+}
+*/
+
+void TelemetryUI::GetRecStartStopCommand(bool start, bool stop)
+{
+    RecStart = start;
+    RecStop = stop;
+
+    //std::cout << "\n START  " << RecStart;
+    //std::cout << "\n STOP  " << RecStop;
+
+}
+
+void TelemetryUI::InitializeDataFile()
+{
+    PitchData.SetName(PitchFile);
+    PitchData.OpenFileStr();
+
+    RollData.SetName(RollFile);
+    RollData.OpenFileStr();
+
+    AccXData.SetName(AccXFile);
+    AccXData.OpenFileStr();
+
+    AccYData.SetName(AccYFile);
+    AccYData.OpenFileStr();
+
+    AccZData.SetName(AccZFile);
+    AccZData.OpenFileStr();
+
+    SteerData.SetName(SteerCommandFile);
+    SteerData.OpenFileStr();
+
+    ThrottleData.SetName(ThrottleCommandFile);
+    ThrottleData.OpenFileStr();
+}
+
+void TelemetryUI::RecordData() {
+
+    if(RecStart && !RecStop)
+    {
+    
+        PitchData.RecordDataFloat(TotalElapsedTime,Pitch);
+        RollData.RecordDataFloat(TotalElapsedTime, Roll);
+
+        AccXData.RecordDataFloat(TotalElapsedTime, AccelX);
+        AccYData.RecordDataFloat(TotalElapsedTime, AccelY);
+        AccZData.RecordDataFloat(TotalElapsedTime, AccelZ);
+       
+        SteerFloat = (float)SteerAngle;
+        ThrottleFloat = (float)TrothleAngle;
+
+        SteerData.RecordDataFloat(TotalElapsedTime, SteerFloat);
+        ThrottleData.RecordDataFloat(TotalElapsedTime, ThrottleFloat);
+
+
+        //std::cout << "\n START  " << SteerFloat;
+        //std::cout << "\n STOP  " << ThrottleFloat;
+
+    }
+
+}
+
+void TelemetryUI::CloseDataFile() {
+
+    PitchData.CloseFile();
+    RollData.CloseFile();
+
+    AccXData.CloseFile();
+    AccYData.CloseFile();
+    AccZData.CloseFile();
+
+    SteerData.CloseFile();
+    ThrottleData.CloseFile();
 
 }
 
@@ -601,4 +1176,172 @@ TelemetryUI::~TelemetryUI() {
 	delete T1;
     delete VM1;
     //arduino.SerialClose();
+}
+
+void TelemetryUI::TimerAnchorPoint()
+{
+    LastReset = std::chrono::steady_clock::now();
+    LastReset2 = std::chrono::steady_clock::now();
+    LastReset3 = std::chrono::steady_clock::now();
+    LastReset4 = std::chrono::steady_clock::now();
+    LastReset5 = std::chrono::steady_clock::now();
+}
+void TelemetryUI::TimerFunction(int Duration)
+{
+    Now = std::chrono::steady_clock::now();
+    std::chrono::seconds TimerDuration(Duration);
+
+
+    if (Now - LastReset >= TimerDuration)
+    {
+        std::cout << "[Reset] 2 seconds have passed! TL window\n";
+
+        LastReset += TimerDuration;
+    }
+
+
+}
+
+void TelemetryUI::DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, static int& HeartBeatCounter)
+{
+    ArdGyroHeartbeat = std::chrono::steady_clock::now();
+
+    bool HeartBeatDetected = ArdGyro.ListenForHeartBeat('?');
+
+    if (HeartBeatDetected)
+        HeartBeatCounter++;
+
+    std::chrono::seconds TimerDuration(Duration);
+
+    if (ArdGyroHeartbeat - LastReset >= TimerDuration)
+    {
+        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
+        LastReset += TimerDuration;
+        TimerElapsed = 1;
+    }
+    else
+    {
+      // std::cout << "Arduino Gyro heartbeat detected\n";
+        TimerElapsed = 0;
+    }
+
+    if (TimerElapsed && (HeartBeatCounter < 1))
+        std::cout << "WARNING: Heartbeat not detected\n";
+    if(TimerElapsed && (HeartBeatCounter > 0) )
+        std::cout << "Heartbeat detected\n";
+
+    if(TimerElapsed)
+        HeartBeatCounter = 0;
+}
+
+void TelemetryUI::DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter)
+{
+    ArdGyroHeartbeat = std::chrono::steady_clock::now();
+
+    if (HeartBeatDetected)
+        HeartBeatCounter++;
+
+    std::chrono::seconds TimerDuration(Duration);
+
+    if (ArdGyroHeartbeat - LastReset3 >= TimerDuration)
+    {
+        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
+        LastReset3 += TimerDuration;
+        TimerElapsed = 1;
+    }
+    else
+    {
+        // std::cout << "Arduino Gyro heartbeat detected\n";
+        TimerElapsed = 0;
+    }
+
+    if (TimerElapsed && (HeartBeatCounter < 1))
+        std::cout << "WARNING: Heartbeat not detected\n";
+    if (TimerElapsed && (HeartBeatCounter > 0))
+        std::cout << "Heartbeat detected\n";
+
+    if (TimerElapsed)
+        HeartBeatCounter = 0;
+}
+
+void TelemetryUI::DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter)
+{
+    ArdRadarHeartBeat = std::chrono::steady_clock::now();
+
+    if (HeartBeatDetected)
+        HeartBeatCounter++;
+
+    std::chrono::seconds TimerDuration(Duration);
+
+    if (ArdRadarHeartBeat - LastReset4 >= TimerDuration)
+    {
+        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
+        LastReset4 += TimerDuration;
+        TimerElapsed = 1;
+    }
+    else
+    {
+        // std::cout << "Arduino Gyro heartbeat detected\n";
+        TimerElapsed = 0;
+    }
+
+    if (TimerElapsed && (HeartBeatCounter < 1))
+        std::cout << "WARNING: Heartbeat not detected\n";
+    if (TimerElapsed && (HeartBeatCounter > 0))
+        std::cout << "Heartbeat detected\n";
+
+    if (TimerElapsed)
+        HeartBeatCounter = 0;
+}
+
+void TelemetryUI::DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter)
+{
+    ArdRadarBoardReadniess = std::chrono::steady_clock::now();
+
+    if (BoardReadinessDetected)
+        BoardReadinessCounter++;
+
+    std::chrono::seconds TimerDuration(Duration);
+
+    if (ArdRadarBoardReadniess - LastReset5 >= TimerDuration)
+    {
+        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
+        LastReset5 += TimerDuration;
+        TimerElapsed = 1;
+    }
+    else
+    {
+        // std::cout << "Arduino Gyro heartbeat detected\n";
+        TimerElapsed = 0;
+    }
+
+    if (TimerElapsed && (BoardReadinessCounter < 1))
+        std::cout << "WARNING: Board comms ready flag not detected\n";
+    if (TimerElapsed && (BoardReadinessCounter > 0))
+        std::cout << "Board comms valid\n";
+
+    if (TimerElapsed)
+        BoardReadinessCounter = 0;
+}
+
+void TelemetryUI::SendHeartBeat(int Duration)
+{
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::milliseconds TimerDuration(Duration);
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - LastReset2); 
+
+    if (elapsed >= TimerDuration)
+    {
+        //std::cout << "\n Milliseconds elapsed " << Duration;
+        ArdGyro.SendHeartBeat();
+        LastReset2 += TimerDuration;
+    }
+    //ArdGyro.SendHeartBeat();
+}
+
+void TelemetryUI::SendHeartBeat()
+{
+    ArdGyro.SendHeartBeat();
+    ArdRadar.SendHeartBeat();
 }

@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ArduinoReceiver.cpp" />
+    <ClCompile Include="FileEditor.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphicRender.cpp" />
     <ClCompile Include="Improc.cpp" />
@@ -34,15 +35,19 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderVison.cpp" />
     <ClCompile Include="TelemetryUI.cpp" />
+    <ClCompile Include="TestWindow.cpp" />
     <ClCompile Include="TextRender.cpp" />
     <ClCompile Include="V2.cpp" />
     <ClCompile Include="VehicleModel.cpp" />
     <ClCompile Include="Vision.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BoardSelection.h" />
+    <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="GraphicRender.h" />
     <ClInclude Include="include\ArduinoReceiver.h" />
     <ClInclude Include="include\camera.h" />
+    <ClInclude Include="include\FileEditor.h" />
     <ClInclude Include="include\GL\GL.h" />
     <ClInclude Include="include\GraphicRender.h" />
     <ClInclude Include="include\graph\Shader.h" />
@@ -52,9 +57,11 @@
     <ClInclude Include="include\RadarUI.h" />
     <ClInclude Include="include\RadarVirtual.h" />
     <ClInclude Include="include\ResourceHandle.h" />
+    <ClInclude Include="include\SerialConnectionSpeed.h" />
     <ClInclude Include="include\SerialPortSelection.h" />
     <ClInclude Include="include\ShaderVision.h" />
     <ClInclude Include="include\TelemetryUI.h" />
+    <ClInclude Include="include\TestWindow.h" />
     <ClInclude Include="include\TextRender.h" />
     <ClInclude Include="include\VehicleModel.h" />
     <ClInclude Include="include\Vision.h" />
@@ -84,26 +91,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

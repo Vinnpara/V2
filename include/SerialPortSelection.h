@@ -3,12 +3,20 @@
 
 // Define the Serial Port names
 enum SerialName {
-	COM3 = 0,
 	COM1 = 1,
+	COM2 = 7,
+	COM3 = 14,
 	COM5 = 2,
 	COM4 = 3,
+	COM6 = 13,
 	COM7 = 4,
 	COM8 = 5,
+	COM9 = 6,
+	COM10 = 8,
+	COM11 = 9,
+	COM12 = 10,
+	COM13 = 11,
+	COM14 = 12
 };
 
 typedef enum SerialName SerialName;

@@ -41,8 +41,17 @@ using namespace chrono;
 
 class Vision {
 	short int v1, v2;
+
 public:
-	Mat fr,Right_sign, Left_sign, stop_sign, green_sign;
+
+	const int max_value_H = 360 / 2;
+	const int max_value = 255;
+	const String window_capture_name = "Video Capture";
+	const String window_detection_name = "Object Detection";
+	int low_H = 0, low_S = 0, low_V = 0;
+	int high_H = max_value_H, high_S = max_value, high_V = max_value;
+
+	Mat fr,Right_sign, Left_sign, stop_sign, green_sign, frHSV, frThresh;
 	int li;
 	short unsigned int d;
 
@@ -67,6 +76,17 @@ public:
 	void Match_arrow(double& as_rlR, double& as_rhR, int& arlR, bool& foundR, double& m_rR, double& as_rlL, double& as_rhL, int& arlL, bool& foundL, double& m_rL);
 	double vector_match(vector<double>v1, vector<double>v2, double& m_v, double tol);
 	double compare_hu(Mat& img, Mat& img2, double& match, double& Ma);
+
+	/*void on_low_H_thresh_trackbar(int, void*);
+	void on_high_H_thresh_trackbar(int, void*);
+	void on_low_S_thresh_trackbar(int, void*);
+	void on_high_S_thresh_trackbar(int, void*);
+	void on_low_V_thresh_trackbar(int, void*);
+	void on_high_V_thresh_trackbar(int, void*);*/
+
+	void HSVSliders();
+
+	void HSVScale(int low_H, int low_S, int low_V, int high_H, int high_S, int high_V);
 
 	//Vision funcitions
 	void capt();
