@@ -1,10 +1,21 @@
+//OLED SCREEN VARIABLES
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#include <Wire.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 
 //USING PITCH AND ROLL FROM OLDER CODE
 //AND YAW FROM NEWER LIBRARY
 //FOR STABILITY REASONS
 //PIN A5 SCL, A4 SDA
 
-#include <Wire.h>
+
 #include <Arduino.h>
 
 #include "I2Cdev.h"
@@ -29,7 +40,10 @@ static int PitchCounter,
            RollCounter, 
            SerialCounter,
            ValidPCHeartBeatCounter = 0,
-           ValidPCReadyCounter =0;
+           ValidPCReadyCounter =0,
+           PcktSz = 0,
+           PacektsRecieved = 0,
+           PitchReq = 0;
 
 static bool FirstPassDone = false,
             RollRequest = false, 
@@ -51,6 +65,16 @@ unsigned int bufferIndex = 0;
 bool isReceiving = false;
 
 int16_t GyroTst;
+
+//---------------------ARDUINO_NAME-------------------------
+//-----------------------GYRO--------------------------------
+// Give this specific board a unique name (Max 20 characters)
+//Adjust the define accordingly.
+
+# define NAME_BUFF_SIZE 10
+const char uniqueName[NAME_BUFF_SIZE] = "GYRO"; 
+
+static char uniqueNameRead[NAME_BUFF_SIZE] = "GYRO"; 
 
 SerialOrder OrderTest;
 // ================================================================
@@ -106,7 +130,7 @@ void dmpDataReady() {
 }
 
 // ================================================================
-// ===               RADAR FUNCTION VARIABLES               ===
+// ===               VAR. FUNCTION VARIABLES               ===
 // ================================================================
 
 SerialOrder OrderReceivedRad, OrderSentRad;
@@ -119,12 +143,37 @@ static bool PC_not_Ready=1,
 
 unsigned long previousMillis = 0,
               previousMillis2 = 0,
-              previousMillis3 = 0; 
+              previousMillis3 = 0,
+              previousMillis4 = 0,
+              SerialOffTime = 0;
+
 const long interval = 50,
-           IntervalPCHBMonitoring = 2000; // Interval in milliseconds
+           IntervalPCHBMonitoring = 2000,
+           IntervalSerialOff = 1500; // Interval in milliseconds
 
 const char START_MARKER = '[',
            END_MARKER = ']';
+
+//New buffer
+static char BuffInComing[20]; //11 works for the STR only command
+static uint8_t idx = 0;
+static bool inMessage = false;
+
+static  bool StartValid = 0,
+             EndValid =0,
+             SendingBoardName =0,
+             Calibrated = false,
+             BoardFoundByPC = false;
+             
+//static unsigned long loopCount = 0;
+//static unsigned long lastRateCheck = 0;
+
+const unsigned long SEND_INTERVAL_MS = 10;   // 100 Hz
+static unsigned long lastSendTime = 0;
+
+const unsigned long SEND_INTERVAL_MSHB = 10;   // 100 Hz
+static unsigned long lastSendTimeHB = 0;
+
 ///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // ================================================================
 // ===                    SETUP FUNCTION                       ===
@@ -132,11 +181,132 @@ const char START_MARKER = '[',
 //***************************************************************\\
 
 void setup() {
+
   // put your setup code here, to run once:
   /*FOR GYROSCOPE*/
   // put your setup code here, to run once:
  pinMode(LED_BUILTIN, OUTPUT);
- 
+
+  // initialize serial communication
+  // (115200 chosen because it is required for Teapot Demo output, but it's
+  // really up to you depending on your project)
+
+  Serial.begin(115200);
+
+  //GyroSetup();
+  //delay(20);
+  
+/*
+OLED screen
+*/ 
+// 0x3C is default i2c adress in some cases MAY be different
+/*
+display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+display.clearDisplay();
+display.setTextSize(2);
+display.setTextColor(WHITE);
+*/
+     
+}
+
+///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+// ================================================================
+// ===                    LOOP FUNCTION                         ===
+// ================================================================
+//***************************************************************\\
+
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+/* to determin execution speed
+ * ensure to manually set any 
+ * serial condition cases to true to simulate
+ * sending to PC
+loopCount++;
+if (millis() - lastRateCheck >= 1000)
+{
+  Serial.print("Loop Hz: ");
+  Serial.println(loopCount);
+  loopCount = 0;
+  lastRateCheck = millis();
+}*/
+
+ReadAndParseDataSTD();
+
+if(!BoardFoundByPC)
+{
+ SendBoardName();
+}
+
+if(!Calibrated && SendingBoardName )
+{
+   GyroSetup();
+   Calibrated = 1;
+
+}
+
+//if(Calibrated)
+ MeasureGyro();
+
+
+if(Serial.available()>0)
+{
+  //FlashBulb(15);
+}
+
+//ReadAndParseDataSTD();
+//ProcessInformation();
+
+MonitorPCHeartBeat();
+MonitorPCReadiness();
+DeterminePCReadiness();
+
+if(BoardFoundByPC && (millis() - lastSendTime >= SEND_INTERVAL_MSHB))
+{
+  lastSendTimeHB = millis();
+  SignalArdReady();
+  SendDataPacketHB();
+  SignalArdCommsEst();
+}
+
+if(CommsEstablished && (millis() - lastSendTime >= SEND_INTERVAL_MS))
+{
+
+   lastSendTime = millis();
+   SendDataPackets(MEASURED_PITCH,pitch);
+   SendDataPackets(MEASURED_ROLL,roll);
+   //SignalArdCommsEst();
+   //SendingBoardName = 0;
+   //BulbON();
+}
+
+if(CommsEstablished)
+ BulbON();
+else
+ BulbOFF();
+
+if(!Serial.available())
+{
+  //FlashBulb(500);
+}
+
+if(Serial.available() && !CommsEstablished)
+{
+  //FlashBulb(25);
+}
+
+//UpdateDisp();
+
+}
+  ////_______________\\\\
+ ////*****************\\\\
+////  ACCEL/GYRO FUNC  \\\\
+\\\\*******************////
+void GyroSetup()
+{
+  
+  
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
         Wire.begin();
         Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
@@ -150,19 +320,9 @@ void setup() {
     #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
         Fastwire::setup(400, true);
     #endif
-
-    // initialize serial communication
-    // (115200 chosen because it is required for Teapot Demo output, but it's
-    // really up to you depending on your project)
-
-    Serial.begin(115200);
-    while (!Serial); // wait for Leonardo enumeration, others continue immediately
-
     
-    //Serial.print("\nArd setup start ");
-    //Serial.print("\nArd Bool flag  ");
-    //Serial.print(FirstPassDone);
-        
+    while (!Serial); // wait for Leonardo enumeration, others continue immediately
+     
     // NOTE: 8MHz or slower host processors, like the Teensy @ 3.3V or Arduino
     // Pro Mini running at 3.3V, cannot handle this baud rate reliably due to
     // the baud timing being too misaligned with processor ticks. You must use
@@ -180,10 +340,6 @@ void setup() {
 
     // wait for ready
     
-    /*Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-    while (Serial.available() && Serial.read()); // empty buffer
-    while (!Serial.available());                 // wait for data
-    while (Serial.available() && Serial.read()); // empty buffer again*/
 
     // load and configure the DMP
     //Serial.println(F("Initializing DMP..."));
@@ -199,8 +355,8 @@ void setup() {
     if (devStatus == 0) {
         // Calibration Time: generate offsets and calibrate our MPU6050
         mpu.CalibrateAccel(6);
-        mpu.CalibrateGyro(6);
-        mpu.PrintActiveOffsets();
+        mpu.CalibrateGyro(6);     ///The *......>... Likely comes from above here
+        //mpu.PrintActiveOffsets();
         // turn on the DMP, now that it's ready
         //Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
@@ -231,65 +387,12 @@ void setup() {
         //Serial.print(devStatus);
         //Serial.println(F(")"));
     }
-  calculate_IMU_error();
+ calculate_IMU_error();
 
   FirstPassDone =1;
 
-  //Serial.print("\nArd setup done");
-  //Serial.print("\nArd Bool flag  ");
-  //Serial.print(FirstPassDone);
   
-  delay(20);
-
-     
 }
-
-///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// ================================================================
-// ===                    LOOP FUNCTION                         ===
-// ================================================================
-//***************************************************************\\
-
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
-MeasureGyro();
-
-
-if(Serial.available()>0)
-{
-  FlashBulb(15);
-}
-
-ReadAndParseData();
-ProcessInformation();
-MonitorPCHeartBeat();
-MonitorPCReadiness();
-DeterminePCReadiness();
-
-SignalArdReady();
-SendDataPacketHB();
-
-if(CommsEstablished)
-{
-
-   SendDataPackets(MEASURED_PITCH,pitch);
-   SendDataPackets(MEASURED_ROLL,roll);
-   BulbON();
-}
-
-if(!Serial.available())
-{
-  FlashBulb(500);
-}
-
-}
-  ////_______________\\\\
- ////*****************\\\\
-////  ACCEL/GYRO FUNC  \\\\
-\\\\*******************////
-
 void calculate_IMU_error() {
   // We can call this funtion in the setup section to calculate the accelerometer and gyro data error. From here we will get the error values used in the above equations printed on the Serial Monitor.
   // Note that we should place the IMU flat in order to get the proper values, so that we then can the correct values
@@ -367,7 +470,7 @@ void MeasureGyro(){
   
   previousTime = currentTime;        // Previous time is stored before the actual time read
   currentTime = millis();            // Current time actual time read
-  elapsedTime = (currentTime - previousTime) / 1000; // Divide by 1000 to get seconds
+  elapsedTime = (currentTime - previousTime) / 1000.0; // Divide by 1000 to get seconds
   Wire.beginTransmission(MPU);
   Wire.write(0x43); // Gyro data first register address 0x43
   Wire.endTransmission(false);
@@ -403,7 +506,13 @@ void MeasureGyro(){
   YawTransfer=yaw*TransferGain;
   
   PitchCounter ++;
+/*
+Serial.print("\npitch read ");
+Serial.print(pitch);
 
+Serial.print("\nroll read ");
+Serial.print(roll);
+*/
  }
   ////_______________\\\\
  ////*****************\\\\
@@ -493,6 +602,13 @@ void SendDataPackets(SerialOrder Type, float value)
   Serial.print(END_MARKER);
 }
 
+void SignalArdCommsEst()
+{
+  Serial.print(START_MARKER);
+  Serial.print(ARD_COMMS_EST);
+  Serial.print(END_MARKER);
+}
+
 void SendDataPacketsPitchRoll()
 {
   Serial.print(START_MARKER);
@@ -513,6 +629,13 @@ void SendDataPacketHB()
   Serial.print(END_MARKER);
 }
 
+void SendBoardName()
+{
+  Serial.print(START_MARKER);
+  Serial.print(uniqueNameRead);
+  Serial.print(END_MARKER);
+}
+
 void SendHeartBeat()
 {
   unsigned long currentMillis = millis();
@@ -524,6 +647,26 @@ void SendHeartBeat()
     SendDataPacketHB();
   }
 
+}
+
+void ListenForPCBoardRequest()
+{
+  uint8_t budget = 16;
+  
+  while (Serial.available() && budget--)
+  {
+   
+    char Peeked = Serial.peek();
+
+      if(Peeked == 'G')
+      {
+        SendingBoardName =1;
+        SendBoardName();
+      }
+    
+  }
+
+   
 }
 
 void ReadAndParseData()
@@ -555,33 +698,124 @@ void ReadAndParseData()
   }
 }
 
+
+void ReadAndParseDataSTD()
+{
+  uint8_t budget = 16;
+
+  if(Serial.available())
+    SerialOffTime = millis();
+  
+  while (Serial.available() && budget--)
+  {
+    char Peeked = Serial.peek();
+
+      if((int)Peeked == PC_READY)
+      {
+         ValidPCReadyCounter++;
+      }
+
+      if((int)Peeked == PC_HEARTBEAT)
+      {
+         ValidPCHeartBeatCounter++;
+      }
+
+      if(Peeked == 'G')
+      {
+        SendingBoardName =1;
+        //SendBoardName();
+      }
+
+      if((int)Peeked == BOARD_FOUND)
+      {
+         BoardFoundByPC = 1;
+      }      
+    
+    char c = Serial.read();
+
+    if (c == START_MARKER)
+    {
+      idx = 0;
+      inMessage = true;
+      BuffInComing[idx++] = c;
+      StartValid =1;
+    }
+    else if (inMessage)
+    {
+      if (idx < sizeof(BuffInComing) - 1)
+        BuffInComing[idx++] = c;
+
+      if (c == END_MARKER)
+      {
+        BuffInComing[idx] = '\0';
+        inMessage = false;
+        EndValid =1;
+        PcktSz = sizeof(BuffInComing);
+        PacektsRecieved++;
+
+        //if(SendingBoardName)
+        ProcessInformation();
+      }  
+    }
+  }
+  if (Serial.available() == 0)
+  {
+    for(int j =0; j < 21; j++)
+    {
+       BuffInComing[j] = '\0';
+    }
+    if (millis() - SerialOffTime > IntervalSerialOff)   
+    {
+      SerialOffTime = millis(); // Serial off for specified interval (1.5 seconds)
+      SendingBoardName = 0;
+      Calibrated = 0;
+      
+      if(BoardFoundByPC)
+        BoardFoundByPC =0;
+    }
+  }
+
+}
+
 void ProcessInformation()
 {
   int DataPacketSize = strlen(buffin);
   int CommandsReceived[DataPacketSize];
 
-   if(DataPacketSize>0)
-   {
+    for(int i =0; i <21; i++)
+  {
+     if(BuffInComing[i] == '\0')
+      break;
 
-    for(int i=0; i < DataPacketSize; i++)
-    {
-      CommandsReceived[i] = (int)buffin[i];
-    }
-   }
-     
-     for(int i=0; i < DataPacketSize; i++)
-    {
-      if(CommandsReceived[i] == PC_HEARTBEAT)
-      {
-             ValidPCHeartBeatCounter++;
-      }
+       if((int)buffin[i] == PC_HEARTBEAT) 
+       {
+          ValidPCHeartBeatCounter++;
+       }
+       
+       if((int)buffin[i] == PC_READY) 
+       {
+          ValidPCReadyCounter++;
+       }
 
-      if(CommandsReceived[i] == PC_READY)
-      {
-            ValidPCReadyCounter++;
-      }
-    }
-   
+       if((int)buffin[i] == REQUEST_PITCH) 
+       {
+          PitchReq++;
+       }
+
+        if(BuffInComing[i] =='G')
+       {
+         SendingBoardName = 1;
+         //SendBoardName();
+       }
+
+        if((int)BuffInComing[i] == BOARD_FOUND)
+       {
+         BoardFoundByPC = 1;
+       }
+  
+  }
+
+
 }
 
 
@@ -608,6 +842,98 @@ void BulbON()
 void BulbOFF()
 {
   digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
+}
+
+
+void ClearDisp()
+{
+  display.clearDisplay();
+}
+
+void ShowDisp()
+{
+  display.display();
+}
+
+void DisplayMessage(char *mess, int x, int y)
+{
+  //display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  display.setCursor(x, y);
+  display.println(mess); 
+  
+  //display.display();
+}
+
+void DisplayMessageInt(int mess, int x, int y)
+{
+  //display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  display.setCursor(x, y);
+  display.println(mess); 
+  
+  //display.display();
+}
+
+void DisplayStatus()
+{
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  if(CommsEstablished)
+  {
+    display.setCursor(1, 30);
+    display.println("C"); 
+  }
+  else
+  {     
+    display.setCursor(1, 30);
+    display.println("NC"); 
+  }
+  if(ValidHeartBeatPC)
+  {
+    display.setCursor(1, 5);
+    display.println("H");
+  }
+  else
+  {
+    display.setCursor(1, 5);
+    display.println("NH");
+  }
+
+
+  DisplayMessage("Pn", 30, 5);
+  DisplayMessageInt(PacektsRecieved, 60, 5);
+
+  //int BuffSize = Serial.available();
+  DisplayMessage("Pr", 30, 30);
+  DisplayMessageInt(PitchReq, 70, 30);
+
+
+  if(SendingBoardName)
+  {
+    DisplayMessage("NR", 50, 50);
+  }
+
+  //DisplayMessage("R", 65, 50);
+  //DisplayMessageInt(ValidMotorRight, 80, 50);  
+
+  //ValidSteerCommand;
+  
+}
+void UpdateDisp()
+{
+  if (millis() - previousMillis4 < 250) return;   // 4 Hz is plenty
+  
+  previousMillis4 = millis();
+  
+  ClearDisp();
+  DisplayStatus();
+  ShowDisp();
 }
 
   ////________________\\\\

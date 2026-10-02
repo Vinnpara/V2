@@ -22,6 +22,8 @@ public:
 	void RecordDataFloat(float Data1, float Data2);
 	void CloseFile();
 
+	void RecordDataInt(int Data);
+
 private:
 	std::ofstream DataFile;
 	char* NameOfFile;

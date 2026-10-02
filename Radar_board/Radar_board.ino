@@ -36,7 +36,9 @@ char DataPacketReceived[MAX_PACKET_SIZE];
 
 static int ServoPosition = 0,
            ValidPCHeartBeatCounter = 0,
-           ValidPCReadyCounter =0;
+           ValidPCReadyCounter =0,
+           PcktSz = 0,
+           PacektsRecieved = 0;
 
 static bool PC_not_Ready=1,
             PC_Ready = 0,
@@ -45,18 +47,43 @@ static bool PC_not_Ready=1,
             SerialFlushed = 0,
             ValidHeartBeatPC = 0,
             PositiveRadarSweep =1,
-            NegativeRadarSweep =0;
+            NegativeRadarSweep =0,
+            SendingBoardName = false,
+            BoardFoundByPC = false;
 
 unsigned long previousMillis = 0,
               previousMillis2 = 0,
-              previousMillis3 = 0; 
+              previousMillis3 = 0,
+              previousMillis4 = 0,
+              SerialOffTime = 0; 
+              
 const long interval = 50,
-           IntervalPCHBMonitoring = 2000; // Interval in milliseconds
+           IntervalPCHBMonitoring = 2000,
+           IntervalSerialOff = 1500; // Interval in milliseconds
 
 const char START_MARKER = '[',
            END_MARKER = ']';
 
 unsigned long ElapsedTIme =0;
+
+//New buffer
+static char BuffInComing[20]; //11 works for the STR only command
+static uint8_t idx = 0;
+static bool inMessage = false;
+
+static  bool StartValid = 0,
+             EndValid =0,
+             Calibrated = false;
+
+//---------------------ARDUINO_NAME-------------------------
+//------------------------RADAR-----------------------------
+// Give this specific board a unique name (Max 20 characters)
+//Adjust the define accordingly.
+
+# define NAME_BUFF_SIZE 10
+const char uniqueName[NAME_BUFF_SIZE] = "RADAR"; 
+
+static char uniqueNameRead[NAME_BUFF_SIZE] = "RADAR"; 
 
 ///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // ================================================================
@@ -86,14 +113,7 @@ void setup() {
 //***************************************************************\\
 
 void loop() {
-  // put your main code here, to run repeatedly:
- 
- /*if(Serial.available()>0)
- {
-  //PingUltraSoundSensor();
-  RadarSweep();
- }*/
-
+// put your main code here, to run repeatedly:
 RadarMeasure();
 
 if(Serial.available()>0)
@@ -102,14 +122,23 @@ if(Serial.available()>0)
    //BulbON();
 }
 
-ReadAndParseData();
-ProcessInformation();
+ReadAndParseDataSTD();
+
+if(!BoardFoundByPC)
+ SendBoardName();
+
+//ProcessInformation();
+
 MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-SignalArdReady();
-SendDataPacketHB();
+if(BoardFoundByPC)
+{
+  SignalArdReady();
+  SendDataPacketHB();
+}
+
 
 DisplayStatus();
 
@@ -119,13 +148,25 @@ if(CommsEstablished)
    SendDataPackets(RADAR_DISTANCE,MeasuredDistance);
    SendDataPackets(RADAR_POSITION,ServoPosition);
    SignalArdCommsEst();
-   BulbON();
+   //BulbON();
 }
+//else
+   //BulbOFF();
 
 if(!Serial.available())
 {
-  FlashBulb(20);
+  //FlashBulb(20);
 }
+
+if(Serial.available() && !CommsEstablished)
+{
+  //FlashBulb(25);
+}
+
+if(BoardFoundByPC)
+ BulbON();
+else
+ BulbOFF();
 
 RadarMove();
  
@@ -345,6 +386,13 @@ void SendHeartBeat()
 
 }
 
+void SendBoardName()
+{
+  Serial.print(START_MARKER);
+  Serial.print(uniqueNameRead);
+  Serial.print(END_MARKER);
+}
+
 void ReadAndParseData()
 {
   if(Serial.available())
@@ -390,28 +438,108 @@ void ProcessInformation()
   int DataPacketSize = strlen(buffin);
   int CommandsReceived[DataPacketSize];
 
-   if(DataPacketSize>0)
-   {
+    for(int i =0; i <21; i++)
+  {
+     if(BuffInComing[i] == '\0')
+      break;
 
-    for(int i=0; i < DataPacketSize; i++)
-    {
-      CommandsReceived[i] = (int)buffin[i];
-    }
-   }
-     
-     for(int i=0; i < DataPacketSize; i++)
-    {
-      if(CommandsReceived[i] == PC_HEARTBEAT)
-      {
-             ValidPCHeartBeatCounter++;
-      }
+       if((int)buffin[i] == PC_HEARTBEAT) 
+       {
+          ValidPCHeartBeatCounter++;
+       }
+       
+       if((int)buffin[i] == PC_READY) 
+       {
+          ValidPCReadyCounter++;
+       }
 
-      if(CommandsReceived[i] == PC_READY)
-      {
-            ValidPCReadyCounter++;
-      }
-    }
+        if(BuffInComing[i] =='R')
+       {
+         SendBoardName();
+         SendingBoardName = 1;
+       }
+
+        if((int)BuffInComing[i] == BOARD_FOUND)
+       {
+         BoardFoundByPC = 1;
+       }
+  
+  }
    
+}
+
+void ReadAndParseDataSTD()
+{
+  uint8_t budget = 16;
+
+  if(Serial.available())
+    SerialOffTime = millis();
+  
+  while (Serial.available() && budget--)
+  {
+    char Peeked = Serial.peek();
+
+      if((int)Peeked == PC_READY)
+      {
+         ValidPCReadyCounter++;
+      }
+
+      if((int)Peeked == PC_HEARTBEAT)
+      {
+         ValidPCHeartBeatCounter++;
+      }
+
+      if(Peeked == 'G')
+      {
+        SendingBoardName =1;
+        SendBoardName();
+      }
+
+      if((int)Peeked == BOARD_FOUND)
+      {
+         BoardFoundByPC = 1;
+      }      
+    
+    char c = Serial.read();
+
+    if (c == START_MARKER)
+    {
+      idx = 0;
+      inMessage = true;
+      BuffInComing[idx++] = c;
+      StartValid =1;
+    }
+    else if (inMessage)
+    {
+      if (idx < sizeof(BuffInComing) - 1)
+        BuffInComing[idx++] = c;
+
+      if (c == END_MARKER)
+      {
+        BuffInComing[idx] = '\0';
+        inMessage = false;
+        EndValid =1;
+        PcktSz = sizeof(BuffInComing);
+        PacektsRecieved++;
+
+        //if(SendingBoardName)
+        ProcessInformation();
+      }  
+    }
+  }
+  if (Serial.available() == 0)
+  {
+    for(int j =0; j < 21; j++)
+    {
+       BuffInComing[j] = '\0';
+    }
+    if (millis() - SerialOffTime > IntervalSerialOff)   
+    {
+      SerialOffTime = millis(); // Serial off for specified interval (1.5 seconds)
+      SendingBoardName = 0;
+    }
+  }
+
 }
 
   ////__________________\\\\

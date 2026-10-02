@@ -11,6 +11,25 @@
 
 #include <Windows.h>
 #include <SerialPortSelection.h>
+#include <vector>
+#include <map>
+#include <string>
+
+#include <ColorSelection.h>
+
+#include <chrono>
+
+#include <GUICallBackSelection.h>
+
+#include <GUICallBackSelection.h>
+#include <PlotterGUIFunction.h>
+#include <SetMenuGUIFunction.h>
+#include <AutoMenuGUIFunction.h>
+
+#include <GUIFunction.h>
+
+
+#include <algorithm>
 
 #define ID_BUTTON 1
 #define ID_BUTTON_1 2 //Identifier forCOM 1
@@ -60,7 +79,7 @@ static bool Board1Selection[15],
             Board3Selection[15]
 	        ;
 
-
+//string GetBoardCommand(int index);
 
 
 class TestWindow
@@ -70,20 +89,40 @@ public:
 	TestWindow();
 	TestWindow(bool Diagnotics);
 	TestWindow(const TestWindow&) = delete; //User does not need to copy window, so delete
+
+	TestWindow(CallBackSelection Selection);
+
+
 	TestWindow& operator = (const TestWindow&) = delete; //ALso delete the = operator
 	~TestWindow();
 	void Assignments();
 	bool ProcessMessages();
+
+	void TimeAnchorPoint();
+	void UpdateElapsedTime();
 
 	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, unsigned long time);
 	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll, unsigned long Time);
 	void UpdateAccelDiag(double AccelX_val, double AccelY_val, double AccelZ_val);
 	void UpdateVelDiag( float velx, float vely, float velcomp);
 	void UpdateElapsedTime(float ElapsedTime);
+
 	void UpdateRadarDaignostcs(int Val, int Pos);
 	void UpdateMotorSteering(int Steer, int Throttle);
 	void DisplayDiagnostics();
 
+	void GetBoardNames();
+	void SetBoardParamaters();
+
+	void ShowBoardParams();
+
+	size_t GetNumberOfBoards() { return BoardSelections.size(); };
+
+	std::vector <string> ReturnBoardNames() { return BoardSelections; };
+	std::map<std::string, int> GetBoardsAndRates(){ return BoardSelectionAndBuadRates; };
+
+void ShowDiagnosisData(static bool& MessagePrinted);
+   void GetMessageToprint(std::vector <std::string> Messages) { MessagesToPrint = Messages; };
 
 
 	LPWSTR GetPitchWritten()
@@ -140,4 +179,17 @@ private:
 	;
 	bool PitchValid,
 		 RollValid;
+
+	LPWSTR ConvertToLPWSTR(std::string Data);
+
+	std::vector<int> ColorSelector(ColorSelection Color);
+	int GetColorRequested(std::string Message);
+	std::string ProcessMessage(std::string Message);
+	std::vector <std::string> SortMessages(std::vector <std::string> Messages);
+	std::vector <std::string> MessagesToPrint;
+
+	std::chrono::steady_clock::time_point StartPoint;
+	std::vector <string> BoardSelections;
+
+	std::map<std::string, int> BoardSelectionAndBuadRates;
 };
