@@ -9,6 +9,11 @@
 #include <stdlib.h>
 #include<SerialConnectionSpeed.h>
 
+#include <string>
+#include <vector>
+
+#include <algorithm>
+
 class SerialPort
 {
 private:
@@ -21,6 +26,7 @@ private:
     char peekCache;
     bool isCacheFull;
 
+
 public:
     SerialPort(char *portName);
     SerialPort(char* portName, int type);
@@ -29,11 +35,23 @@ public:
     {};
     ~SerialPort();
 
+    void SetHandle(HANDLE& outHandle);
+
     int readSerialPort(char *buffer, unsigned int buf_size);
     int ReadSerialPortAfterPeek(char* buffer, unsigned int buf_size);
     bool writeSerialPort(char *buffer, unsigned int buf_size);
     void InitializeSerial(char* portName);
+    bool InitializeSerialM(char* portName);
+
+    bool InitializeSerialM(int portName);
+
+    bool IndetifySerialPort(int portNumber, const std::string& expectedName, HANDLE& outHandle, int Baud);
+    bool IndetifySerialPort(int portNumber, const std::string& expectedName, HANDLE& outHandle, int Baud, char SpecialChar);
+    bool IndetifySerialPortHserial(int portNumber, const std::string& expectedName, HANDLE& outHandle, int Baud, char SpecialChar);
+
     void SetBaudRate(SerialSpeed BaudRate);
+    void SetBaudRate(int BaudRate);
+
     void OpenConnection();
     bool isConnected();
     void SerialClose();

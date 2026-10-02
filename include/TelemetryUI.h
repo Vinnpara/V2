@@ -30,6 +30,9 @@
 #include <Windows.h>
 
 #include <FileEditor.h>
+#include <map>
+
+#include <DataConcentrator.h>
 
 #define MS_2_TO_CMS_2 981
 #define MILISEC_TO_SEC 0.001
@@ -41,28 +44,44 @@ using namespace std::chrono_literals;
 
 class TelemetryUI {
 public:
-
+	//check functions with a '/**/' above them. Perhaps could get rid of
 
 	TelemetryUI();
-	void AssignBoards();
+	void AssignBoards(DataConcentrator &DC);
+
+	void DelayForArduinoInit();
+
 	void InitializeTelemetry();
 	void UpdateValuues(SerialPort& Serial);
 
-	void EstablishedCommunicationsArdGyro (static bool &GyroArduinoCommsEstablished);
-	void EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished);
+	void EstablishedCommunicationsArdGyro (static bool &GyroArduinoCommsEstablished, static bool &TimerElapsed, DataConcentrator& DC);
+	void EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC);
+	void EstablishedCommunicationsMSB(static bool& MSBCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC);
 
-	void ListenForArduinoReadiness(static bool& RadarArduinoReady);
+
+	void ListenForArduinoReadiness(static bool& RadarArduinoReady, DataConcentrator& DC);
+	void ListenForArduinoReadiness(BoardSelection Board, static bool& ArduinoReady, DataConcentrator& DC);
+	void ListenForMSBRequest(bool& RequestReceived, static bool& NoFirstRequest, static int &RequestCounter,  static DWORD& lastSendTime, DataConcentrator& DC);
 
 	void DetectGyroHeartBeat(int Duration, static bool &TimerElapsed, static int& HeartBeatCounter);
-	void DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter);
+	void DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool &HeartBeatDetected, static bool &HBDetectedGlobal, static int& HeartBeatCounter, DataConcentrator& DC);
 	void DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter);
+	void DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);
 
-	void DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter);
+	void DetectMSBHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);
+
+	void DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
+	void DetectBoardReadinessGyro(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
+	void DetectBoardReadinessMSB(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
 
 	void SendHeartBeat(int Duration);
-	void SendHeartBeat();
+	void SendHeartBeat(DataConcentrator& DC);
 	void RequestData(SerialOrder DataRequest);
 
+	void CheckArduinoConnections();
+	void DirectCommandMSB(DataConcentrator& DC, static DWORD& lastSendTime);
+
+	void DirectCommandMSBTimer(DataConcentrator& DC, static DWORD& lastSendTime);
 
 	void UpdateValues6Axis(float y, float p, float r, float Ax, float Ay, float Az);
 	void UpdateValues3Attitude(float y, float p, float r);
@@ -70,15 +89,23 @@ public:
 	void Update2Axis3Accel();
 	void Update2Axis3AccelFromBuffer();
 	void Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
-	void Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, bool &HBDetected, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
+	void UpdateGyroAccel(bool &HBDetected, bool& BoardReadiness, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
+	void UpdateGyroAccelT();
 
+	void RequestPitch();
+	void SignalReadyToBoard();
+
+	void DirectConnectArd(DataConcentrator& DC);
 	
 	void UpdateValuesRadar(bool& HBDetected, static bool& RadarArduinoCommsEstablished);
 	void UpdateValuesRadar(bool& HBDetected, bool& BoardReadiness, static bool& RadarArduinoCommsEstablished);
+
+	void UpdateValuesMSB(bool& HBDetected, bool& BoardReadiness, static bool& MSBArduinoCommsEstablished);
 	
 	void TimerAnchorPoint();
 	void TimerFunction(int Duration);
 
+	void HandleCommsEstMessaging(static bool CommsEst, DataConcentrator& DC);
 
 	void UpdateValuesRadar();
 	void CloseSerial();
@@ -212,7 +239,8 @@ private:
 	void ReTryRequest(SerialPort& Serial, SerialOrder Command);
 	int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue);
 	float ConvertValue(float RadarValX, float m, float C);
-	TestWindow* DiagWindow = new TestWindow(true);
+
+	//TestWindow* DiagWindow = new TestWindow(true);
 
 	FileEditor PitchData,
 		       RollData, 
@@ -242,7 +270,10 @@ private:
 	float VelocityX,
 		  VelocityY,
 		  VelocityZ,
-		  VelocityCombined;
+		  VelocityCombined,
+		  JoyStickSteer,
+		  ThrottleAngle,
+		  ReverseAngle;
 
 	unsigned long ElapsedTime;
 
@@ -284,11 +315,24 @@ private:
 		                                  LastReset3,
 		                                  LastReset4,
 		                                  LastReset5,
+		                                  LastReset6,
+		                                  LastReset7,
+		                                  LastReset8,
+		                                  LastReset9,
+		                                  LastReset10,
+		                                  LastReset11,
 	                                      Now,
 		                                  ArdGyroHeartbeat,
 		                                  ArdRadarHeartBeat,
-		                                  ArdRadarBoardReadniess;
+		                                  ArdRadarBoardReadniess,
+		                                  ArdGyroCommsEst,
+		                                  ArdRadarCommsEst,
+		                                  ArdGyroBoardReadniess,
+		                                  ArdMSBCommsEst,
+		                                  ArdMSBHeartBeat,
+		                                  ArdMSBBoardReadniess;
 
+	std::map<std::string, int> BoardAssingmentAndBuadRate;
 
 	//std::ofstream DataFile("Pitch_v_time.csv");
 };

@@ -17,6 +17,7 @@
 #include<string.h>
 
 #define MAX_BUFFER 128
+#define MAX_BUFFER_GYRO 64
 
 char* ARDPort = "\\\\.\\COM3";
 char* ARDPort2 = "\\\\.\\COM1";
@@ -25,6 +26,7 @@ char* ARDPort4 = "\\\\.\\COM4";
 char* ARDPort5 = "\\\\.\\COM7";
 char* ARDPort6 = "\\\\.\\COM8";
 char* ARDPort7 = "\\\\.\\COM9";
+char* ARDPort8 = "\\\\.\\COM6";
 
 static bool ValidCommandRoll, 
             ValidCommandPitch, 
@@ -320,10 +322,263 @@ void ArduinoReceiver::SetArdPort(SerialName PortName) {
 
 }
 
+std::string ArduinoReceiver::GetBoardMessage()
+{
+    std::string board;
+
+    switch (ArduinoType)
+    {
+        case RADAR_BOARD:
+        {
+            
+            board = {"Radar board"};
+            
+            return  board;
+            break;
+        }
+        case GYROSCOPE_BOARD:
+        {
+
+            board = { "GyroScope board" };
+
+            return  board;
+            break;
+        }
+        case MOTOR_STEER_BOARD:
+        {
+
+            board = { "Motor steer board" };
+
+            return  board;
+            break;
+        }
+
+    }
+}
+
+int ArduinoReceiver::GetBoardMessageCode()
+{
+    int board;
+
+    switch (ArduinoType)
+    {
+    case RADAR_BOARD:
+    {
+
+        board = 4000;
+
+        return  board;
+        break;
+    }
+    case GYROSCOPE_BOARD:
+    {
+
+        board = 3000;
+
+        return  board;
+        break;
+    }
+    case MOTOR_STEER_BOARD:
+    {
+
+        board = 5000;
+
+        return  board;
+        break;
+    }
+
+    }
+}
+
+void ArduinoReceiver::SetArdPort(SerialName PortName, DataConcentrator& DC)
+{
+ /*
+* Messages:
+* Board initilization, cyan or red
+* code 8001, 8002 Radar
+* code 8003, 8004 Gyroscope
+* code 8005, 8006 Motor steer
+ */
+    
+    
+    bool Serialinitialized = 0;
+    
+    switch (PortName)
+    {
+    case COM3:
+    {
+        //SerialPort Serial(ARDPort);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort);
+        break;
+    }
+
+    case COM1:
+    {
+        //SerialPort Serial2(ARDPort2);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort2);
+        break;
+    }
+
+    case COM5:
+    {
+        //SerialPort Serial3(ARDPort3);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort3);
+        break;
+    }
+    case COM4:
+    {
+        //SerialPort Serial4(ARDPort4);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort4);
+        break;
+    }
+    case COM7:
+    {
+        //SerialPort Serial5(ARDPort5);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort5);
+        break;
+    }
+    case COM8:
+    {
+        //SerialPort Serial6(ARDPort6);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort6);
+        break;
+    }
+    case COM9:
+    {
+        //SerialPort Serial6(ARDPort7);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort7);
+        break;
+    }
+    case COM6:
+    {
+        //SerialPort Serial6(ARDPort7);
+        Serialinitialized = Ard.InitializeSerialM(ARDPort8);
+        break;
+    }
+
+    }
+
+    std::string SerialStatus;
+    std::string Board = GetBoardMessage();
+
+    if (Serialinitialized)
+    {
+        
+        SerialStatus = { "13:Ardunio initialized " };
+        std::string CompleteMessage = SerialStatus + Board;
+
+        int code = 8000 + (int)ArduinoType;
+
+        std::cout << "\nBOARD INIT " << Board <<" " << code;
+
+        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
+
+    }
+    else
+    {
+        
+        SerialStatus = { "11: Warning, Ardunio not initialized " };
+        std::string CompleteMessage = SerialStatus + Board;
+
+        int code = 8000 + ((int)ArduinoType * 2);
+        
+        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
+    }
+
+}
+
+void ArduinoReceiver::SetArdPort(char* PortName, DataConcentrator& DC)
+{
+    /*
+* Messages:
+* Board initilization, cyan or red
+* code 8001, 8002 Radar
+* code 8003, 8004 Gyroscope
+* code 8005, 8006 Motor steer
+ */
+
+    bool Serialinitialized = Ard.InitializeSerialM(PortName);
+
+    std::string SerialStatus;
+    std::string Board = GetBoardMessage();
+
+    if (Serialinitialized)
+    {
+
+        SerialStatus = { "13:Ardunio initialized " };
+        std::string CompleteMessage = SerialStatus + Board;
+
+        int code = 8000 + (int)ArduinoType;
+
+        std::cout << "\nBOARD INIT " << Board << " " << code;
+
+        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
+
+    }
+    else
+    {
+
+        SerialStatus = { "11: Warning, Ardunio not initialized " };
+        std::string CompleteMessage = SerialStatus + Board;
+
+        int code = 8000 + ((int)ArduinoType * 2);
+
+        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
+    }
+
+
+}
+
+void ArduinoReceiver::SetArdPort(int PortName, DataConcentrator& DC)
+{
+/*
+* Messages:
+* Board initilization, cyan or red
+* code 8001, 8002 Radar
+* code 8003, 8004 Gyroscope
+* code 8005, 8006 Motor steer
+*/
+    bool Serialinitialized = 0;
+
+    Serialinitialized = Ard.InitializeSerialM(PortName);
+
+    std::string SerialStatus;
+    std::string Board = GetBoardMessage();
+
+    if (Serialinitialized)
+    {
+
+        SerialStatus = { "13:Ardunio initialized " };
+        std::string CompleteMessage = SerialStatus + Board;
+
+
+        int code = 8000 + (int)ArduinoType;
+
+        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
+    }
+    else
+    {
+
+        SerialStatus = { "11: Warning, Ardunio not initialized " };
+        std::string CompleteMessage = SerialStatus + Board;
+
+        int code = 8000 + ((int)ArduinoType * 2);
+
+        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
+    }
+}
+
 void ArduinoReceiver::SetBaudRate(SerialSpeed BaudRate) {
 
     Ard.SetBaudRate(BaudRate);
 
+}
+
+void ArduinoReceiver::SetBaudRate(int BaudRate)
+{
+
+
+    Ard.SetBaudRate(BaudRate);
 }
 
 void ArduinoReceiver::ArdInitialize() {
@@ -372,7 +627,7 @@ void ArduinoReceiver::RequestReadData(SerialPort& Serial, SerialOrder Command)
 
     //std::string message;
     //message = START_MARKER + char(Command) + END_MARKER;
-    std::cout << "\nmesage to be sent " << buff[0]<<" "<<buff[1]<<" "<<buff[2];
+    //std::cout << "\nmesage to be sent " << buff[0]<<" "<<buff[1]<<" "<<buff[2];
 
 }
 
@@ -866,7 +1121,14 @@ void ArduinoReceiver::ReadPitchRoll() {
 
 void ArduinoReceiver::RequestPitch()
 {
-    RequestData(Ard, REQUEST_PITCH);
+    //RequestData(Ard, REQUEST_PITCH);
+
+    RequestReadData(Ard, (int)REQUEST_PITCH);
+}
+
+void ArduinoReceiver::SendPCReadiness()
+{
+    RequestReadData(Ard, (int)BOARD_FOUND);
 }
 
 void ArduinoReceiver::ReadPitchRoll(static bool& ValidRoll, static bool& ValidPitch, static bool& FirstReading)
@@ -949,8 +1211,8 @@ void  ArduinoReceiver::ReadArduino3Accel2Attitude() {
 
     if (ValidTime) {
 
-        RequestReadData(Ard, REQUEST_TIME, ValidCommandTime);
-        ReadBuffer(Ard, REQUEST_TIME, ValidCommandTime);
+       // RequestReadData(Ard, REQUEST_TIME, ValidCommandTime);
+        //ReadBuffer(Ard, REQUEST_TIME, ValidCommandTime);
 
     }
 
@@ -1108,7 +1370,7 @@ void ArduinoReceiver::EstablishComms(static bool &CommsEstablished)
 
 void ArduinoReceiver::EstablishComms(static bool& CommsEstablished, std::vector<std::string>& Packets)
 {
-    SignalPCReadiness();
+    //SignalPCReadiness();
     //CommsEstablished = MonitorArduinoReadiness();
     //CommsEstablished = PeekForData(ARDUINO_READY);
 
@@ -1117,10 +1379,10 @@ void ArduinoReceiver::EstablishComms(static bool& CommsEstablished, std::vector<
     ReadIntoBuffer(CircularBufferIn);
     CommsEstablished = ParseBufferForItem(CircularBufferIn, Packets, ARDUINO_READY);
     
-    if(CommsEstablished)
-       std::cout << "\n Comms established ";
+    /*if (CommsEstablished)
+        std::cout << "\n Comms established Board type " << ArduinoType;
     else
-       std::cout << "\n No comms available ";
+        std::cout << "\n No comms available Board type " << ArduinoType;*/
 }
 
 void ArduinoReceiver::ListenForArduinoReadiness(static bool& ArduinoCommsEstablished, std::vector<std::string>& Packets)
@@ -1131,9 +1393,30 @@ void ArduinoReceiver::ListenForArduinoReadiness(static bool& ArduinoCommsEstabli
     ArduinoCommsEstablished = ParseBufferForItem(CircularBufferIn, Packets, ARD_COMMS_EST);
 }
 
-void ArduinoReceiver::SendHeartBeat()
+bool ArduinoReceiver::ListenForRequest(SerialOrder order)
 {
-    
+    std::vector<std::string> DataPackets;
+    CircularBuffer<unsigned char> CircularBufferIn{ 50 };
+
+    ReadIntoBufferMT(CircularBufferIn);
+
+    return ParseBufferForItem2(CircularBufferIn, DataPackets, order);
+}
+
+void ArduinoReceiver::SendHeartBeat(DataConcentrator& DC)
+{
+ /*
+ * Heartbeat not sent, amber if not sent, no messages indicating successfully sent HB. 
+ * 3001 Gyroscope
+ * 4001 Radar
+ * 5001 Motor
+ * 
+ * Will also determine ardunio connected or not Red for not connected, cyan connected
+ * 3002 Gyroscope, 3003 Connected
+ * 4002 Radar, 4003 Connected
+ * 5002 Motor, 5003 Connected
+ * 
+ */
 
     /*bool Transfer;
     char buff[1] = { PC_HEARTBEAT };
@@ -1147,15 +1430,198 @@ void ArduinoReceiver::SendHeartBeat()
     char buff[3] = { START_MARKER, dataschar, END_MARKER };
     Transfer = Ard.writeSerialPort(buff, 3);
 
-    if (!Transfer)
-        std::cout << "\n FAILED TO SEND DATA  ";
+    SignalPCReadiness();
 
-    if (!Ard.isConnected())
-    {
-        //std::cout << "\n ARDUINO IS NOT CONNECTED  ";
-    }
+    /*
+    *  Messaging
+    */
+
+    std::string MessageHeartBeatCaution{ "12:Caution, heart beat not sent " };
+    std::string Board = GetBoardMessage();
+
+    std::string MessageHeartBeatCautionComplete = MessageHeartBeatCaution + Board;
+
+    int MessageCodeHB = GetBoardMessageCode() + 1;
+
+        if (!Transfer)
+        {
+            DC.SetMessageStatus(MessageHeartBeatCautionComplete, MessageCodeHB, MESSAGE_ON);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageHeartBeatCautionComplete, MessageCodeHB, MESSAGE_OFF);
+        }
+
+    std::string MessageArduinoConnectionOFF={ "11:Warning, Arduino not connected " };
+    std::string MessageCompleteArduinoConnectionOFF = MessageArduinoConnectionOFF + Board;
+    int MessageCodeConnectionOFF = GetBoardMessageCode() + 2;
+
+    std::string MessageArduinoConnectionON = { "13:Arduino connected " };
+    std::string MessageCompleteArduinoConnectionON = MessageArduinoConnectionON + Board;
+    int MessageCodeConnectionON = GetBoardMessageCode() + 3;
+
+        if (!Ard.isConnected())
+        {
+            DC.SetMessageStatus(MessageCompleteArduinoConnectionOFF, MessageCodeConnectionOFF, MESSAGE_ON);
+            DC.SetMessageStatus(MessageCompleteArduinoConnectionON, MessageCodeConnectionON, MESSAGE_OFF);
+
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageCompleteArduinoConnectionOFF, MessageCodeConnectionOFF, MESSAGE_OFF);
+            DC.SetMessageStatus(MessageCompleteArduinoConnectionON, MessageCodeConnectionON, MESSAGE_ON);
+        }
+
 
     //std::cout << "\nmesage to be sent " << buff[0] << " " << buff[1] << " " << buff[2];
+}
+
+void ArduinoReceiver::SendMessageToArd(char command)
+{
+    char buff[5] = { START_MARKER, command, END_MARKER };
+    bool Transfer = Ard.writeSerialPort(buff, 3);
+}
+
+void ArduinoReceiver::SendMessageToArd(SerialOrder Type, int command)
+{
+
+    char CommandType = (char)Type;
+    bool Transfer;
+
+    char Command = (char)command;
+
+    char buff[5] = { START_MARKER, CommandType, ':', Command, END_MARKER};
+    //char buff[3] = { START_MARKER, CommandType, END_MARKER };
+    Transfer = Ard.writeSerialPort(buff, 5);
+}
+
+void ArduinoReceiver::SendMessageToArdTotal(SerialOrder Type, int command, static DWORD& lastSendTime)
+{
+    bool Transfer,
+         Transfer2,
+         Transfer3;
+    
+    char CommandType = (char)Type;
+    char Command = (char)command;
+
+    char HeartBeat = (char)PC_HEARTBEAT;
+    char ReadyInd = (char)PC_READY;
+
+    DWORD currentTime = GetTickCount64();
+
+    //char buff[] = { START_MARKER, HeartBeat, ',', ReadyInd, ',', CommandType, ':', Command, END_MARKER };
+
+    //char buffHB[] = { START_MARKER, HeartBeat, END_MARKER };
+    //char buffReadyInd[] = { START_MARKER, ReadyInd, END_MARKER };
+    //char buff[] = { START_MARKER, CommandType, ':', Command, END_MARKER };
+
+    char buff[] = { START_MARKER, HeartBeat, ReadyInd, CommandType, ':', Command, END_MARKER };
+    //char buff[5] = { START_MARKER, CommandType, ':', Command, END_MARKER };
+    //char buff[3] = { START_MARKER, CommandType, END_MARKER };
+
+   /* std::string packet = std::string(1, START_MARKER)
+        + std::to_string(PC_HEARTBEAT) + ","
+        + std::to_string(PC_READY) + ","
+        + (char)Type + ":"
+        + std::to_string(command)
+        + END_MARKER;*/
+
+    //Transfer = Ard.writeSerialPort((char*)packet.c_str(), packet.length());
+
+    if (currentTime - lastSendTime >= 20)
+    {
+        lastSendTime = currentTime;
+
+
+        //Transfer = Ard.writeSerialPort((char*)packet.c_str(), packet.length());
+        //std::cout << "\n50 MS passed";
+
+        //Transfer2 = Ard.writeSerialPort(buffHB, sizeof(buffHB));
+        //Transfer3 = Ard.writeSerialPort(buffReadyInd, sizeof(buffReadyInd));
+        Transfer = Ard.writeSerialPort(buff, sizeof(buff));
+
+
+
+        //Transfer = Ard.writeSerialPort((char*)packet.c_str(), packet.length());
+    }
+
+
+    //Transfer = Ard.writeSerialPort(buff, 9);
+}
+
+void ArduinoReceiver::SendMessageToArdTotal(SerialOrder Type, int command, SerialOrder Type2, int command2, SerialOrder Type3, int command3, static DWORD& lastSendTime)
+{
+    bool Transfer,
+        Transfer2,
+        Transfer3;
+
+    char CommandType = (char)Type;
+    char Command = (char)command;
+
+    char CommandType2 = (char)Type2;
+    char Command2 = (char)command2;
+
+    char CommandType3 = (char)Type3;
+    char Command3 = (char)command3;
+
+    char HeartBeat = (char)PC_HEARTBEAT;
+    char ReadyInd = (char)PC_READY;
+
+    DWORD currentTime = GetTickCount64();
+
+
+    char buff[] = { START_MARKER, HeartBeat, ReadyInd, CommandType, ':', Command, CommandType2, ':', Command2, CommandType3, ':', Command3, END_MARKER };
+
+
+   /* if (currentTime - lastSendTime >= 50)
+    {
+        lastSendTime = currentTime;
+
+        Transfer = Ard.writeSerialPort(buff, sizeof(buff));
+
+        //std::cout << "\nTimeout, MSB ";
+
+    }*/
+
+    Transfer = Ard.writeSerialPort(buff, sizeof(buff));
+
+}
+
+void ArduinoReceiver::SendMessageToArdTotal(SerialOrder Type, int command, SerialOrder Type2, int command2, static DWORD& lastSendTime)
+{
+    bool Transfer,
+        Transfer2,
+        Transfer3;
+
+    char CommandType = (char)Type;
+    char Command = (char)command;
+
+    char CommandType2 = (char)Type2;
+    char Command2 = (char)command2;
+
+
+
+    char HeartBeat = (char)PC_HEARTBEAT;
+    char ReadyInd = (char)PC_READY;
+
+    DWORD currentTime = GetTickCount64();
+
+
+    char buff[] = { START_MARKER, HeartBeat, ReadyInd, CommandType, ':', Command, CommandType2, ':', Command2, END_MARKER };
+
+
+    /* if (currentTime - lastSendTime >= 50)
+     {
+         lastSendTime = currentTime;
+
+         Transfer = Ard.writeSerialPort(buff, sizeof(buff));
+
+         //std::cout << "\nTimeout, MSB ";
+
+     }*/
+
+    Transfer = Ard.writeSerialPort(buff, sizeof(buff));
+
 }
 
 bool ArduinoReceiver::ListenForHeartBeat(const char &HeatBeatCharacter)
@@ -1319,7 +1785,7 @@ void ArduinoReceiver::ParseBuffer()
 }
 
 bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, std::vector<std::string>& Packets, SerialOrder Order)
-{
+{//added
     bool run = true,
          ArdReady = false;
 
@@ -1334,13 +1800,13 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
                 StartMarkerIndex = -1;
 
             unsigned int BuffSize = Buff.size();
-            std::cout << "\nSize of buffer at the start  " << Buff.size();
+            //std::cout << "\nSize of buffer at the start  " << Buff.size();
 
 
-            for (int i = Buff.size() - 1; i > -1; i--)
+            /*for (int i = Buff.size() - 1; i > -1; i--)
             {
                 std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
-            }
+            }*/
 
 
 
@@ -1350,7 +1816,7 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
 
                 if (Buff.peek(i) == ']')
                 {
-                    std::cout << "\nStart at index  " << i;
+                    //std::cout << "\nStart at index  " << i;
                     StartMarkerIndex = i;
                     //Remove the Startmarker
                     //if (Buff.size() > 0)
@@ -1370,7 +1836,7 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
                 {
                     if (Buff.peek(i) == '[' && i < StartMarkerIndex) //Must come after
                     {
-                        std::cout << "\nEnd marker found at " << i;
+                        //std::cout << "\nEnd marker found at " << i;
                         EndMarkerIndex = i;
                         break;           // Exit the processing block cleanly
                     }
@@ -1383,19 +1849,24 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
             {         
                 for (int i = StartMarkerIndex - 1 ; i > EndMarkerIndex; i--)
                 {
-                    std::cout << "\n Packing Data  " << i <<" " << Buff.peek(i);
-                    DataPacket.push_back(Buff.peek(i));
+                    if (!Buff.IsEmpty())
+                    {
+                        //std::cout << "\n Packing Data  " << i << " " << Buff.peek(i);
+                        DataPacket.push_back(Buff.peek(i));
+                    }
                 }
                 //now consume
                 for (int i = StartMarkerIndex; i >= EndMarkerIndex; i--)
                 {
-                    char data = Buff.ReadByte();
-                    std::cout << "\n Consuming at index  " << i<<" Data consumed "<< data;
-
+                    if (!Buff.IsEmpty())
+                    {
+                        char data = Buff.ReadByte();
+                        //std::cout << "\n Consuming at index  " << i << " Data consumed " << data;
+                    }
                 }
             }
 
-
+            /*
 
             if (!DataPacket.empty())
             {
@@ -1408,9 +1879,9 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
             {
                 std::cout << "\nData packet empty ";
             }
-
+            
             std::cout << "\nBuffer size  END "<<Buff.size();
-
+            */
             //std::string DataPacket;
 
             /*for (int i = Buff.size() - 1; i > -1; i--)
@@ -1491,11 +1962,11 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
                         if(isitadigit)
                             value = std::stoi(Packets[i]);
 
-                        std::cout << "\nPacket value  " << Packets[i] <<" at "<<i<<" digit detected "<< isitadigit<<" As an int "<< value;
+                        //std::cout << "\nPacket value  " << Packets[i] <<" at "<<i<<" digit detected "<< isitadigit<<" As an int "<< value;
                         //value = std::stoi(Packets[i]);
                     }
 
-                    if (value == Order)  //(value == ARDUINO_READY)
+                    if (value == ARDUINO_READY)  //(value == ARDUINO_READY)
                         ArdReadySignals++;
                 }
 
@@ -1504,13 +1975,216 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
         if (ArdReadySignals > 1)
             ArdReady = 1;
 
-        std::cout << "\n Arduino ready signals " << ArdReadySignals;
+        //std::cout << "\n Arduino ready signals " << ArdReadySignals <<" "<< ArduinoType;
     }
     
  
     return ArdReady;
 
     
+}
+
+bool ArduinoReceiver::ParseBufferForItem2(CircularBuffer< unsigned char >& Buff, std::vector<std::string>& Packets, SerialOrder Order)
+{//added
+    bool run = true,
+        ArdReady = false;
+
+    int ArdReadySignals = 0;
+
+    while (run)
+    {
+        if (Buff.size() > 2)
+        {
+
+            int EndMarkerIndex = -1,
+                StartMarkerIndex = -1;
+
+            unsigned int BuffSize = Buff.size();
+            //std::cout << "\nSize of buffer at the start  " << Buff.size();
+
+
+            for (int i = Buff.size() - 1; i > -1; i--)
+            {
+                //std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
+            }
+
+
+
+            for (int i = Buff.size() - 1; i > -1; i--)
+            {
+                //std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
+
+                if (Buff.peek(i) == ']')
+                {
+                    //std::cout << "\nStart at index  " << i;
+                    StartMarkerIndex = i;
+                    //Remove the Startmarker
+                    //if (Buff.size() > 0)
+                        //Buff.ReadByte();
+                    break;
+                }
+                //if (Buff.size() > 0)
+                    //Buff.ReadByte();
+            }
+
+            unsigned int BuffSize2 = Buff.size();
+            //std::cout << "\n Size of CB2 " << BuffSize2;
+
+            if (Buff.size() > 0)
+            {
+                for (int i = Buff.size() - 1; i > -1; i--)
+                {
+                    if (Buff.peek(i) == '[' && i < StartMarkerIndex) //Must come after
+                    {
+                        //std::cout << "\nEnd marker found at " << i;
+                        EndMarkerIndex = i;
+                        break;           // Exit the processing block cleanly
+                    }
+                }
+            }
+
+            std::string DataPacket;
+
+            if (Buff.size() > 0)
+            {
+                for (int i = StartMarkerIndex - 1; i > EndMarkerIndex; i--)
+                {
+                    if (!Buff.IsEmpty())
+                    {
+                        //std::cout << "\n Packing Data  " << i << " " << Buff.peek(i);
+                        DataPacket.push_back(Buff.peek(i));
+                    }
+                }
+                //now consume
+                for (int i = StartMarkerIndex; i >= EndMarkerIndex; i--)
+                {
+                    if (!Buff.IsEmpty())
+                    {
+                        char data = Buff.ReadByte();
+                        //std::cout << "\n Consuming at index  " << i << " Data consumed " << data;
+                    }
+                }
+            }
+
+            /*
+
+            if (!DataPacket.empty())
+            {
+                for (int i = 0; i < DataPacket.size(); i++)
+                {
+                    std::cout << "\nData packet " << DataPacket[i];
+                }
+            }
+            else
+            {
+                std::cout << "\nData packet empty ";
+            }
+
+            std::cout << "\nBuffer size  END "<<Buff.size();
+            */
+            //std::string DataPacket;
+
+            /*for (int i = Buff.size() - 1; i > -1; i--)
+            {
+                if (Buff.peek(i) == '[' || Buff.peek(i) == ']')
+                {
+                    if (Buff.size() > 0)
+                        Buff.ReadByte();
+                    break;
+                }
+
+
+                if (Buff.size() > 2)
+                {
+
+                    if (Buff.peek(i) == '?')
+                    {
+                        Buff.ReadByte();
+                        std::cout << "\nHB DETECTED ";
+                    }
+
+                    unsigned char data = Buff.peek(i);
+
+                    Buff.ReadByte();
+                    //std::cout << "\nPacking buffer, for loop number at: " << i << " Buff size " << Buff.size() << " Buff content " << Buff.peek(i) << " Buff at data " << data;
+
+                    bool isitadigit = std::isdigit(data);
+
+                    if (isitadigit)
+                      DataPacket.push_back(data);
+                }
+            }
+
+
+            //std::cout << "\n Size of CB3 " << Buff.size() << " Data packet size " << DataPacket.size();
+
+            std::reverse(DataPacket.begin(), DataPacket.end());
+
+            if (DataPacket.size() > 0)
+            {
+
+
+                for (int i = 0; i < DataPacket.size(); i++)
+                {
+                   // std::cout << "\nData packet " << DataPacket[i];
+                }
+
+            }*/
+
+            Packets.push_back(DataPacket);
+
+        }
+        else
+        {
+            run = false;
+
+        }
+
+
+
+        if (Packets.size() > 0)
+        {
+            for (int i = 0; i < Packets.size(); i++)
+            {
+                int value = 0;
+
+                if (!Packets.empty())
+                {
+                    if (!Packets[i].empty())
+                    {
+                        //value = std::stoi(Packets[i]);
+                        //Packets[i].re
+                        std::reverse(Packets[i].begin(), Packets[i].end());
+                        char Data;
+                        Data = (char)Packets[i].at(0);
+                        bool isitadigit = std::isdigit(Data);
+
+                        if (isitadigit)
+                            value = std::stoi(Packets[i]);
+
+                        //std::cout << "\nPacket value  " << Packets[i] <<" at "<<i<<" digit detected "<< isitadigit<<" As an int "<< value;
+                        //value = std::stoi(Packets[i]);
+                    }
+
+                    if ((SerialOrder)value == Order)  //(value == ARDUINO_READY)
+                    {
+                       
+                        ArdReadySignals++;
+                    }
+                }
+
+            }
+        }
+        if (ArdReadySignals > 0)
+            ArdReady = 1;
+
+        //std::cout << "\n Arduino ready signals " << ArdReadySignals <<" "<< ArduinoType;
+    }
+
+
+    return ArdReady;
+
+
 }
 
 
@@ -1648,9 +2322,10 @@ bool ArduinoReceiver::ParseBufferForItem(CircularBuffer< unsigned char >& Buff, 
 
 void ArduinoReceiver::ReadIntoBuffer(CircularBuffer< unsigned char >& Buff)
 {
-    char BufferIn[MAX_BUFFER];
+    const int BufSz = 15;
+    char BufferIn[MAX_BUFFER_GYRO];
 
-    int BytesRead = Ard.readSerialPort(BufferIn, MAX_BUFFER);
+    int BytesRead = Ard.readSerialPort(BufferIn, MAX_BUFFER_GYRO);
 
     //std::cout << "\nBytes Read number "<< BytesRead;
 
@@ -1669,6 +2344,72 @@ void ArduinoReceiver::ReadIntoBuffer(CircularBuffer< unsigned char >& Buff)
         }
 
         
+        //std::cout << "\n Is CB full ? "<< Buff.IsFull();
+
+    }
+    else
+    {
+        //std::cout << "\n Bytes Read is 0";
+    }
+}
+
+void ArduinoReceiver::ReadIntoBufferMT(CircularBuffer< unsigned char >& Buff)
+{
+    const int BufSz = 15;
+    char BufferIn[MAX_BUFFER_GYRO];
+
+    int BytesRead = Ard.readSerialPort(BufferIn, MAX_BUFFER_GYRO);
+
+    //std::cout << "\nBytes Read number "<< BytesRead;
+
+
+    if (BytesRead > 0)
+    {
+        std::lock_guard<std::mutex> lock(MutexArd);
+
+        for (int i = 0; i < BytesRead; i++)
+        {
+            //std::string ConvertedToStringVal = std::to_string(BufferIn[i]);
+            //std::cout << "\nString Read " << ConvertedToStringVal;
+
+            //std::cout << "\n Data added " << BufferIn[i];
+            Buff.WriteByte((BufferIn[i]));
+        }
+
+
+        //std::cout << "\n Is CB full ? "<< Buff.IsFull();
+
+    }
+    else
+    {
+        //std::cout << "\n Bytes Read is 0";
+    }
+}
+
+void ArduinoReceiver::ReadIntoBufferT(CircularBuffer< unsigned char >& Buff)
+{
+    const int BufSz = 15;
+    char BufferIn[MAX_BUFFER_GYRO];
+
+    int BytesRead = Ard.readSerialPort(BufferIn, MAX_BUFFER_GYRO);
+
+    //std::cout << "\nBytes Read number "<< BytesRead;
+
+
+    if (BytesRead > 0)
+    {
+        std::lock_guard<std::mutex> lock(MutexArd);
+
+        for (int i = 0; i < BytesRead; i++)
+        {
+            //std::string ConvertedToStringVal = std::to_string(BufferIn[i]);
+            //std::cout << "\nString Read " << ConvertedToStringVal;
+
+            //std::cout << "\n Data added " << BufferIn[i];
+            Buff.WriteByte((BufferIn[i]));
+        }
+
+
         //std::cout << "\n Is CB full ? "<< Buff.IsFull();
 
     }
@@ -1929,6 +2670,180 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
     }
 }
 
+void ArduinoReceiver::ParseBufferRadT(CircularBuffer< unsigned char >& Buff, std::vector<std::string>& Packets)
+{
+    bool run = true;
+    std::string DataPacket;
+
+    while (run)
+    {
+        bool FoundStart = false;
+        
+
+        if (Buff.size() > 3)
+        {
+
+            int EndMarkerIndex = -1,
+                StartMarkerIndex = -1;
+
+            unsigned int BuffSize = Buff.size();
+            //std::cout << "\n Size of CB " << BuffSize;
+
+            char c = Buff.ReadByte();
+            std::cout << "\n Read " << c;
+
+            if (c == START_MARKER)
+            {
+                FoundStart = 1;
+
+                if (!DataPacket.empty())
+                {
+                    DataPacket.clear();
+                }
+            }
+            else if (FoundStart)
+            {
+                DataPacket.push_back(c);
+
+                if (c == END_MARKER)
+                {
+                    Packets.push_back(DataPacket);
+                    FoundStart = 0;
+                }
+            }
+            
+        }
+        else
+        {
+            run = false;
+
+        }
+
+        if (!Packets.empty())
+        {
+            for (int i = 0; i < Packets.size(); i++)
+            {
+                
+                /*if (!Packets[i].empty() && std::all_of(Packets[i].begin(), Packets[i].end(), ::isdigit))
+                {
+                    if ((SerialOrder)std::stoi(Packets[i]) == ARD_COMMS_EST)
+                        BoardReadiness = 1;
+                }*/
+
+                std::cout << "\nData packet in vector " << Packets[i]<<" at "<<i <<" Ard type "<< ArduinoType;
+
+            }
+        }
+        else
+        {
+            //std::cout << "\nEMPTY ";
+        }
+    }
+}
+
+void ArduinoReceiver::ParseBufferRadT(CircularBuffer< unsigned char >& Buff, bool& HeartBeat, bool& BoardReadiness, std::vector<std::string>& Packets)
+{
+    bool run = true;
+    std::string DataPacket;
+    bool FoundStart = false;
+
+    while (run)
+    {
+       
+
+
+        if (Buff.size() > 3)
+        {
+
+            int EndMarkerIndex = -1,
+                StartMarkerIndex = -1;
+
+            unsigned int BuffSize = Buff.size();
+            //std::cout << "\n Size of CB " << BuffSize;
+
+            char c = Buff.ReadByte();
+            //std::cout << "\n Read " << c;
+
+            if (c == '?')
+            {
+                HeartBeat = 1;
+            }
+
+            if (c == START_MARKER)
+            {
+                FoundStart = 1;
+
+                //std::cout << "\nStrt found ";
+
+                if (!DataPacket.empty())
+                {
+                    DataPacket.clear();
+                }
+            }
+            else if (FoundStart)
+            {
+                
+                if (c != END_MARKER)
+                  DataPacket.push_back(c);
+
+                //std::cout << "\nAdding "<<c;
+
+                if (c == END_MARKER)
+                {
+                    Packets.push_back(DataPacket);
+                    FoundStart = 0;
+                    //std::cout << "\nAdded ";
+                }
+            }
+
+        }
+        else
+        {
+            run = false;
+
+        }
+
+        if (!Packets.empty())
+        {
+            for (int i = 0; i < Packets.size(); i++)
+            {
+
+                if (!Packets[i].empty() && std::all_of(Packets[i].begin(), Packets[i].end(), ::isdigit))
+                {
+                    if ((SerialOrder)std::stoi(Packets[i]) == ARD_COMMS_EST)
+                        BoardReadiness = 1;
+                }
+
+                //std::cout << "\nData packet in vector " << Packets[i] << " at " << i << " Ard type " << ArduinoType;
+
+            }
+        }
+        else
+        {
+            //std::cout << "\nEMPTY ";
+        }
+    }
+
+    //std::cout << "\nPackets size "<< Packets.size();
+    if (!Packets.empty())
+    {
+        for (int i = 0; i < Packets.size(); i++)
+        {
+            std::cout << "\nData packet in vector " << Packets[i];
+            /*
+            if (Packets[i].find("Nan"))
+            {
+                std::cout << "\nNan ";
+            }
+            */
+        }
+    }
+    else
+    {
+        std::cout << "\nEMPTY GYRO PACKS ";
+    }
+}
+
 void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool& HeartBeat, bool& BoardReadiness, std::vector<std::string>& Packets)
 {
     bool run = true;
@@ -1947,6 +2862,14 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
             for (int i = Buff.size() - 1; i > -1; i--)
             {
                 //std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
+
+
+                //if (Buff.size() > 0)
+            }
+
+            for (int i = Buff.size() - 1; i > -1; i--)
+            {
+               // std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
 
                 if (Buff.peek(i) == ']')
                 {
@@ -2002,19 +2925,23 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                 }
             }
 
-            for (int i = Buff.size() - 1; i > -1; i--)
+            /*for (int i = Buff.size() - 1; i > -1; i--)
             {
                 if (Buff.size() > 0)
                 {
                     
                     char data = Buff.peek(i);
+
+                    //std::cout << "\nComms radar peek buff "<< data;
+
                     if ((SerialOrder)data == ARD_COMMS_EST)
                     {
                         BoardReadiness = 1;
+                        //std::cout << "\nComms established radar ";
                     }
                    
                 }
-            }
+            }*/
 
 
             std::string DataPacket;
@@ -2050,15 +2977,15 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
             //std::cout << "\n Size of CB3 " << Buff.size() << " Data packet size " << DataPacket.size();
 
             std::reverse(DataPacket.begin(), DataPacket.end());
-
+            /*
             if (DataPacket.size() > 0)
             {
-                //for (int i = 0; i < DataPacket.size(); i++)
-                //{
-                    //std::cout << "\nData packet " << DataPacket;
-                //}
+                for (int i = 0; i < DataPacket.size(); i++)
+                {
+                    std::cout << "\nData packet " << DataPacket;
+                }
             }
-
+            */
             Packets.push_back(DataPacket);
 
         }
@@ -2079,7 +3006,7 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                         BoardReadiness = 1;
                 }
 
-                //std::cout << "\nData packet in vector " << Packets[i]<<" at "<<i;
+                //std::cout << "\nData packet in vector " << Packets[i]<<" at "<<i <<" Ard type "<< ArduinoType;
 
             }
         }
@@ -2205,10 +3132,10 @@ void ArduinoReceiver::ParseBuffer(CircularBuffer< unsigned char >& Buff, std::ve
         }
     }
 
-    for (int i = 0; i < Packets.size(); i++)
+    /*for (int i = 0; i < Packets.size(); i++)
     {
       std::cout << "\nData packet " << Packets[i];
-    }
+    }*/
 
     //std::cout << "\n Number of data packets " << Packets.size();
 }
@@ -2335,6 +3262,36 @@ void ArduinoReceiver::ProcessDataPackets(std::vector<std::string>& Packets, Boar
     }
 }
 
+bool ArduinoReceiver::isValidFloat(const std::string& str)
+{
+    if (str.empty()) return false;
+
+    size_t i = 0;
+    // Skip leading whitespace
+    while (i < str.size() && std::isspace(str[i])) i++;
+
+    // Check optional sign
+    if (i < str.size() && (str[i] == '+' || str[i] == '-')) i++;
+
+    bool hasDigits = false;
+    bool hasDecimal = false;
+
+    for (; i < str.size(); ++i) {
+        if (std::isdigit(str[i])) {
+            hasDigits = true;
+        }
+        else if (str[i] == '.' && !hasDecimal) {
+            hasDecimal = true; // Allow only one decimal point
+        }
+        else {
+            // Check if remaining characters are just trailing spaces
+            while (i < str.size() && std::isspace(str[i])) i++;
+            return (i == str.size()) && hasDigits;
+        }
+    }
+    return hasDigits;
+}
+
 void ArduinoReceiver::SortAndUpdateFromPacket(std::string& DataPacket)
 {
     if (!DataPacket.empty()) 
@@ -2367,9 +3324,13 @@ void ArduinoReceiver::SortAndUpdateFromPacket(std::string& DataPacket)
             DataPacket.pop_back();
             std::reverse(DataPacket.begin(), DataPacket.end());
 
-            float measureval = std::stof(DataPacket);
+            float measureval = 0;
+
+            if (isValidFloat(DataPacket))
+                measureval = std::stof(DataPacket);  //Might have an error here
+
             ConvertedRoll = measureval;
-            //std::cout << "\n Packet contents as float " << measureval << " Order " << Order;
+            //std::cout << "\n Roll " << measureval << " Order " << Order;
             break;
         }
         case MEASURED_PITCH:
@@ -2389,9 +3350,14 @@ void ArduinoReceiver::SortAndUpdateFromPacket(std::string& DataPacket)
             DataPacket.pop_back();
             std::reverse(DataPacket.begin(), DataPacket.end());
 
-            float measureval = std::stof(DataPacket);
+            
+            float measureval = 0;
+
+            if (isValidFloat(DataPacket))
+                measureval = std::stof(DataPacket);  //Might have an error here, likely bad format
+
             ConvertedPitch = measureval;
-            //std::cout << "\n Packet contents as float " << measureval << " Order " << Order;
+            //std::cout << "\n Pitch " << measureval << " Order " << Order;
             break;
         }
         case MEASURED_YAW:
@@ -2410,7 +3376,11 @@ void ArduinoReceiver::SortAndUpdateFromPacket(std::string& DataPacket)
             DataPacket.pop_back();
             std::reverse(DataPacket.begin(), DataPacket.end());
 
-            float measureval = std::stof(DataPacket);
+
+            float measureval = 0;
+
+            if (isValidFloat(DataPacket))
+                measureval = std::stof(DataPacket);
 
             //std::cout << "\n Packet contents as float " << measureval << " Order " << Order;
             break;
@@ -2714,6 +3684,7 @@ void ArduinoReceiver::SteeringI8Command(SerialOrder CommandType, int8_t Command)
 
 }
 
+
 void ArduinoReceiver::KeepSerialActive() {
     KeepSerialOpen();
 }
@@ -2770,4 +3741,158 @@ unsigned long ArduinoReceiver::GetTime() {
 ArduinoReceiver::~ArduinoReceiver() {
 
     //Ard.SerialClose();
+}
+
+char ArduinoReceiver::GetBoardSpecialChar()
+{
+    char board;
+
+    switch (ArduinoType)
+    {
+    case RADAR_BOARD:
+    {
+
+        board = 'R';
+
+        return  board;
+        break;
+    }
+    case GYROSCOPE_BOARD:
+    {
+
+        board = 'G';
+
+        return  board;
+        break;
+    }
+    case MOTOR_STEER_BOARD:
+    {
+
+        board = 'M';
+
+        return  board;
+        break;
+    }
+
+    }
+}
+
+void ArduinoReceiver::InitializedBoard()
+{
+    char InitValue = GetBoardSpecialChar();
+
+    DWORD StartTimeSend = GetTickCount();
+
+    while (GetTickCount() - StartTimeSend < 20)
+    {
+        SendMessageToArd(InitValue);
+    }
+
+}
+bool ArduinoReceiver::FindArduinoBoardPort(const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
+{
+    HANDLE hSerial;
+    std::string BoardName = expectedName;
+
+    char Specialchar = GetBoardSpecialChar();
+
+    std::cout << "\nSpecial char " << Specialchar;
+
+    for (int port = 1; port <= 32; port++)
+    {
+        if (port != PrevPort || port != PrevPort2) //Skip ports that have already been marked
+        {
+            std::cout << "\nTrying COM " << port << "...";
+
+            if (Ard.IndetifySerialPort(port, expectedName, hSerial, buad, Specialchar))
+            {
+                outPortNumber = port;
+                std::cout << "Found " << BoardName << " on COM" << port << "\n";
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool ArduinoReceiver::FindArduinoBoardPort(const std::string& expectedName, int& outPortNumber, int buad, int PrevPort)
+{
+    HANDLE hSerial;
+    std::string BoardName = expectedName;
+
+    char Specialchar = GetBoardSpecialChar();
+
+    std::cout << "\nSpecial char " << Specialchar;
+
+    for (int port = 1; port <= 32; port++)
+    {
+        if (port != PrevPort) //Skip ports that have already been marked
+        {
+            //std::cout << "\nTrying COM " << port << "...";
+
+            if (Ard.IndetifySerialPort(port, expectedName, hSerial, buad, Specialchar))
+            {
+                outPortNumber = port;
+                std::cout << "Found " << BoardName << " on COM" << port << "\n";
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool ArduinoReceiver::FindArduinoBoardPort(const std::string& expectedName, int& outPortNumber, int buad)
+{
+    HANDLE hSerial;
+    std::string BoardName = expectedName;
+
+    char Specialchar = GetBoardSpecialChar();
+
+    std::cout << "\nSpecial char " << Specialchar;
+
+    for (int port = 1; port <= 32; port++)
+    {
+        //std::cout << "\nTrying COM " << port << "...";
+
+        if (Ard.IndetifySerialPort(port, expectedName, hSerial, buad, Specialchar))
+        {
+            outPortNumber = port;
+            std::cout << "Found " << BoardName << " on COM" << port << "\n";
+            return true;
+        }
+
+    }
+
+    return false;
+}
+
+bool ArduinoReceiver::FindArduinoBoardPortHserial(const std::string& expectedName, int& outPortNumber, int buad, int PrevPort)
+{
+    HANDLE hSerial;
+    std::string BoardName = expectedName;
+
+    char Specialchar = GetBoardSpecialChar();
+
+    std::cout << "\nSpecial char " << Specialchar;
+
+    for (int port = 1; port <= 32; port++)
+    {
+        if (port != PrevPort) //Skip ports that have already been marked
+        {
+            //std::cout << "\nTrying COM " << port << "...";
+
+            if (Ard.IndetifySerialPortHserial(port, expectedName, hSerial, buad, Specialchar))
+            {
+                outPortNumber = port;
+                std::cout << "Found " << BoardName << " on COM" << port << "\n";
+                return true;
+            }
+        }
+    }
+
+    Ard.SetHandle(hSerial);
+
+    return false;
 }

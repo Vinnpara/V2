@@ -55,6 +55,8 @@
 
 #include <TestWindow.h>
 
+#include <GUICallBackSelection.h>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
@@ -151,8 +153,13 @@ void HSVSliders()
 
 int main()
 {
+    
+    //Main class that will handle all failiure, warning, and infromation 
+    //Messages
+    DataConcentrator DC1; 
+
     // glfw: initialize and configure
-// ------------------------------
+    // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -162,6 +169,15 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
+    // For the diagnosis window
+    // --------------------
+
+    HMODULE hRichEditLib = LoadLibrary(L"Msftedit.dll");
+
+    if (!hRichEditLib) {
+        // Handle error or fallback
+        std::cout << "hRichEditLib Not loaded ";
+    }
 
     // glfw window creation
     // --------------------
@@ -210,7 +226,11 @@ int main()
                 GyroFirstReading = true,
                 GyroHeartBeatTimerElapsed =false,
                 GyroArduinoCommunicationsEstablished = false,
-                GyroArduinoCommsLost =0;
+                GyroArduinoCommsLost =0,
+                HBDetectedGyroGlobal = 0,
+                GyroCommsEstTimer = 0,
+                GyroBoardReadinessTimerElapsed = 0,
+                GyroBoardReady = false;
 
     static bool RadarArduinoReady = false,
                 RadarArduinoCommsEstablished = false,
@@ -218,11 +238,31 @@ int main()
                 RadarHeartBeatTimerElapsed = false,
                 RadarBoardReady = false,
                 RadarBoardReadinessTimerElapsed = false,
-                RadarArduinoCommsLost = 0;
+                HBStatus = 0,
+                RadarArduinoCommsLost = 0,
+                PrintDiagnosisMessages = 0,
+                MessageAdded =0,
+                RadarCommsEstTimer = 0;
+
+    static bool MSBArduinoReady = false,
+                MSBArduinoCommsEstablished = false,
+                MSBFirstReading = true,
+                MSBHeartBeatTimerElapsed = false,
+                MSBBoardReady = false,
+                MSBBoardReadinessTimerElapsed = false,
+                MSBHBStatus = 0,
+                MSBArduinoCommsLost = 0,
+                MSBCommsEstTimer = 0,
+                MSBNoFirstReq = 1;
 
     static int GyroHeartBeatCounter =0,
                RadarHeartBeatCounter = 0,
-               RadarBoardReadyCounter = 0;
+               RadarBoardReadyCounter = 0,
+               NumberOfMessages = 0,
+               GyroBoardReadyCounter = 0,
+               MSBHeartBeatCounter = 0,
+               MSBBoardReadyCounter = 0,
+               MSBRequestCounter = 0;
 
 
     unsigned int CharVAO, CharVBO=0, CommonVBO=0;
@@ -235,7 +275,9 @@ int main()
     //COM8 RADAR
     //COM9 GYRO
 
-    TL1.AssignBoards();
+    TL1.AssignBoards(DC1);
+
+    //TL1.DirectConnectArd(DC1);
 
     TL1.InitializeTelemetry();
 
@@ -246,8 +288,16 @@ int main()
     cv::Mat Frame;
     TL1.OpenSerial();
 
+
+    //TL1.DelayForArduinoInit();
+
     //TestWindow* tWindow = new TestWindow(true);
     //TestWindow* tWindow = new TestWindow(true);
+
+
+    TL1.SignalReadyToBoard();
+
+    //TL1.RequestPitch();
 
     TestWindow* DiagWindow = new TestWindow(true);
 
@@ -255,10 +305,16 @@ int main()
 
     //TL1.OpenFile(Pitch("Data_pitch"));
     int TimerDuration = 1;
- 
+
+
     //const std::chrono::seconds interval(TimerDuration);
     //std::chrono::steady_clock::time_point last_reset = std::chrono::steady_clock::now();
     TL1.TimerAnchorPoint();
+
+    DiagWindow->TimeAnchorPoint();
+
+    static DWORD lastSendTime = GetTickCount64(),
+                 lastSendTime2 = GetTickCount64();
 
     while (!glfwWindowShouldClose(window) ) {
 
@@ -267,30 +323,92 @@ int main()
         LimitAngle(180.0f, -180.0f, ConvertedPitch);
         LimitAngle(180.0f, -180.0f, ConvertedRoll);
 
-        
+        TL1.CheckArduinoConnections();
 
         //std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         //TL1.TimerFunction(TimerDuration);
         
-        if (GyroFirstReading || !GyroArduinoCommsEstablished)
-        {
-            TL1.EstablishedCommunicationsArdGyro(GyroArduinoCommsEstablished);
+        //Establishing Comms Gyro
 
+        if (GyroFirstReading || !GyroArduinoCommsEstablished || !GyroBoardReady)
+        {
+            TL1.EstablishedCommunicationsArdGyro(GyroArduinoCommsEstablished, GyroCommsEstTimer, DC1);
+            
+            if(!DC1.CheckMessageExistence(1008) && GyroCommsEstTimer)
+              DC1.AddMessage("13:Establishing comms Gyro ...", 1008);
         }
+
+
+        if (GyroArduinoCommsEstablished)
+        {
+            if (DC1.CheckMessageExistence(1008))
+              DC1.RemoveMessage(1008);
+
+            TL1.HandleCommsEstMessaging(GyroArduinoCommsEstablished, DC1);
+        }
+
+        if (!GyroBoardReady)
+        {
+            TL1.ListenForArduinoReadiness(GYROSCOPE_BOARD, GyroBoardReady, DC1);
+        }
+
+        //Establishing Comms Radar
 
         if (RadarFirstReading || !RadarArduinoCommsEstablished || !RadarBoardReady)
         {
-            TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished);
+            TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished, RadarCommsEstTimer, DC1);
+            
+            if (!DC1.CheckMessageExistence(1009) && RadarCommsEstTimer)
+              DC1.AddMessage("13:Establishing comms Radar ...", 1009);
+        }
 
+        if (RadarArduinoCommsEstablished)
+        {
+            if (DC1.CheckMessageExistence(1009))
+               DC1.RemoveMessage(1009);
         }
 
         if (!RadarBoardReady)
         {
-            TL1.ListenForArduinoReadiness(RadarBoardReady);
+            TL1.ListenForArduinoReadiness(RadarBoardReady, DC1);
         }
 
+        //Establishing Comms MSB
+        /*
+        if (MSBFirstReading || !MSBArduinoCommsEstablished || !MSBBoardReady)
+        {
+            TL1.EstablishedCommunicationsMSB(MSBArduinoCommsEstablished, MSBCommsEstTimer, DC1);
+
+            if (!DC1.CheckMessageExistence(1016) && MSBCommsEstTimer)
+                DC1.AddMessage("13:Establishing comms MSB ...", 1016);
+        }
+        
+        if (!MSBBoardReady)
+        {
+            TL1.ListenForArduinoReadiness(MOTOR_STEER_BOARD, MSBBoardReady, DC1);
+            //cout << "\nMSBoard NOT READY ";
+        }
+
+        if (MSBArduinoCommsEstablished)
+        {
+            if (DC1.CheckMessageExistence(1016))
+                DC1.RemoveMessage(1016);
+        }
+        */
+
+        bool MSBRequest;
+
+        /*if (!MSBFirstReading || MSBNoFirstReq)
+        {
+
+
+            TL1.ListenForMSBRequest(MSBRequest, MSBNoFirstReq, DC1);
+        }*/
+
+        TL1.ListenForMSBRequest(MSBRequest, MSBNoFirstReq, MSBRequestCounter, lastSendTime2, DC1);
+
         //TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished);
-        TL1.SendHeartBeat();
+        TL1.SendHeartBeat(DC1);
 
         //if(!GyroFirstReading && GyroArduinoCommsEstablished)
          //TL1.DetectGyroHeartBeat(TimerDuration, GyroHeartBeatTimerElapsed, GyroHeartBeatCounter);
@@ -308,9 +426,9 @@ int main()
         int ControllerPresent = glfwJoystickPresent(GLFW_JOYSTICK_1);
         //cout << "\n COntroller status " << ControllerPresent;
         const float* axes = 0;
+        int AxesCount = 0;
         if (ControllerPresent == 1) {
 
-            int AxesCount;
             axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &AxesCount);
             //cout << "\n COntroller Axes " << AxesCount;
 
@@ -318,30 +436,57 @@ int main()
 
         //TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
         //TL1.Update2Axis3Accel();
-        if (!GyroFirstReading && GyroArduinoCommsEstablished)
+        //bool HBdetectedGyro = 0;
+
+        //TL1.UpdateGyroAccelT(); //Testing only
+
+        //if (!GyroFirstReading && GyroArduinoCommsEstablished && GyroBoardReady)
+
+        if (!GyroFirstReading && GyroArduinoCommsEstablished && GyroBoardReady)
         {
-            bool HBdetected = 0;
-            TL1.Update2Axis3Accel(RollReceived, PitchReceived, HBdetected, GyroArduinoCommsEstablished, GyroFirstReading);
-            TL1.DetectGyroHeartBeat(TimerDuration, GyroHeartBeatTimerElapsed, HBdetected, GyroHeartBeatCounter);
+            bool HBdetectedGyro = 0,
+                 BoardReadyDetectGyro = 0;
+
+
+            TL1.UpdateGyroAccel(HBdetectedGyro, BoardReadyDetectGyro, GyroArduinoCommsEstablished, GyroFirstReading);
+            TL1.DetectGyroHeartBeat(2.0, GyroHeartBeatTimerElapsed, HBdetectedGyro, HBDetectedGyroGlobal, GyroHeartBeatCounter, DC1);
+            TL1.DetectBoardReadinessGyro(2.0, GyroBoardReadinessTimerElapsed, BoardReadyDetectGyro, GyroBoardReadyCounter, DC1);
         }
 
+        //TL1.DetectGyroHeartBeat(TimerDuration, GyroHeartBeatTimerElapsed, HBdetectedGyro, GyroHeartBeatCounter, DC1);
+        GyroArduinoCommsEstablished = HBDetectedGyroGlobal;
+
+        if (HBDetectedGyroGlobal && !GyroBoardReady)
+        {
+            GyroArduinoCommsEstablished = 0;
+        }
+        
 
         if (!RadarFirstReading && RadarArduinoCommsEstablished && RadarBoardReady)
         {
-            bool HBdetected = 0,
-                 BoardReadyDetect =0;
+            bool HBdetectedRad = 0,
+                 BoardReadyDetectRad = 0;
 
-            TL1.UpdateValuesRadar(HBdetected, BoardReadyDetect, RadarArduinoCommsEstablished);
-            TL1.DetectHeartBeat(TimerDuration, RadarHeartBeatTimerElapsed, HBdetected,  RadarHeartBeatCounter);
-            TL1.DetectBoardReadiness(TimerDuration, RadarBoardReadinessTimerElapsed, BoardReadyDetect, RadarBoardReadyCounter);
+            TL1.UpdateValuesRadar(HBdetectedRad, BoardReadyDetectRad, RadarArduinoCommsEstablished);
+            TL1.DetectHeartBeat(TimerDuration, RadarHeartBeatTimerElapsed, HBdetectedRad, HBStatus, RadarHeartBeatCounter, DC1);
+            TL1.DetectBoardReadiness(TimerDuration, RadarBoardReadinessTimerElapsed, BoardReadyDetectRad, RadarBoardReadyCounter, DC1);
+        }
+
+
+        //TL1.DetectHeartBeat(TimerDuration, RadarHeartBeatTimerElapsed, HBdetectedRad, HBStatus, RadarHeartBeatCounter, DC1);
+        //TL1.DetectBoardReadiness(TimerDuration, RadarBoardReadinessTimerElapsed, BoardReadyDetectRad, RadarBoardReadyCounter, DC1);
+
+        if (HBStatus && !RadarBoardReady)
+        {
+            RadarArduinoCommsEstablished = 0; //Communications lost, but HB detected. Need to re-establish comms
         }
 
         TL1.CalcVelocity();
         //TL1.Update2Axis3AccelFromBuffer();
-       
 
         //TL1.UpdateDiagnosticsWindow(DiagWindow);
         //TL1.DrawDiagnosticsData(DiagWindow);
+
         
         DiagWindow->UpdateDaignostcs(TL1.ReturnPitch(),TL1.ReturnRoll(),TL1.ReturnYaw(), TL1.GetPitchValid(), TL1.GetRollValid(), TL1.ReturnTime());
         DiagWindow->UpdateAccelDiag(TL1.ReturnAccelX(), TL1.ReturnAccelY(), TL1.ReturnAccelZ());
@@ -349,9 +494,10 @@ int main()
         DiagWindow->UpdateMotorSteering(TL1.ReturnSteerAngle(), TL1.ReturnThrottleAngle());
         DiagWindow->UpdateVelDiag(TL1.ReturnVelx(), TL1.ReturnVely(), TL1.ReturnVelocityCombined());
         DiagWindow->UpdateElapsedTime(TL1.ReturnTotalTime());
-        DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
+
 
         DiagWindow->RecordCommandButtons();
+        
 
         //std::cout << "\nWINDOW PITCH VALUE.......  " << TL1.ReturnTime();
         //TL1.ViewDiagnostics();
@@ -363,8 +509,6 @@ int main()
        // V1.capt();
        // V1.disp();
        // V1.HSVScale(low_H, low_S, low_V, high_H, high_S, high_V);
-
-
 
         static bool ValidCommandRoll, ValidCommandPitch, ValidCommandYaw, ValidRadarVal, ValidRadarPos;
      
@@ -420,11 +564,66 @@ int main()
         
         //cout << "\nITERATION DONE";
 
+        //Data concentrates done here
 
+        std::string ControllerStatus;
+
+        if (AxesCount == 6)
+        {
+            ControllerStatus = { "13:Controller is connected" };
+            DC1.SetMessageStatus(ControllerStatus, 9001, MESSAGE_ON);
+        }
+        if (AxesCount == 8)
+        {
+            ControllerStatus = { "12:Controller is not connected" };
+            DC1.SetMessageStatus(ControllerStatus, 9002, MESSAGE_ON);
+        }
+        
+        /*
+        if (!MSBFirstReading && MSBArduinoCommsEstablished && MSBBoardReady)
+        {
+            bool HBdetectedMSB = 0,
+                BoardReadyDetectMSB = 0;
+
+            if (MSBRequest || MSBNoFirstReq)
+            {
+                TL1.DirectCommandMSB(DC1, lastSendTime);
+            }
+
+            TL1.UpdateValuesMSB(HBdetectedMSB, BoardReadyDetectMSB, MSBArduinoCommsEstablished);
+            TL1.DetectMSBHeartBeat(TimerDuration, MSBHeartBeatTimerElapsed, HBdetectedMSB, MSBHBStatus, MSBHeartBeatCounter, DC1);
+            TL1.DetectBoardReadinessMSB(TimerDuration, MSBBoardReadinessTimerElapsed, BoardReadyDetectMSB, MSBBoardReadyCounter, DC1);
+
+        }*/
+
+        /*if (MSBFirstReading || MSBRequest || MSBNoFirstReq)
+        {
+            TL1.DirectCommandMSB(DC1, lastSendTime);
+        }*/
+
+        if (MSBFirstReading || MSBRequest)
+        {
+            //TL1.DirectCommandMSB(DC1, lastSendTime);
+        }
+
+        TL1.DirectCommandMSBTimer(DC1, lastSendTime);
+
+        DC1.CheckMapIncrement(NumberOfMessages);
+
+        DC1.PreparePrintMessage();
+        DC1.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+
+        DiagWindow->GetMessageToprint(DC1.GetPrintMessage());
+        DiagWindow->ShowDiagnosisData(PrintDiagnosisMessages);
+
+
+        DiagWindow->UpdateElapsedTime();
+
+        DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
 
         GyroFirstReading = 0;
         RadarFirstReading = 0;
-
+        MSBFirstReading = 0;
     }
 
     //ARD1.CloaseSerial();

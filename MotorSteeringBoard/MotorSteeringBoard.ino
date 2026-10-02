@@ -4,7 +4,7 @@
      
            /\
           /  \
-         /    \
+         /    \motor_speed
            ||
            
           USER
@@ -17,6 +17,11 @@
 #include<Servo.h> // include server library
 #include <Arduino.h>
 
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
 
 #define enA 5
 #define in1 6
@@ -26,13 +31,19 @@
 #define in3 2
 #define in4 3
 
+#define MAX_PAYLOAD_SIZE 20
+#define MAX_PACKET_SIZE 64
 
 #include <LiquidCrystal.h>
-//#define echoPin 4 // attach pin D2 Arduino to pin Echo of HC-SR04
-//#define trigPin 5
 
 #include <Wire.h>
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+#include <EEPROM.h>
+
 #include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C Scrn(0x27,16,2);
 
 #include "SerialOrder.h"
 #include "ArduinoReceiver.h"
@@ -52,372 +63,685 @@ long duration;
 int distance, inches;
 
 int8_t SteerRawCommand, ThrottleLever, ThrottleLever2;
+int SteerCommandInt;
 
-int MAX_ANGLE = 106;
-int MIN_ANGLE = 10;
+int ServoCommand;
+
+int MAX_ANGLE = 180;
+int MIN_ANGLE = 0;
 
 int motor_speed=0;
 int motor_speed_rev=0;
 
+//---------------------ARDUINO_NAME-------------------------
+//-----------------------MSB--------------------------------
+// Give this specific board a unique name (Max 20 characters)
+//Adjust the define accordingly.
+
+# define NAME_BUFF_SIZE 5
+const char uniqueName[NAME_BUFF_SIZE] = "MSB"; 
+
+static char uniqueNameRead[NAME_BUFF_SIZE] = "MSB"; 
+
 int i_r, i_l, Command=0, SteerVal=0;
 int8_t ZeroSteer=58;
 
-const int BUFFER_SIZE = 50;
-char SteerBuff[BUFFER_SIZE];
+SerialOrder OrderReceivedRad, OrderSentRad;
+static bool PC_not_Ready=1,
+            PC_Ready = 0,
+            CommsEstablished =0,
+            ReStartSerial = 0,
+            SerialFlushed = 0,
+            ValidHeartBeatPC = 0,
+            StartFound = 0;
 
-//LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-LiquidCrystal_I2C Scrn(0x27,16,2);
+volatile bool newDataReceived = false;            
+
+unsigned long previousMillis = 0,
+              previousMillis2 = 0,
+              previousMillis3 = 0,
+              previousMillis4 = 0,
+              lastValidMsgTime = 0,
+              lastRequestTime = 0,
+              SerialOffTime = 0,
+              BoardNameReq = 0,
+              requestSentTime = 0,
+              roundTrip = 0;              
+               
+const long interval = 50,
+           IntervalPCHBMonitoring = 1500,
+           IntervalSerialMonitoring = 60,
+           IntervalDisplayMonitoring = 250,
+           IntervalSerialOff = 1500; // Interval in milliseconds
+
+const char START_MARKER = '[',
+           END_MARKER = ']';
+
+char DataPacketReceived[MAX_PACKET_SIZE],
+     buffin[MAX_PAYLOAD_SIZE];
+
+static int ValidPCHeartBeatCounter = 0,
+           ValidPCReadyCounter =0,
+           j = 0, //data added
+           k = 0; //Steer buff counter
+
+static int  IndexAtStart = 0,
+            IndexAtEnd = 0,
+            ValidPckts = 0,
+            PcktSz = 0,
+            PacektsRecieved = 0,
+            ValidSteerCommand = 0,
+            ValidMotorLeft = 0,
+            ValidMotorRight = 0;
+
+static  bool StartValid = 0,
+             EndValid =0,
+             SendingBoardName =0,
+             MotorSteerSetupComplete =0,
+             InitDelayTimer = 0,
+             DelayStart =0,
+             BoardFoundByPC = 0;
+
+static char BuffInComing[20]; //11 works for the STR only command
+static uint8_t idx = 0;
+static bool inMessage = false;
+
+
+static unsigned long loopCount = 0;
+static unsigned long lastRateCheck = 0;
+
+unsigned long rttSum = 0, rttCount = 0, rttMax = 0, rttAvg = 0;
+unsigned long lastRttReport = 0;
 
 void setup() {
   // put your setup code here, to run once:
+pinMode(LED_BUILTIN, OUTPUT);
 
-Serial.begin(9600); // Serial comm begin at 9600bps
-ser.attach(9);// servo is connected at pin 9 
-//ser1.attach(10); //Servo 2 at pin 10 
+Serial.begin(115200); // Serial comm begin at 9600bps
+/*
+ while (!Serial) {
+    ; // Wait for the serial port to connect (needed for native USB boards, good practice)
+  }
+*/
 
-pinMode(enA, OUTPUT);
-pinMode(in1, OUTPUT);
-pinMode(in2, OUTPUT);
+//WRITING INTO EPROM,ONLY USE THIS **************
+//ONE TIME TO CHANGE THE NAME********************
 
-pinMode(enB, OUTPUT);
-pinMode(in3, OUTPUT);
-pinMode(in4, OUTPUT);
+///////////TO BE USED ONE TIME\\\\\\\\\\\\\\\\\
+********DEVICE NAME HAS BEEN UPDATED*************
+//^^^^CHANGE STATUS ONCE NAME UPDATED^^^^^\\\\\\
+/*
+ for (int i = 0; i < NAME_BUFF_SIZE; i++) 
+ {
+ 
+    EEPROM.write(i, uniqueName[i]);
+ }
+ 
+ for (int i = 0; i < NAME_BUFF_SIZE; i++) 
+ {
+ 
+    uniqueNameRead[i] = EEPROM.read(i);
+ }
+//To check name change
 
-// Set initial rotation direction
-digitalWrite(in1, LOW);
-digitalWrite(in2, LOW);
-analogWrite(enA,0);
+ 
+///////////TO BE USED ONE TIME\\\\\\\\\\\\\\\\\
 
-digitalWrite(in3, LOW);
-digitalWrite(in4, LOW);
-analogWrite(enB,0);
+///////////TO BE USED ONE TIME\\\\\\\\\\\\\\\\\
 
-//pinMode(trigPin, OUTPUT);
-//pinMode(echoPin, INPUT);
+//WRITING INTO EPROM,ONLY USE THIS **************
+//ONE TIME TO CHANGE THE NAME********************
+/*
+ * 
+ */
 
-
- /*
-LCD setup for debug
+ 
+/*
+OLED screen
 */ 
-  
-Scrn.init();
-Scrn.backlight();
-  // Print a message to the LCD.
+// 0x3C is default i2c adress in some cases MAY be different
+display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+display.clearDisplay();
+display.setTextSize(2);
+display.setTextColor(WHITE);
 
-poser=44;
-ZeroSteering();
 }
 
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  /*lcd.setCursor(0, 1);
-  lcd.print("OR");
-  lcd.setCursor(1, 1);*/
-  //lcd.print(OrderReceived);
+/* to determin execution speed
+ * ensure to manually set any 
+ * serial condition cases to true to simulate
+ * sending to PC   (currently 457-458 Hz)*/
+/* 
+loopCount++;
+if (millis() - lastRateCheck >= 1000)
+{
+  Serial.print("Loop Hz: ");
+  Serial.println(loopCount);
+  loopCount = 0;
+  lastRateCheck = millis();
+}*/
 
-  /*lcd.setCursor(0, 4);
-  lcd.print("SPD");
-  lcd.setCursor(1, 4);*/
-  //lcd.print(SteerRawCommand);
-  //TestSweepSteering();
-if (Serial.available()){
+ReadAndParseDataSTD();
 
-  RequestCommand(REQUEST_STEER);
-  //ReadSerial();
-  ReadSerial2();
-  //ReadDirectSerial();
-  //SerialTest();
-  //SerialSteeringControl();
-  //TestSweepSteering();
 
-  /*Scrn.clear();
+if(!MotorSteerSetupComplete)
+{
+  MotorServosSetup();
+  MotorSteerSetupComplete = 1;
+}
  
-  Scrn.setCursor(0,0);
-  Scrn.print(OrderReceived); 
-  Scrn.setCursor(0,1);
-  Scrn.print(SteerRawCommand);*/
+MonitorPCHeartBeat();
+MonitorPCReadiness();
+DeterminePCReadiness();
 
-  /*Scrn.setCursor(5,0);
-  Scrn.print(OrderReceived2);
-  Scrn.setCursor(5,1);
-  Scrn.print(motor_speed);*/
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
-
-
-  //delay(75);
-
+if(!BoardFoundByPC)
+{
+  SendBoardName();
 }
 
+if(SendingBoardName) //SendingBoardName
+{
+  
+  SendBoardName();
+
+  if (millis() - BoardNameReq > 1000) //750 was also acceptable  
+  {
+     DelayStart =1;
+  }
+
+  if(DelayStart && BoardFoundByPC) //DelayStart && BoardFoundByPC
+  {
+    SignalArdReady();
+    SendDataPacketHB();
+  }
 }
+
+
+if (CommsEstablished && SendingBoardName) //CommsEstablished && SendingBoardName
+{
+  
+  //ServiceSerialLink();
+  SignalArdCommsEst();
+
+  //BulbON();
+}
+else
+{
+ //BulbOFF();
+
+  if(PacektsRecieved > 0)
+    PacektsRecieved =0;
+ 
+}
+
+if(BoardFoundByPC)
+ BulbON();
+else
+ BulbOFF();
+
+if (millis() - lastRttReport > 2000 && rttCount > 0)
+{
+  //Serial.print("avgRTT:");
+  rttAvg = rttSum / rttCount;
+  //Serial.print(" maxRTT:");
+  //Serial.println(rttMax);
+  rttSum = 0; rttCount = 0; rttMax = 0;
+  lastRttReport = millis();
+}
+
+
+UpdateDisp();
+}
+
 ////******END OF MAIN LOOP********///////
-/*
-
-list of funtions
 
 
+  ////_______________\\\\
+ ////*****************\\\\
+////  ESTABLISH COMMS  \\\\
+\\\\*******************////
 
-*/
-///SERIAL SEND RECEIVE/////
-
-void SerialTest(){
-   int8_t Num=10;
-   int8_t Buff[1]={(int8_t) (Num & 0xff)};
-   int8_t SteerRawCommand =(int8_t) static_cast<signed char>(Buff[0]);
-   Serial.println(" Serial Test  ");
-   Serial.print(SteerRawCommand);
-  }
-
-void WriteOrder(enum SerialOrder CommandOrder)
+void MonitorPCHeartBeat()
 {
-  uint8_t* Order = (uint8_t*) &CommandOrder;
-  Serial.write(Order, sizeof(uint8_t));
-}
 
-void Write8InCommand(uint8_t Command)
-{
-  uint8_t* Order = (uint8_t*) &Command;
-  Serial.write(Order, sizeof(uint8_t));
-}
-
-void RequestCommand (enum SerialOrder CommandOrder){
-
-  uint8_t* Order = (uint8_t*) &CommandOrder;
-  Serial.write(Order, sizeof(uint8_t));
-  
-  }
-
-enum SerialOrder read_order()
-{
-  return (SerialOrder) Serial.read();
-}
-
-void ReadForSerial(enum SerialOrder CommandOrder){
-  
-  SerialOrder Command = (SerialOrder) Serial.read();
-  
-  }
-
-void ReadDirectSerial(){
-  
-  
-SteerRawCommand =(int8_t) static_cast<signed char>(Serial.read());
-  
-  
-  }
-
-void ReadSerial(enum SerialOrder RequestedOrder){
-//Requested command - expected command =10
-//ie REQUEST_STEER(23) - STEER_COMMAND(13) =10
-
-  OrderReceived = read_order();
-  Command=(int)OrderReceived;
     
-    switch(OrderReceived){
-      
-     case PC_NOT_READY:
-      {    
-        
-        break;
-      }
-      case STEER_COMMAND:
-      {
-        //SteerRawCommand =(int8_t)Serial.read();
-        //int sent=Serial.readBytes(SteerBuff, sizeof(int8_t));
-        //SteerRawCommand =(int8_t) static_cast<signed char>(Serial.read());
-        //SteerRawCommand =(int8_t)(SteerBuff[0]);
-        //SteerRawCommand =55;
-        //SteerVal=(int)SteerRawCommand;
-        //SteerRawCommand =(int)Serial.read();        
-        //SerialSteeringControl();
-        //SendCommandReceived(STEER_COMMAND,SteerRawCommand);
-        break;
-      }
-    
+   unsigned long currentMillis = millis();
+  // Check if the interval has passed
+  if (currentMillis - previousMillis2 >= IntervalPCHBMonitoring) 
+  {
+    previousMillis2 = currentMillis; // Save the last time you blinked
+    //IntervalPCHBMonitoring
+    if(ValidPCHeartBeatCounter > 0)
+    {
+        ValidHeartBeatPC = 1;
     }
+   else
+        ValidHeartBeatPC = 0;
+    
+   ValidPCHeartBeatCounter = 0;
+  }
+
   
+}
+
+void MonitorPCReadiness()
+{
+//A valid PC heartbeat and PC ready flag will trigger the CommsEstablished flag
+//If there is a vaild CommsEstablished and we loose PC heart beat, commsestablished is false
+
+  unsigned long currentMillis = millis();
+  // Check if the interval has passed
+  if (currentMillis - previousMillis3 >= IntervalPCHBMonitoring) 
+  {
+    previousMillis3 = currentMillis; // Save the last time you blinked
+    //IntervalPCHBMonitoring
+    if(ValidPCReadyCounter > 0)
+    {
+        PC_Ready = 1;
+    }
+   else
+        PC_Ready = 0;
+    
+    ValidPCReadyCounter = 0;
+  }
+
+}
+
+void DeterminePCReadiness()
+{
+//A valid PC heartbeat and PC ready flag will trigger the CommsEstablished flag
+//If there is a vaild CommsEstablished and we loose PC heart beat, commsestablished is false
+
+if(ValidHeartBeatPC && PC_Ready)
+    CommsEstablished =1;
+
+if(CommsEstablished && !ValidHeartBeatPC)
+  {
+    CommsEstablished =0;
+    PC_Ready = 0;  
+  }
+}
+
+  ////_______________\\\\
+ ////*****************\\\\
+////SERIAL SEND RECEIVE\\\\
+\\\\*******************////
+
+
+void SignalArdReady()
+{
+  Serial.print(START_MARKER);
+  Serial.print(ARDUINO_READY);
+  Serial.print(END_MARKER);
+}
+
+void SendDataPackets(SerialOrder Type, float value)
+{
+  Serial.print(START_MARKER);
+  Serial.print(Type);
+  Serial.print(':');
+  Serial.print(value);
+  Serial.print(END_MARKER);
+}
+
+void SignalArdCommsEst()
+{
+  Serial.print(START_MARKER);
+  Serial.print(ARD_COMMS_EST);
+  Serial.print(END_MARKER);
+}
+
+void SignalSingleMarker(SerialOrder Marker)
+{
+  Serial.print(START_MARKER);
+  Serial.print(Marker);
+  Serial.print(END_MARKER);
+}
+
+void SendDataPacketHB()
+{
+  Serial.print(START_MARKER);
+  Serial.print('?');
+  Serial.print(END_MARKER);
+}
+
+void SendBoardName()
+{
+  Serial.print(START_MARKER);
+  Serial.print(uniqueNameRead);
+  Serial.print(END_MARKER);
+}
+
+void SendHeartBeat()
+{
+  unsigned long currentMillis = millis();
+  // Check if the interval has passed
+  if (currentMillis - previousMillis >= interval) 
+  {
+    previousMillis = currentMillis; // Save the last time you blinked
+    // Send heartbeat
+    SendDataPacketHB();
+  }
+
+}
+
+void ProcessInformationDualMotor()
+{
   
+  for(int i =0; i <21; i++)
+  {
+    bool SteerCommand = CheckForReqComm((int)BuffInComing[i], STEER_COMMAND);
+    bool MotorLeft = CheckForReqComm((int)BuffInComing[i], MOTOR_FWD_LEFT) || CheckForReqComm((int)BuffInComing[i], MOTOR_REV_LEFT);
+    bool MotorRight = CheckForReqComm((int)BuffInComing[i], MOTOR_FWD_RIGHT) || CheckForReqComm((int)BuffInComing[i], MOTOR_REV_RIGHT);    
+    
+    bool MotorLeftFwd = CheckForReqComm((int)BuffInComing[i], MOTOR_FWD_LEFT);
+    bool MotorLeftRev = CheckForReqComm((int)BuffInComing[i], MOTOR_REV_LEFT);
+
+    bool MotorRightFwd = CheckForReqComm((int)BuffInComing[i], MOTOR_FWD_RIGHT);
+    bool MotorRightRev = CheckForReqComm((int)BuffInComing[i], MOTOR_REV_RIGHT);
+    
+    if(SteerCommand)
+    {
+     if(i<19)
+     {
+      if(BuffInComing[i+1] == ':')
+      {
+          int command = (int)BuffInComing[i+2]; 
+          int CommandConverted = ConvertValue(command, 1.042, -10.42);
+          ServoCommand = position_err(CommandConverted, MAX_ANGLE,  MIN_ANGLE);
+          SerialSteeringControl();
+          ValidSteerCommand++;           
+      }
+     }
+   }
+
+    if(MotorLeft)
+    {
+     if(i<19)
+     {
+      if(BuffInComing[i+1] == ':')
+      {
+        if(MotorLeftFwd)
+        {
+            int MotorCommandLeft = (int)BuffInComing[i+2];
+            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 3.55,-3.55);
+            DriveMotorsCommandLeft(MotorCommandLeftAct);
+            SetMotorsFWD();
+        }
+        if(MotorLeftRev)
+        {
+            int MotorCommandLeft = (int)BuffInComing[i+2];
+            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 3.55,-3.55);
+            DriveMotorsCommandLeft(MotorCommandLeftAct);
+            SetMotorsREV();
+        }
+       ValidMotorLeft++;
+      }
+     }
+    }
+
+    if(MotorRight)
+    {
+     if(i<19)
+     {
+      if(BuffInComing[i+1] == ':')
+      {
+        if(MotorRightFwd)
+        {
+            int MotorCommandRight = (int)BuffInComing[i+2];
+            int MotorCommandRightAct = ConvertValue(MotorCommandRight, 3.55,-3.55);
+            DriveMotorsCommandRight(MotorCommandRightAct);
+            SetMotorsFWD();
+        }
+        if(MotorRightRev)
+        {
+            int MotorCommandRight = (int)BuffInComing[i+2];
+            int MotorCommandRightAct = ConvertValue(MotorCommandRight, 3.55,-3.55);
+            DriveMotorsCommandRight(MotorCommandRightAct);
+            SetMotorsREV();
+        }
+       ValidMotorRight++;
+      }
+     }
+    }
+            
+      if((int)BuffInComing[i] == PC_READY)
+      {
+         ValidPCReadyCounter++;
+      }
+
+      if((int)BuffInComing[i] == PC_HEARTBEAT)
+      {
+         ValidPCHeartBeatCounter++;
+      }
+  }
+}
+
+void ProcessInformationSingleMotor()
+{
+  
+  for(int i =0; i <21; i++)
+  {
+    bool SteerCommand = CheckForReqComm((int)BuffInComing[i], STEER_COMMAND);
+    bool MotorLeft = CheckForReqComm((int)BuffInComing[i], MOTOR_FWD_LEFT) || CheckForReqComm((int)BuffInComing[i], MOTOR_REV_LEFT);    
+    bool MotorLeftFwd = CheckForReqComm((int)BuffInComing[i], MOTOR_FWD_LEFT);
+    bool MotorLeftRev = CheckForReqComm((int)BuffInComing[i], MOTOR_REV_LEFT);
+
+    if(BuffInComing[i] =='M') //Ensure this matches the unique char
+    {
+      SendBoardName();
+      SendingBoardName = 1;
+      
+      if(BoardNameReq == 0)
+        BoardNameReq = millis();
+    }
+
+    
+    if(SteerCommand)
+    {
+     if(i<19)
+     {
+      if(BuffInComing[i+1] == ':')
+      {
+          int command = (int)BuffInComing[i+2]; 
+          int CommandConverted = ConvertValue(command, 1.042, -10.42);
+          ServoCommand = position_err(CommandConverted, MAX_ANGLE,  MIN_ANGLE);
+          SerialSteeringControl();
+          ValidSteerCommand++; 
+
+      }
+     }
+   }
+
+    if(MotorLeft)
+    {
+     if(i<19)
+     {
+      if(BuffInComing[i+1] == ':')
+      {
+        if(MotorLeftFwd)
+        {
+            int MotorCommandLeft = (int)BuffInComing[i+2];
+            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 3.55,-3.55);
+            DriveMotorsCommand(MotorCommandLeftAct);
+            
+            motor_speed = MotorCommandLeftAct;
+            
+            SetMotorsFWD();
+        }
+        if(MotorLeftRev)
+        {
+            int MotorCommandLeft = (int)BuffInComing[i+2];
+            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 3.55,-3.55);
+            DriveMotorsCommand(MotorCommandLeftAct);
+                        
+            motor_speed = MotorCommandLeftAct;
+            
+            SetMotorsREV();
+        }
+       ValidMotorLeft++;
+      }
+     }
+    }
+
+            
+      if((int)BuffInComing[i] == PC_READY)
+      {
+         ValidPCReadyCounter++;
+      }
+
+      if((int)BuffInComing[i] == PC_HEARTBEAT)
+      {
+         ValidPCHeartBeatCounter++;
+      }
+
+      if((int)BuffInComing[i] == BOARD_FOUND)
+      {
+         BoardFoundByPC = 1;
+      }
+
+      
+  }
+
+
+}
+
+void ServiceSerialLink()
+{
+  if (millis() - lastRequestTime > IntervalSerialMonitoring)   // e.g. 200 ms
+  {
+    requestSentTime = millis();
+    SignalSingleMarker(REQUEST_COMMAND_MSB);   // nudge the PC, unconditionally
+  }
+}
+
+void ListenForPCBoardRequest()
+{
+  uint8_t budget = 16;
+  
+  while (Serial.available() && budget--)
+  {
+   
+    char Peeked = Serial.peek();
+
+      if(Peeked == '?')
+      {
+        //SendingBoardName =1;
+        SendBoardName();
+      }
+    
+  }
+
    
 }
 
-void ReadSerial(){
+void ReadAndParseDataSTD()
+{
+  uint8_t budget = 16;
 
-    int sent=Serial.readBytes(SteerBuff, 4*sizeof(int8_t));
+  if(Serial.available())
+    SerialOffTime = millis();
+  
+  while (Serial.available() && budget--)
+  {
+    char Peeked = Serial.peek();
 
-    OrderReceived=(SerialOrder)SteerBuff[0];
-    OrderReceived2=(SerialOrder)SteerBuff[2];
- 
-    //SerialOrder order_received = read_order();
-    //OrderReceived=order_received;
-    //SteerRawCommand =(int8_t) static_cast<signed char>(SteerBuff[0]);
-    //SteerRawCommand =(int8_t)Serial.read();
+      if((int)Peeked == PC_READY)
+      {
+         ValidPCReadyCounter++;
+      }
+
+      if((int)Peeked == PC_HEARTBEAT)
+      {
+         ValidPCHeartBeatCounter++;
+      }
+
+      if(Peeked == 'M')
+      {
+        SendingBoardName =1;
+        SendBoardName();
+
+        if(BoardNameReq == 0)
+          BoardNameReq = millis();
+      }
+      
+      if((int)Peeked == BOARD_FOUND)
+      {
+         BoardFoundByPC = 1;
+      }
     
-    switch(OrderReceived){
-      
-     case PC_NOT_READY:
-      {    
+    char c = Serial.read();
+
+    if (c == START_MARKER)
+    {
+      idx = 0;
+      inMessage = true;
+      BuffInComing[idx++] = c;
+      StartValid =1;
+    }
+    else if (inMessage)
+    {
+      if (idx < sizeof(BuffInComing) - 1)
+        BuffInComing[idx++] = c;
+
+      if (c == END_MARKER)
+      {
+        BuffInComing[idx] = '\0';
+        inMessage = false;
+        EndValid =1;
+        PcktSz = sizeof(BuffInComing);
+        PacektsRecieved++;
+
+        //if(SendingBoardName)
+        // SignalSingleMarker(REQUEST_COMMAND_MSB);
         
-        break;
-      }
-      case STEER_COMMAND:
-      {
-        //SteerRawCommand = Serial.read();
-        //int sent=Serial.readBytes(SteerBuff, sizeof(int8_t));
-        //SteerRawCommand =(int8_t) static_cast<signed char>(SteerBuff[0]);
-        //SteerRawCommand =10;
-        //SerialSteeringControl();
-        SteerRawCommand=(int8_t)SteerBuff[1];
-        //SerialSteeringControl();
-        //SendCommandReceived(STEER_COMMAND,SteerRawCommand);
-        break;
-      }
-      case MOTOR_SPEED:
-      {
-        //SteerRawCommand = Serial.read();
-        //int sent=Serial.readBytes(SteerBuff, sizeof(int8_t));
-        //SteerRawCommand =(int8_t) static_cast<signed char>(SteerBuff[0]);
-        //SteerRawCommand =10;
-        //SerialSteeringControl();
-        ThrottleLever=(int8_t)SteerBuff[3];
-        motor_speed=ConvertValue(ThrottleLever,3.55f,0);
-        //DriveMotorForward();
-        //SerialSteeringControl();
-        //SendCommandReceived(STEER_COMMAND,SteerRawCommand);
-        break;
-      }
-      
-      }
+        //ProcessInformationDualMotor();
+        ProcessInformationSingleMotor();    
+        
+        roundTrip = millis() - requestSentTime;
+
+        //if(BoardFoundByPC)
+        //{
+         //Serial.print("RT");
+        //Serial.print(roundTrip);
+        //}
+        
+        lastValidMsgTime = millis();
+        lastRequestTime = millis();
+
+        rttSum += roundTrip;
+        rttCount++;
+        if (roundTrip > rttMax) rttMax = roundTrip;
+        
+      }  
+    }
+  }
+  if (Serial.available() == 0)
+  {
+    for(int j =0; j < 21; j++)
+    {
+       BuffInComing[j] = '\0';
+    }
+    if (millis() - SerialOffTime > IntervalSerialOff)   
+    {
+      SerialOffTime = millis(); // Serial off for specified interval (1.5 seconds)
+      SendingBoardName = 0;
+      MotorSteerSetupComplete = 0;
+      BoardFoundByPC =0;
+    }
+    //PacektsRecieved =0;
+  }
 
 }
 
-void ReadSerial2(){
-  int sent=Serial.readBytes(SteerBuff, 6*sizeof(int8_t));
-  //int sent=Serial.readBytes(SteerBuff, 4*sizeof(int8_t));
 
-  /*
-    Scrn.setCursor(0,0);
-  Scrn.print(OrderReceived); //SteerBuff[0]: motor reverse value
-  Scrn.setCursor(0,1);
-  Scrn.print(SteerRawCommand); //SteerBuff[3]: motor command indentifier
-
-  Scrn.setCursor(5,0);
-  Scrn.print(OrderReceived2); //SteerBuff[1]: motor reverse indentifier
-  Scrn.setCursor(5,1);
-  Scrn.print(ThrottleLever); //SteerBuff[4]: motor value
-
-  Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3); //SteerBuff[2]: Steering Value
-  Scrn.setCursor(10,1);
-  Scrn.print(ThrottleLever2); //SteerBuff[5] Steering identifier
-
-  
-  */
-  
-    OrderReceived=(SerialOrder)SteerBuff[5];
-    OrderReceived2=(SerialOrder)SteerBuff[3];
-
-    OrderReceived3=(SerialOrder)SteerBuff[1];
-
-    /*OrderReceived=(SerialOrder)SteerBuff[0];
-    OrderReceived2=(SerialOrder)SteerBuff[1];
-    OrderReceived3=(SerialOrder)SteerBuff[2];
-    SteerRawCommand=(int8_t)SteerBuff[3];  
-    ThrottleLever=(int8_t)SteerBuff[4];
-    ThrottleLever2=(int8_t)SteerBuff[5]; */        
-
-   if(STEER_COMMAND==OrderReceived)
-   {
-    //SteerRawCommand=(int8_t)SteerBuff[1];
-    SteerRawCommand=(int8_t)SteerBuff[2];    
-    SerialSteeringControl();
-    }
-   /*if(MOTOR_SPEED==OrderReceived2)
-   {
-    //ThrottleLever=(int8_t)SteerBuff[3];
-    ThrottleLever=(int8_t)SteerBuff[4];
-     if(ThrottleLever > 0)
-      {   
-       motor_speed=ConvertValue(ThrottleLever, 2.55f, 0);
-       DriveMotorForward();
-      }
-    
-     else
-      {
-       DriveMotorStop();
-      }
-   }
-
-    if(MOTOR_REVERSE==OrderReceived3)
-    {
-    //ThrottleLever=(int8_t)SteerBuff[5];
-    ThrottleLever2=(int8_t)SteerBuff[0];
-     if(ThrottleLever2 > 0)
-     {       
-       motor_speed_rev=ConvertValue(ThrottleLever2, 2.55f, 0);
-       DriveMotorReverse();
-     }
-     else
-     {
-       DriveMotorStop();
-      }
-    }*/
-
-    if(MOTOR_REVERSE==OrderReceived3 && MOTOR_SPEED==OrderReceived2)
-    {
-    ThrottleLever=(int8_t)SteerBuff[4];
-    ThrottleLever2=(int8_t)SteerBuff[0];
-     if(ThrottleLever2 > ThrottleLever)
-     {
-       //motor_speed_rev=ConvertValue(ThrottleLever2, 2.55f, 0);
-     motor_speed=ConvertValue(ThrottleLever2, 2.55f, 0);
-     
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, HIGH);
-      digitalWrite(in3, HIGH);
-      digitalWrite(in4, LOW);
-       
-       //DriveMotorReverse();
-     }
-     else if(ThrottleLever2 < ThrottleLever)
-     {
-       //motor_speed=ConvertValue(ThrottleLever, 2.55f, 0);
-      motor_speed=ConvertValue(ThrottleLever, 2.55f, 0);
-      
-     digitalWrite(in1, HIGH);
-     digitalWrite(in2, LOW);
-     digitalWrite(in3, LOW);
-     digitalWrite(in4, HIGH);
-      
-       //DriveMotorForward();
-     }
-     else
-     {
-      motor_speed=ConvertValue(0, 2.55f, 0);
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, LOW);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, LOW);
-       //DriveMotorStop();
-     }
-
-     DriveMotorsCommand(motor_speed);
-      
-    }
-  
-  }
-
-void SendCommandReceived(enum SerialOrder CommandOrder, int8_t Value){
-  
-  WriteOrder(CommandOrder);
-  Write8InCommand(Value);
-  
-  }
-
+  ////________________\\\\
+ ////******************\\\\
+////  HELPER FUNCTIONS  \\\\
+\\\\*******************////
 int position_err(int val, int max, int min)
 {
   int val_lim;
@@ -439,12 +763,124 @@ int position_err(int val, int max, int min)
   
 }
 
-//STEERING & MOTOR FUNCTIONS
-int ConvertValue(int8_t ValX, float m, int C){
+
+int ConvertValue(int ValX, float m, float C){
   
  int ConvertedVal = (m*ValX) +  C;
 
   return ConvertedVal;
+}
+
+bool IsValidCommand(int command)
+{
+  SerialOrder CommandRec = (SerialOrder)command;
+
+    
+    switch (CommandRec)
+    {
+    case RADAR_DISTANCE:
+    {   
+        return true;
+    }
+    case RADAR_POSITION:
+    {  
+        return true;
+    }
+    case REQUEST_RADAR:
+    {   
+        return true;
+    }
+    case REQUEST_RADAR_POS:
+    {   
+        return true;
+    }
+    case ARDUINO_READY:
+    {   
+        return true;
+    }
+    case PC_READY:
+    {   
+        return true;
+    }
+    case PC_HEARTBEAT:
+    {   
+        return true;
+    }
+    case STEER_COMMAND:
+    {   
+        return true;
+    }          
+    default:
+    {
+        return false; //No valid order has been found.
+    }
+    }
+}
+
+
+
+bool CheckForReqComm(int command, SerialOrder ExpCommand)
+{
+
+  if((SerialOrder)command == ExpCommand)
+    return true;
+  else
+    return false;
+  
+}
+
+  ////______________________\\\\
+ ////************************\\\\
+////STEERING & MOTOR FUNCTIONS\\\\
+\\\\*************************////
+void MotorServosSetup()
+{
+  ser.attach(12);// servo is connected at pin 12
+
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+
+  pinMode(enB, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+
+  // Set initial rotation direction
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  analogWrite(enA,0);
+
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  analogWrite(enB,0);
+
+  //pinMode(trigPin, OUTPUT);
+  //pinMode(echoPin, INPUT);
+
+  // Print a message to the LCD.
+  ser.write(50);
+}
+void SetMotorsFWD()
+{
+     digitalWrite(in1, HIGH);
+     digitalWrite(in2, LOW);
+     digitalWrite(in3, LOW);
+     digitalWrite(in4, HIGH);
+}
+
+void SetMotorsREV()
+{
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, HIGH);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+}
+void SetMotorSTOP()
+{
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, LOW);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, LOW);
 }
 
 void TestSweepSteering(){
@@ -468,102 +904,36 @@ void ZeroSteering(){
   }
 
 void SerialSteeringControl(){
-      
-      ser.write(position_err((int)SteerRawCommand,MAX_ANGLE, MIN_ANGLE));// the servo will move according to position
-      //ser.write(position_err(10,MAX_ANGLE, MIN_ANGLE));// the servo will move according to position
-      //delay(15);//delay for the servo to get to the position
-  
+      ser.write(ServoCommand);
   }
 
-void DriveMotorForward(){
-      
-      analogWrite(enA, 255);
-      //digitalWrite(in1, HIGH);
-      //digitalWrite(in2, LOW);
+void DriveMotorForward()
+{
+analogWrite(enA, 255);
+analogWrite(enB, 255);
+} 
 
-      analogWrite(enB, 255);
-      //digitalWrite(in3, LOW);
-      //digitalWrite(in4, HIGH);
+void DriveMotorReverse()
+{
+analogWrite(enA, 255);
+analogWrite(enB, 255);
+}
 
-      /*
-      analogWrite(enA, motor_speed);
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, HIGH);
+void DriveMotorsCommand(int Speed)
+{  
+analogWrite(enA, Speed);
+analogWrite(enB, Speed);
+}  
 
-      analogWrite(enB, motor_speed);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);
-      */
+void DriveMotorsCommandLeft(int Speed)
+{  
+analogWrite(enA, Speed);
+}
 
-      /*
-      analogWrite(enB, motor_speed);
-      digitalWrite(in3, HIGH);
-      digitalWrite(in4, LOW);
-      
-      */
-
-  /*Scrn.setCursor(5,0);
-  Scrn.print(OrderReceived2);
-  Scrn.setCursor(5,1);
-  Scrn.print(motor_speed);*/
-
-  
-  } 
-
-void DriveMotorReverse(){
-      
-      analogWrite(enA, 255);
-      //digitalWrite(in1, HIGH);
-      //digitalWrite(in2, LOW);
-
-      analogWrite(enB, 255);
-      //digitalWrite(in3, LOW);
-      //digitalWrite(in4, HIGH);
-      
-      /*analogWrite(enA, motor_speed_rev);
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);*/
-
-      /*analogWrite(enB, motor_speed_rev);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);*/
-
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
-      
-  
-  }
-
-void DriveMotorsCommand(int Speed){
-      
-      analogWrite(enA, Speed);
-      //digitalWrite(in1, HIGH);
-      //digitalWrite(in2, LOW);
-
-      analogWrite(enB, Speed);
-      //digitalWrite(in3, LOW);
-      //digitalWrite(in4, HIGH);
-      
-      /*analogWrite(enA, motor_speed_rev);
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);*/
-
-      /*analogWrite(enB, motor_speed_rev);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);*/
-
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
-      
-  
-  }  
-
+void DriveMotorsCommandRight(int Speed)
+{  
+analogWrite(enB, Speed);
+} 
 
 void DriveMotorStop(){
       
@@ -575,21 +945,6 @@ void DriveMotorStop(){
       digitalWrite(in3, LOW);
       digitalWrite(in4, LOW);
       
-      /*analogWrite(enA, motor_speed_rev);
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);*/
-
-      /*analogWrite(enB, motor_speed_rev);
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);*/
-
-
-  /*Scrn.setCursor(10,0);
-  Scrn.print(OrderReceived3);
-  Scrn.setCursor(10,1);
-  Scrn.print(motor_speed_rev);*/
-      
-  
   } 
 
 void ManualControl(){
@@ -647,6 +1002,15 @@ void ManualControl(){
         
       }
 
+     if(val=='g'){//motor increment
+        
+      motor_speed-=5;
+      analogWrite(enA, motor_speed);
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, HIGH);
+        
+      }
+
       if(val=='s'){//motor back
         
       motor_speed=355;
@@ -677,3 +1041,120 @@ Serial.print(motor_speed);*/
 
   
   }
+  ////________________\\\\
+ ////******************\\\\
+////DIAGNOSIS,INDICATION\\\\
+\\\\*******************////
+
+void FlashBulb(int duration)
+{
+
+  digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on
+  delay(duration);                       // Wait for a second (1000 milliseconds)
+  digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
+  delay(duration);  
+}
+
+void BulbON()
+{
+
+  digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on
+}
+
+void BulbOFF()
+{
+  digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
+}
+
+void ClearDisp()
+{
+  display.clearDisplay();
+}
+
+void ShowDisp()
+{
+  display.display();
+}
+
+void DisplayMessage(char *mess, int x, int y)
+{
+  //display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  display.setCursor(x, y);
+  display.println(mess); 
+  
+  //display.display();
+}
+
+void DisplayMessageInt(int mess, int x, int y)
+{
+  //display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  display.setCursor(x, y);
+  display.println(mess); 
+  
+  //display.display();
+}
+
+void DisplayStatus()
+{
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  if(CommsEstablished)
+  {
+    display.setCursor(1, 30);
+    display.println("C"); 
+  }
+  else
+  {     
+    display.setCursor(1, 30);
+    display.println("NC"); 
+  }
+  if(ValidHeartBeatPC)
+  {
+    display.setCursor(1, 5);
+    display.println("H");
+  }
+  else
+  {
+    display.setCursor(1, 5);
+    display.println("NH");
+  }
+
+
+  DisplayMessage("Pz", 30, 5);
+  DisplayMessageInt(PacektsRecieved, 60, 5);
+
+  //int BuffSize = Serial.available();
+  DisplayMessage("St", 30, 30);
+  DisplayMessageInt(ServoCommand, 70, 30);
+
+  DisplayMessage("L", 1, 50);
+  DisplayMessageInt(motor_speed, 20, 50);
+
+  if(SendingBoardName)
+  {
+    DisplayMessage("NR", 50, 50);
+  }
+
+  //DisplayMessage("R", 65, 50);
+  //DisplayMessageInt(ValidMotorRight, 80, 50);  
+
+  //ValidSteerCommand;
+  
+}
+void UpdateDisp()
+{
+  if (millis() - previousMillis4 < 250) return;   
+  
+  previousMillis4 = millis();
+  
+  ClearDisp();
+  DisplayStatus();
+  ShowDisp();
+}  
