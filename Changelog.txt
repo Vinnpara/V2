@@ -35,3 +35,6 @@ Gyro sometimes freezes on one axis. Radar doesn't draw but gets the values.
 09/18
 Serials work properly now, robot gets gyro data and radar. They seem stable now. Added Vision class and all dependent
 source files. 
+
+17/10/2026
+Upgraded UI to automatically find all boards. Added Diagnosis UI window to display status

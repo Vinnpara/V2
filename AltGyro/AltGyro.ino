@@ -130,11 +130,23 @@ float ValueFromBufferFloatGain,
 
 double ValueDouble;
 
-void setup() {
+static bool EnableDisplay = false; //To enable LCD display
 
- 
-  
+const int CalNum = 850;
+
+void setup() {
   Serial.begin(115200);
+ if(EnableDisplay)
+ {
+  lcd.init();
+  lcd.backlight(); 
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("CALIBRATING");
+ }
+  
+
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
   Wire.setClock(400000);
@@ -144,156 +156,150 @@ void setup() {
   Wire.write(0x6B);
   Wire.write(0x00);
   Wire.endTransmission();
-  for (RateCalibrationNumber=0; RateCalibrationNumber<2500; RateCalibrationNumber ++) 
+  for (RateCalibrationNumber=0; RateCalibrationNumber<CalNum; RateCalibrationNumber ++) 
   {
     ReadGyroValues();
+    
     RateCalibrationRoll+=RateRoll;
     RateCalibrationPitch+=RatePitch;
     RateCalibrationYaw+=RateYaw;
-    delay(1);
-  }
-  RateCalibrationRoll/=2500;
-  RateCalibrationPitch/=2500;
-  RateCalibrationYaw/=2500;
 
-  for (AccCalibration=0; AccCalibration<2500; AccCalibration ++) 
-  {
-    ReadGyroValues();
     CalibrationAccX+=AccX;
     CalibrationAccY+=AccY;
     CalibrationAccZ+=AccZ;
 
-    CalibrationAccAngleX+=AnglePitch;
-    CalibrationAccAngleY+=AngleRoll; 
-     
+   if(EnableDisplay)
+   {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("CALIBRATING");
+    
+    lcd.setCursor(0,1);
+    lcd.print(RateCalibrationNumber);
+
+    lcd.setCursor(5,1);
+    lcd.print("Cal 1");
+   }
+    
     delay(1);
   }
-  CalibrationAccX/=2500;
-  CalibrationAccY/=2500;
-  CalibrationAccZ/=2500;
+  RateCalibrationRoll/=CalNum;
+  RateCalibrationPitch/=CalNum;
+  RateCalibrationYaw/=CalNum;
 
-  for(int ValCalibration=0; ValCalibration<2500; ValCalibration ++)
+  CalibrationAccX/=CalNum;
+  CalibrationAccY/=CalNum;
+  CalibrationAccZ/=CalNum;
+
+  for(int ValCalibration=0; ValCalibration<CalNum; ValCalibration ++)
   {
     ReadGyroValues();
     CalibrationAccAngleX+=AnglePitch;
     CalibrationAccAngleY+=AngleRoll; 
+
+   if(EnableDisplay)
+   {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("CALIBRATING");
+    
+    lcd.setCursor(0,1);
+    lcd.print(ValCalibration);
+
+    lcd.setCursor(5,1);
+    lcd.print("Cal 2");
+
+    
+   }
      
     delay(1);
   }
 
-  CalibrationAccAngleX/=2500;
-  CalibrationAccAngleY/=2500;  
+  CalibrationAccAngleX/=CalNum;
+  CalibrationAccAngleY/=CalNum;  
 
- for (ValueCalibration=0; ValueCalibration<2500; ValueCalibration ++) 
+ for (ValueCalibration=0; ValueCalibration<CalNum; ValueCalibration ++) 
   {
     MeasureGyroSetup();
     //UpdateGyroAttitudes();
     CalibrationRoll+=KalmanAngleRoll;
     CalibrationPitch+=KalmanAnglePitch;
 
+   if(EnableDisplay)
+   {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("CALIBRATING");
+    
+    lcd.setCursor(0,1);
+    lcd.print(ValueCalibration);
+
+    lcd.setCursor(5,1);
+    lcd.print("Cal 3");
+   }
+
     delay(1);
   }
- CalibrationRoll/=2500;
- CalibrationPitch/=2500;
+ CalibrationRoll/=CalNum;
+ CalibrationPitch/=CalNum;
    
   LoopTimer=micros();
 
  //SetupYawMeasurement();
  //LCD setup for debug
- 
-  //initialize lcd screen
-  lcd.init();
-  // turn on the backlight
-  lcd.backlight(); 
+
   
 }
 
 void loop() {
- 
-  /*lcd.setCursor(0,0);
-  lcd.print((AccX*10000));
-  lcd.setCursor(0,1);
-  lcd.print((AccY*10000));
-  
-  MeasureGyro();
-  lcd.clear();
-  
-  lcd.setCursor(12,0);
-  lcd.print((AccZ*10000));*/
-  /**lcd.setCursor(0,0);
-  lcd.print("PC");
-  lcd.setCursor(0,1);
-  lcd.print(KalmanAnglePitchCalibrated);
 
-  lcd.setCursor(10,0);
-  lcd.print("RC");
-  lcd.setCursor(10,1);
-  lcd.print(KalmanAngleRollCalibrated);*/
-  //lcd.setCursor(7,1);
-  //lcd.print(AccY);
+
+  if(Serial.available())
+  {
   
-  //delay(5);
-  
-  if(Serial.available()){
-    
-  //ReadGyroValues();
-  //UpdateGyroAttitudes();
-  //UpdateKalman();
-  /*lcd.clear();
-
-  lcd.setCursor(0,0);
-  lcd.print((AccX*1000));
-  lcd.setCursor(0,1);
-  lcd.print((AccY*1000));
-  lcd.setCursor(9,1);
-  lcd.print((AccY*1000));
-
-  delay(5);*/
-
   StartTime = millis();
-
   MeasureGyro();
   MessageGyro();
-
   EndTime = millis();
-  
   ElapsedTime = EndTime - StartTime;
-  
-  //float TransferValue=KalmanAnglePitch*TransferGain;
-  //int16_t ValueToSend=(int16_t)TransferValue;
-  //PitchValueTest = ValueToSend;
-
-  //MessageBuffer();
-  //ReadFromBuffer();
-  /*lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print(ElapsedTime);*/
-  //lcd.setCursor(0,1);
-  //lcd.print(KalmanAnglePitch
-
-  /*lcd.setCursor(3,0);
-  lcd.print("R");
-  lcd.setCursor(3,1);
-  lcd.print(KalmanAngleRoll);*/
-  
-  /*lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print((AccX*1000));
-  lcd.setCursor(0,1);
-  lcd.print((AccY*1000));
-  lcd.setCursor(9,1);
-  lcd.print((AccY*1000));
-
-  //lcd.setCursor(6,0);
-  //lcd.print((AccZ*1000));
 
 
-  delay(5);*/
-  
-  //while (micros() - LoopTimer < 4000);
-  //LoopTimer=micros();
+  if(EnableDisplay)
+  {
+    DisplayPR_3Acc(); 
+  }
+
   
   }
+}
+
+
+/*
+**********Lcd display**************
+
+
+*/
+
+void DisplayPR_3Acc()
+{
+  lcd.clear();
+  
+  /*lcd.setCursor(0,0);
+  lcd.print((CalibratedAccX*100));
+  lcd.setCursor(0,1);
+  lcd.print((CalibratedAccY*100));
+  lcd.setCursor(8,0);
+  lcd.print((CalibratedAccZ*100));*/
+
+  /*lcd.setCursor(0,0);  
+  lcd.print("PC");*/
+  
+  lcd.setCursor(0,0);
+  lcd.print(KalmanAnglePitchCalibrated);
+
+  lcd.setCursor(0,1);
+  lcd.print(KalmanAngleRollCalibrated);
+  
 }
 
 /*
@@ -308,7 +314,7 @@ void UpdateKalmanSetup(){
   KalmanAngleRoll=Kalman1DOutput[0]; 
   KalmanUncertaintyAngleRoll=Kalman1DOutput[1];
   Kalman1DFilter(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch);
-  KalmanAnglePitch=Kalman1DOutput[0]; 
+  KalmanAnglePitch=Kalman1DOutput[0];                                                                                                                                                                                                                                                                                                                                                        
   KalmanUncertaintyAnglePitch=Kalman1DOutput[1];
   
   }
@@ -618,93 +624,6 @@ void MessageGyro(){
       }
       }
     }
-}
-
-void MessageBuffer(){
-  
-  int OrderAsInt = (int)MEASURED_PITCH;
-  int OrderAsIntRoll = (int)MEASURED_ROLL;
-  
-  int ValueAsInt = (int)(PitchValueTest * 10000);
-
-  ValueToBufferFloatGain = KalmanAnglePitch * 1000;
-  PitchWithGain = (int)(PitchValueTest * 10000);
-
-  ValueGainTest = (int32_t)(KalmanAnglePitch * 1000);
-  ValueGainTestRoll = (int32_t)(KalmanAngleRoll * 1000);
-
-  int16_t TestGain = (int16_t)(PitchValueTest);
-
-
-  /*char *BuffPointer, *BuffPointer2;
-  SerialOrder *OrderPointerPitch;
-  int32_t *PitchValuePointer;
-  
-  BuffPointer2 = Buffer;
-  BuffPointer = BuffPointer2;
-  
-  OrderPointerPitch = (int *)BuffPointer;
-  *BuffPointer = MEASURED_PITCH;
-  BuffPointer += sizeof(int);
-  
-  PitchValuePointer = (int32_t *)BuffPointer;
-  *BuffPointer = PitchValueTest;*/
-
-  char *BuffPointer, *BuffPointer2;
-  int *OrderPointerPitch,
-      *OrderPointerRoll;
-      
-  int32_t *PitchValuePointer,
-          *RollValuePointer;
-  
-  BuffPointer2 = Buffer;
-  BuffPointer = BuffPointer2;
-  
-  OrderPointerPitch = (int *)BuffPointer;
-  *OrderPointerPitch = OrderAsInt;
-  BuffPointer += sizeof(int);
-  
-  PitchValuePointer = (int32_t *)BuffPointer;
-  *PitchValuePointer = ValueGainTest;
-  BuffPointer += sizeof(int32_t);
-
-  OrderPointerRoll = (int *)BuffPointer;
-  *OrderPointerRoll = OrderAsIntRoll;
-  BuffPointer += sizeof(int);
-  
-  RollValuePointer = (int32_t *)BuffPointer;
-  *RollValuePointer = ValueGainTestRoll;
-
-  Serial.write(Buffer, 12);
-}
-
-void ReadFromBuffer(){
-  
- char *BuffPointer, *BuffPointer2;
- int *OrderPointerPitch,
-     *OrderPointerRoll;
- int32_t *PitchValuePointer,
-         *RollValuePointer; 
-
- BuffPointer2 = Buffer;
- BuffPointer = BuffPointer2; 
-
- OrderPointerPitch = (int *)BuffPointer;
- EnumReadFromBufferAsInt = *OrderPointerPitch;
- BuffPointer += sizeof(int);
-
- PitchValuePointer = (int32_t *)BuffPointer;
- ValueReadFromBufferPitch = *PitchValuePointer;
- BuffPointer += sizeof(int32_t);
-
- OrderPointerRoll = (int *)BuffPointer;
- EnumReadFromBufferAsIntRoll = *OrderPointerRoll;
- BuffPointer += sizeof(int);
-
- RollValuePointer = (int32_t *)BuffPointer;
- ValueReadFromBufferRoll = *RollValuePointer; 
- 
-  
 }
 
 /*

@@ -1,0 +1,6 @@
+Potentially able to read yaw:
+
+https://github.com/jremington/MPU-6050-Fusion/blob/main/MPU6050_MahonyIMU.ino
+
+Merging hyro + magnonometer
+https://how2electronics.com/measure-pitch-roll-yaw-with-mpu6050-hmc5883l-esp32/

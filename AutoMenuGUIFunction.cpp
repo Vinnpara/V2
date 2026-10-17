@@ -41,12 +41,14 @@ void AutoMenuGUIFunction::WMCreateWindowFunction() {
 
 	CreateWindowFunction(BUTTON_STATE_STATIC, SetMenuTexts[0]);
 
-	for (size_t i = 1; i < 5; i++)
+	for (size_t i = 1; i < 6; i++)
 	{
 		if (i < 4)
 			CreateWindowFunction(BUTTON_STATE_STATIC, SetMenuTexts[i], 0, 30 * i, 0, 0);
-		else
+		if (i == 4)
 			CreateWindowFunctionButton(BUTTON_STATE_BUTTON, SetMenuTexts[i], 0, 30 * i, 0, 0, StaticMenuVar.ButtonSelection[1]); //confirm sel LOWORD(wParam) == 1
+		if (i == 5)
+			CreateWindowFunctionButton(BUTTON_STATE_BUTTON, SetMenuTexts[i], 0, 30 * i, 0, 0, StaticMenuVar.ButtonSelection[2]); //confirm sel LOWORD(wParam) == 1
 
 	}
 

@@ -29,6 +29,7 @@
     <ClCompile Include="Improc.cpp" />
     <ClCompile Include="Lane.cpp" />
     <ClCompile Include="Line.cpp" />
+    <ClCompile Include="MessageHandler.cpp" />
     <ClCompile Include="Radar.cpp" />
     <ClCompile Include="RadarUI.cpp" />
     <ClCompile Include="RadarVirtual.cpp" />
@@ -63,6 +64,7 @@
     <ClInclude Include="include\GUIFunction.h" />
     <ClInclude Include="include\Improc.h" />
     <ClInclude Include="include\Lane.h" />
+    <ClInclude Include="include\MessageHandler.h" />
     <ClInclude Include="include\Radar.h" />
     <ClInclude Include="include\RadarUI.h" />
     <ClInclude Include="include\RadarVirtual.h" />

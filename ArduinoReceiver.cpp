@@ -15,6 +15,7 @@
 #include<SerialPortSelection.h>
 #include <algorithm>
 #include<string.h>
+#include <string>
 
 #define MAX_BUFFER 128
 #define MAX_BUFFER_GYRO 64
@@ -2829,7 +2830,7 @@ void ArduinoReceiver::ParseBufferRadT(CircularBuffer< unsigned char >& Buff, boo
     {
         for (int i = 0; i < Packets.size(); i++)
         {
-            std::cout << "\nData packet in vector " << Packets[i];
+            //std::cout << "\nData packet in vector " << Packets[i];
             /*
             if (Packets[i].find("Nan"))
             {
@@ -3840,6 +3841,8 @@ bool ArduinoReceiver::FindArduinoBoardPort(const std::string& expectedName, int&
         }
     }
 
+    //Ard.SetHandle(hSerial);
+
     return false;
 }
 
@@ -3856,7 +3859,7 @@ bool ArduinoReceiver::FindArduinoBoardPort(const std::string& expectedName, int&
     {
         //std::cout << "\nTrying COM " << port << "...";
 
-        if (Ard.IndetifySerialPort(port, expectedName, hSerial, buad, Specialchar))
+        if (Ard.IndetifySerialPortHserial(port, expectedName, hSerial, buad, Specialchar))
         {
             outPortNumber = port;
             std::cout << "Found " << BoardName << " on COM" << port << "\n";
@@ -3864,6 +3867,8 @@ bool ArduinoReceiver::FindArduinoBoardPort(const std::string& expectedName, int&
         }
 
     }
+
+    Ard.SetHandle(hSerial);
 
     return false;
 }
@@ -3895,4 +3900,305 @@ bool ArduinoReceiver::FindArduinoBoardPortHserial(const std::string& expectedNam
     Ard.SetHandle(hSerial);
 
     return false;
+}
+
+bool ArduinoReceiver::FindArduinoBoardPortHserial(HWND DiagHndl, DataConcentrator& Dc, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort)
+{
+    HANDLE hSerial;
+    std::string BoardName = expectedName;
+
+    char Specialchar = GetBoardSpecialChar();
+
+    std::string boardname = GetBoardMessage();
+
+    std::string WarnMsg = "11:Warning, board not connected ";
+    std::string WarnMsgTot = WarnMsg + boardname;
+
+    std::string head = "13:Board  ";
+    std::string mid = " Connected to ";
+    std::string TOT;
+
+    std::cout << "\nSpecial char " << Specialchar;
+
+    Dc.AddMessage("13:Connecting MSB ", 5008);
+    ShowMessage(Dc, DiagHndl);
+
+    bool PortFound = 0;
+
+    for (int port = 1; port <= 32; port++)
+    {
+        if (port != PrevPort) //Skip ports that have already been marked
+        {
+            //std::cout << "\nTrying COM " << port << "...";
+
+            if (Ard.IndetifySerialPortHserial(port, expectedName, hSerial, buad, Specialchar))
+            {
+                outPortNumber = port;
+                std::cout << "Found " << BoardName << " on COM" << port << "\n";
+
+                std::string portname = std::to_string(port);
+
+                TOT = head + boardname + mid + portname;
+
+                PortFound = true;
+            }
+
+        }
+    }
+
+    if(!PortFound)
+    Dc.AddMessage(WarnMsgTot, 5009);
+    else
+    Dc.AddMessage(TOT, 5009);
+
+    ShowMessage(Dc, DiagHndl);
+
+    Ard.SetHandle(hSerial);
+
+    return PortFound;
+}
+
+bool ArduinoReceiver::FindArduinoBoardPortHserial(DataConcentrator& Dc, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort)
+{
+    HANDLE hSerial;
+    std::string BoardName = expectedName;
+
+    char Specialchar = GetBoardSpecialChar();
+
+    std::string boardname = GetBoardMessage();
+
+    std::string WarnMsg = "11:Warning, board not connected ";
+    std::string WarnMsgTot = WarnMsg + boardname;
+
+    std::cout << "\nSpecial char " << Specialchar;
+
+    //Dc.AddMessage("13:Connecting MSB ", 5008);
+
+
+    for (int port = 1; port <= 32; port++)
+    {
+        if (port != PrevPort) //Skip ports that have already been marked
+        {
+            //std::cout << "\nTrying COM " << port << "...";
+
+            if (Ard.IndetifySerialPortHserial(port, expectedName, hSerial, buad, Specialchar))
+            {
+                outPortNumber = port;
+                std::cout << "Found " << BoardName << " on COM" << port << "\n";
+
+                std::string head = "13:Board  ";
+                std::string mid = " Connected to ";
+                std::string portname = std::to_string(port);
+
+                std::string TOT = head + boardname + mid + portname;
+
+                Dc.AddMessage(TOT, 5009);
+
+                return true;
+            }
+
+        }
+    }
+
+    Dc.AddMessage(WarnMsgTot, 5009);
+
+    Ard.SetHandle(hSerial);
+
+    return false;
+}
+
+void ArduinoReceiver::SignalTryingConnection(DataConcentrator& Dc, int code, bool Add)
+{
+    std::string head = "13:Connecting Board  ";
+    std::string boardname = GetBoardMessage();
+
+    if (Add)
+    {
+        std::string tot = head + boardname;
+        Dc.AddMessage(tot, code);
+    }
+    else
+    {
+        Dc.RemoveMessage(code);
+    }
+
+}
+
+std::string ArduinoReceiver::ProcessMessage(std::string Message) 
+{
+    std::string str = Message;
+
+    int End = 0;
+    for (int j = 0; j < str.size(); j++)
+    {
+
+        if (str.at(j) == ':')
+        {
+            End = j;
+            break;
+        }
+
+
+    }
+
+    str.erase(0, (End + 1));
+
+    return str;
+}
+
+std::vector<int> ArduinoReceiver::ColorSelector(ColorSelection Color) 
+{
+    switch (Color)
+    {
+    case RED:
+    {
+        std::vector<int> Colors{ 255, 0, 0 };
+        return Colors;
+        break;
+    };
+
+    case AMBER:
+    {
+        std::vector<int> Colors{ 255, 150, 75 };
+        return Colors;
+        break;
+    };
+
+    case CYAN:
+    {
+        std::vector<int> Colors{ 0, 160, 255 };
+        return Colors;
+        break;
+    };
+
+
+    }
+
+}
+
+int ArduinoReceiver::GetColorRequested(std::string Message)
+{
+    std::string ColorReq;
+
+    for (int j = 0; j < Message.size(); j++)
+    {
+        if (Message.at(j) == ':')
+        {
+            //std::cout << "\nMessage at j " << Messages[i].at(j)<<" "<<j;
+            break;
+        }
+
+        ColorReq.push_back(Message.at(j));
+        //std::cout << "\nThe requested color " << ColorRequested[j];
+    }
+
+    int ColorRequestInt = std::stoi(ColorReq);
+
+    return ColorRequestInt;
+}
+
+std::vector <std::string> ArduinoReceiver::SortMessages(std::vector <std::string> Messages)
+{
+    std::vector <std::string> RedMessages,
+        AmberMessages,
+        CyanMessages;
+
+    std::vector <std::string> OutputMessages;
+
+    if (!Messages.empty())
+    {
+        for (int i = 0; i < Messages.size(); i++)
+        {
+            ColorSelection ColorReq = (ColorSelection)GetColorRequested(Messages[i]);
+
+            if (ColorReq == RED)
+            {
+                RedMessages.push_back(Messages[i]);
+            }
+            if (ColorReq == AMBER)
+            {
+                AmberMessages.push_back(Messages[i]);
+            }
+            if (ColorReq == CYAN)
+            {
+                CyanMessages.push_back(Messages[i]);
+            }
+
+        }
+    }
+
+    for (int i = 0; i < RedMessages.size(); i++)
+    {
+        OutputMessages.push_back(RedMessages[i]);
+    }
+
+    for (int i = 0; i < AmberMessages.size(); i++)
+    {
+        OutputMessages.push_back(AmberMessages[i]);
+    }
+
+    for (int i = 0; i < CyanMessages.size(); i++)
+    {
+        OutputMessages.push_back(CyanMessages[i]);
+    }
+
+    return OutputMessages;
+}
+
+LPWSTR ArduinoReceiver::ConvertToLPWSTR(std::string Data)
+{
+    size_t size = Data.size() + 1;
+    const char* const_p = Data.c_str();
+    wchar_t* portName = new wchar_t[size];
+    size_t outSize;
+    mbstowcs_s(&outSize, portName, size, const_p, size - 1);
+
+    return portName;
+}
+
+void ArduinoReceiver::ShowMessage(DataConcentrator& Dc, HWND Hndlr)
+{
+    if (!Hndlr) return;
+    
+    std::vector <std::string>Messages = SortMessages(Dc.GetPrintMessage());
+
+
+        //std::cout << "\nVector size " << Messages.size();
+
+    SendMessage(Hndlr, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""));
+
+    for (int i = 0; i < Messages.size(); i++)
+    {
+            //std::cout << "\n Messgs " << Messages[i];
+
+            int TextLength = GetWindowTextLength(Hndlr);
+            SendMessage(Hndlr, EM_SETSEL, TextLength, TextLength);
+
+            ColorSelection ColorReq = (ColorSelection)GetColorRequested(Messages[i]);
+
+            std::string Message = ProcessMessage(Messages[i]);
+            std::vector<int> ColorToUse = ColorSelector(ColorReq);
+
+            //SetTextColor(dc, RGB(255, 0, 0));
+
+            COLORREF textColor = RGB(ColorToUse.at(0), ColorToUse.at(1), ColorToUse.at(2));
+
+            //COLORREF textColor = RGB(255, 0, 0);
+
+            CHARFORMAT2 cf = {};
+            cf.cbSize = sizeof(CHARFORMAT2);
+            cf.dwMask = CFM_COLOR;              // We only want to modify the color attribute
+            cf.crTextColor = textColor;
+
+            SendMessage(Hndlr, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+
+            wchar_t* message = ConvertToLPWSTR(Message);
+
+            SendMessage(Hndlr, EM_REPLACESEL, FALSE, (LPARAM)message);
+            SendMessage(Hndlr, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
+            SendMessage(Hndlr, EM_SCROLLCARET, 0, 0);
+
+    }
+
+    
 }

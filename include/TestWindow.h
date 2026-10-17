@@ -16,6 +16,8 @@
 #include <string>
 
 #include <ColorSelection.h>
+#include <DataConcentrator.h>
+#include <ArduinoReceiver.h>
 
 #include <chrono>
 
@@ -26,8 +28,11 @@
 #include <SetMenuGUIFunction.h>
 #include <AutoMenuGUIFunction.h>
 
-#include <GUIFunction.h>
+#include <ArduinoReceiver.h>
+#include <BoardSelection.h>
 
+#include <GUIFunction.h>
+#include <MessageHandler.h>
 
 #include <algorithm>
 
@@ -101,6 +106,12 @@ public:
 	void TimeAnchorPoint();
 	void UpdateElapsedTime();
 
+	bool ArduinoConnectionRequest();
+	void ResetArduinoConnectionRequest();
+
+	bool ArduinoConfirmCommPorts();
+	void ResetArduinoCommPorts();
+
 	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, unsigned long time);
 	void UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_val, bool ValidPitch, bool ValidRoll, unsigned long Time);
 	void UpdateAccelDiag(double AccelX_val, double AccelY_val, double AccelZ_val);
@@ -121,8 +132,15 @@ public:
 	std::vector <string> ReturnBoardNames() { return BoardSelections; };
 	std::map<std::string, int> GetBoardsAndRates(){ return BoardSelectionAndBuadRates; };
 
-void ShowDiagnosisData(static bool& MessagePrinted);
+   void ShowDiagnosisData(static bool& MessagePrinted);
+   void ShowCommsPortData();
+
+   void ShowCommsPortData(static bool& MessagePrinted);
+
+   void UpdateCommPortsMessages(DataConcentrator &DC);
+
    void GetMessageToprint(std::vector <std::string> Messages) { MessagesToPrint = Messages; };
+
 
 
 	LPWSTR GetPitchWritten()
@@ -161,6 +179,8 @@ private:
 
 	WNDCLASS DiagBox = {};  // Dynamic textbox
 
+	static bool BoardsSelected;
+
 	LPWSTR 
 	PitchWritten,
 	RollWritten,
@@ -192,4 +212,13 @@ private:
 	std::vector <string> BoardSelections;
 
 	std::map<std::string, int> BoardSelectionAndBuadRates;
+};
+
+HWND GetDiagnosisArdCommsWindHandler();
+
+class WinHndlr
+{
+public:
+
+	void WriteCommsMessage();
 };

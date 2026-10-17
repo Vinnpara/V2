@@ -17,6 +17,11 @@
 
 #include <BoardSelection.h>
 #include <DataConcentrator.h>
+#include <ColorSelection.h>
+#include <string>
+
+#include <richedit.h>
+
 
 enum BoardMessageIndentifier {
 	RADAR_BOARD_MESSAGE = 4000,
@@ -120,6 +125,8 @@ public:
 
 	void InitializedBoard();
 
+	void ShowMessage(DataConcentrator &Dc, HWND Hndlr);
+
 	bool GetValidPitch() {
 		return ValidPitch;
 	}
@@ -146,6 +153,11 @@ public:
 	bool FindArduinoBoardPort(const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
 
 	bool FindArduinoBoardPortHserial(const std::string& expectedName, int& outPortNumber, int buad, int PrevPort);
+	bool FindArduinoBoardPortHserial(DataConcentrator &Dc, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort);
+	
+	bool FindArduinoBoardPortHserial(HWND DiagHndl, DataConcentrator& Dc, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort);
+
+	void SignalTryingConnection(DataConcentrator& Dc, int code, bool Add);
 
 private:
 	bool MonitorArduinoReadiness();
@@ -172,6 +184,11 @@ private:
 	void UpdateRadarPacket(std::string& DataPacket);
 	void UpdateMotorSteerPacket(std::string& DataPacket);
 
+	std::vector <std::string> SortMessages(std::vector <std::string> Messages);
+	int GetColorRequested(std::string Message);
+	std::string ProcessMessage(std::string Message);
+	std::vector<int> ColorSelector(ColorSelection Color);
+	LPWSTR ConvertToLPWSTR(std::string Data);
 
 
 	//void SortRadarPacket(std::string& DataPacket);

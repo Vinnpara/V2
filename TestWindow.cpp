@@ -87,6 +87,33 @@ static int BaudRateBoard1,
 
 std::map<std::string, int> BoardAndBuadRate;
 
+bool TestWindow::BoardsSelected = 0;
+
+static bool BoardConfrimSelect;
+static bool TryConnection;
+
+static int NumberOfMessagesCommPorts = 0;
+
+static bool PrintDiagnosisMessages = 0,
+            MessageAdded = 0;
+
+ArduinoReceiver MSB(MOTOR_STEER_BOARD),
+                GYRO(GYROSCOPE_BOARD),
+                RADAR(RADAR_BOARD);
+
+std::string MSBName,
+            GYROName,
+            RADARName;
+
+int MSBBaud = 0,
+    FoundPort = 0,
+    GYROBaud = 0,
+    RADARBaud = 0,
+    GYROFoundPort = 0,
+    RADARFoundPort = 0;
+
+DataConcentrator DC;
+
 string GetBoardCommand(int index)
 {
 	string board;
@@ -1474,12 +1501,16 @@ LRESULT CALLBACK WindowProcMenuAutoComs(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 
 	RECT BoardChoiceCords[NUMBER_OF_BOARDS];
 	RECT BaudRateChoiceCords[NUMBER_OF_BOARDS];
+
 	/*
 	for (int i = 0; i < NUMBER_OF_BOARDS; i++)
 	{
 		HwndBoards[NUMBER_OF_BOARDS] = NULL;
 	}
 	*/
+
+
+
 	for (int i = 0; i < NUMBER_OF_BOARDS; i++)
 	{
 
@@ -1503,6 +1534,15 @@ LRESULT CALLBACK WindowProcMenuAutoComs(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	const wchar_t* options[] = { L"MSB", L"GYRO", L"RADAR" };
 	const wchar_t* BaudRates[] = { L"9600", L"57600", L"115200" };
 
+	if (IsWindow(g_hwndMessageAutoComms))
+	{
+		//std::cout << "\n PROC FUNCTION ";
+
+		//DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+		//DC.PreparePrintMessage();
+		//DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+		//ShowData(DC, g_hwndMessageAutoComms, MessageAdded);
+	}
 
 	switch (uMsg)
 	{
@@ -1579,11 +1619,14 @@ LRESULT CALLBACK WindowProcMenuAutoComs(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			NULL
 		);
 
+		//std::cout << "\n CREATE FUNCTION ";
+
 		break;
 	}
 
 	case WM_COMMAND:
 	{
+		//std::cout << "\n COMMAND FUNCTION ";
 
 		if (HIWORD(wParam) == CBN_SELCHANGE)
 		{
@@ -1687,8 +1730,20 @@ LRESULT CALLBACK WindowProcMenuAutoComs(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			BoardAndBuadRate[BoardSel1] = BaudRateBoard1;
 			BoardAndBuadRate[BoardSel2] = BaudRateBoard2;
 			BoardAndBuadRate[BoardSel3] = BaudRateBoard3;
-		}
 
+			BoardConfrimSelect = 1;
+			
+		}
+		//std::cout << "\nButton: " << LOWORD(wParam);
+
+		if (LOWORD(wParam) == 2)  //Confirm selection button
+		{
+			//std::string Tst = "Test Msg";
+			//TestMessage(Tst, g_hwndMessageAutoComms);  //This works if the ShowCommsPortData 
+			                                            //is commented out. Displayed before conection
+
+			TryConnection = 1;
+		}
 		//Menu.WMCommandWindowFunction();
 		break;
 	}
@@ -1701,6 +1756,10 @@ LRESULT CALLBACK WindowProcMenuAutoComs(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 		PostQuitMessage(0); //quit application once destroyed
 
 	}
+
+
+	//std::cout << "\n PROC FUNCTION ";
+
 	return DefWindowProc(hWnd, uMsg, wParam, lParam); //return undefiened params as well
 }
 
@@ -1767,6 +1826,8 @@ LRESULT CALLBACK WindowProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 HWND GetDiagnosisWindHandler() { return hwndDiagLog; }
 
+HWND GetDiagnosisArdCommsWindHandler() { return g_hwndMessageAutoComms; }
+
 TestWindow::TestWindow()
 	:m_hInstance(GetModuleHandle(nullptr))
 {
@@ -1813,8 +1874,6 @@ TestWindow::TestWindow()
 	//Initialize the undone buttons
 	B1_Done = 0, B2_Done = 0, B3_Done = 0;
 }
-
-
 
 /*TestWindow::TestWindow(bool Diagnotics)
 	:m_hInstance(GetModuleHandle(nullptr))
@@ -2028,7 +2087,7 @@ bool TestWindow::ProcessMessages()
 			return false;
 		}
 
-
+		//std::cout << "\n Messages process ";
 		TranslateMessage(&msg); //Does things like translate key presses to character.
 		DispatchMessage(&msg); //calls window procedure
 
@@ -2557,6 +2616,26 @@ void TestWindow::ShowBoardParams()
 	}
 }
 
+bool TestWindow::ArduinoConnectionRequest()
+{
+	return TryConnection;
+}
+
+void TestWindow::ResetArduinoConnectionRequest()
+{
+	TryConnection = 0;
+}
+
+bool TestWindow::ArduinoConfirmCommPorts() 
+{
+	return BoardConfrimSelect;
+}
+
+void TestWindow::ResetArduinoCommPorts() 
+{
+	BoardConfrimSelect = 0;
+}
+
 void TestWindow::RecordCommandButtons() {
 
 	/*if (ID_BUTTON_START_RECORD) {
@@ -2625,9 +2704,6 @@ std::vector<int> TestWindow::ColorSelector(ColorSelection Color)
 
 	}
 }
-
-
-
 
 int TestWindow::GetColorRequested(std::string Message)
 {
@@ -2767,3 +2843,213 @@ void TestWindow::ShowDiagnosisData(static bool& MessagePrinted)
 
 	}
 }
+
+void TestWindow::ShowCommsPortData(static bool& MessagePrinted)
+{
+	if (!g_hwndMessageAutoComms) return;
+
+	std::vector <std::string>Messages = SortMessages(MessagesToPrint);
+
+	if (!MessagePrinted)
+	{
+		//std::cout << "\nVector size " << Messages.size();
+
+		SendMessage(g_hwndMessageAutoComms, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""));
+
+		for (int i = 0; i < Messages.size(); i++)
+		{
+			//std::cout << "\n Messgs " << Messages[i];
+			
+			int TextLength = GetWindowTextLength(g_hwndMessageAutoComms);
+			SendMessage(g_hwndMessageAutoComms, EM_SETSEL, TextLength, TextLength);
+
+			ColorSelection ColorReq = (ColorSelection)GetColorRequested(Messages[i]);
+			std::string Message = ProcessMessage(Messages[i]);
+
+			std::vector<int> ColorToUse = ColorSelector(ColorReq);
+
+			//SetTextColor(dc, RGB(255, 0, 0));
+
+			COLORREF textColor = RGB(ColorToUse.at(0), ColorToUse.at(1), ColorToUse.at(2));
+
+			//COLORREF textColor = RGB(255, 0, 0);
+
+			CHARFORMAT2 cf = {};
+			cf.cbSize = sizeof(CHARFORMAT2);
+			cf.dwMask = CFM_COLOR;              // We only want to modify the color attribute
+			cf.crTextColor = textColor;
+
+			SendMessage(g_hwndMessageAutoComms, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+
+			wchar_t* message = ConvertToLPWSTR(Message);
+
+			SendMessage(g_hwndMessageAutoComms, EM_REPLACESEL, FALSE, (LPARAM)message);
+			SendMessage(g_hwndMessageAutoComms, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
+			SendMessage(g_hwndMessageAutoComms, EM_SCROLLCARET, 0, 0);
+
+			UpdateWindow(g_hwndMessageAutoComms);
+
+			if (i == (Messages.size() - 1))
+			{
+				MessagePrinted = 1;
+				//std::cout << "\nMessg Prntd ";
+			}
+		}
+
+	}
+}
+
+void TestWindow::UpdateCommPortsMessages(DataConcentrator& DC)
+{
+	std::string MSBName,
+		GYROName,
+		RADARName;
+
+	int MSBBaud = 0,
+		GYROBaud = 0,
+		RADARBaud = 0;
+
+	std::vector<string> Msgs;
+
+	std::string Conn = " at ";
+	std::string Start = " Board ";
+
+	std::string MessageHead = { "13:" };
+	std::string MessageTotal = "\0",
+		        MSBTot = "\0",
+		        GYROTot = "\0",
+		        RADARTot = "\0";
+
+
+	for (const auto& pair : BoardAndBuadRate)
+	{
+		if (pair.first == "MSB")
+		{
+				MSBName = pair.first;
+				MSBBaud = pair.second;
+
+				MSBTot = Start + MSBName + Conn + std::to_string(MSBBaud);
+				//Msgs.push_back(MSBTot);
+		}
+		if (pair.first == "GYRO")
+		{
+				GYROName = pair.first;
+				GYROBaud = pair.second;
+
+				GYROTot = Start + GYROName + Conn + std::to_string(GYROBaud);
+				//Msgs.push_back(GyroTot);
+
+		}
+		if (pair.first == "RADAR")
+		{
+				RADARName = pair.first;
+				RADARBaud = pair.second;
+
+				RADARTot = Start + RADARName + Conn + std::to_string(RADARBaud);
+				//Msgs.push_back(RadarTot);
+		}
+	}
+
+	MessageTotal = MessageHead + MSBTot + GYROTot + RADARTot;
+	//MessageTotal = MessageHead;
+	//std::cout << "\nBoards " << MessageTotal;
+
+	if (!DC.CheckMessageExistence(1001))
+	{
+		DC.AddMessage(MessageTotal, 1001);
+		//std::cout << "\nNo comm port msg ";
+	}
+	else
+	{
+		DC.SwapMessage(MessageTotal, 1001, 1001);
+	}
+
+}
+
+void TestWindow::ShowCommsPortData()
+{
+	if (!g_hwndMessageAutoComms) return;
+
+	std::string MSBName,
+		GYROName,
+		RADARName;
+
+	int MSBBaud = 0,
+		GYROBaud = 0,
+		RADARBaud = 0;
+
+	std::vector<string> Msgs;
+
+	std::string Conn = " at ";
+	std::string Start = " Board ";
+
+	if (BoardConfrimSelect)
+	{
+		for (const auto& pair : BoardAndBuadRate)
+		{
+			if (pair.first == "MSB")
+			{
+				MSBName = pair.first;
+				MSBBaud = pair.second;
+
+				std::string MSBTot = Start + MSBName + Conn + std::to_string(MSBBaud);
+				Msgs.push_back(MSBTot);
+			}
+			if (pair.first == "GYRO")
+			{
+				GYROName = pair.first;
+				GYROBaud = pair.second;
+
+				std::string GyroTot = Start + GYROName + Conn + std::to_string(GYROBaud);
+				Msgs.push_back(GyroTot);
+
+			}
+			if (pair.first == "RADAR")
+			{
+				RADARName = pair.first;
+				RADARBaud = pair.second;
+
+				std::string RadarTot = Start + RADARName + Conn + std::to_string(RADARBaud);
+				Msgs.push_back(RadarTot);
+			}
+		}
+
+		for (int i = 0; i < Msgs.size(); i++)
+		{
+			int TextLength = GetWindowTextLength(g_hwndMessageAutoComms);
+			SendMessage(g_hwndMessageAutoComms, EM_SETSEL, TextLength, TextLength);
+
+			ColorSelection ColorReq = CYAN;
+
+			std::string Message = ProcessMessage(Msgs[i]);
+
+			std::vector<int> ColorToUse = ColorSelector(ColorReq);
+
+			//SetTextColor(dc, RGB(255, 0, 0));
+
+			COLORREF textColor = RGB(ColorToUse.at(0), ColorToUse.at(1), ColorToUse.at(2));
+
+			//COLORREF textColor = RGB(255, 0, 0);
+
+			CHARFORMAT2 cf = {};
+			cf.cbSize = sizeof(CHARFORMAT2);
+			cf.dwMask = CFM_COLOR;              // We only want to modify the color attribute
+			cf.crTextColor = textColor;
+
+			SendMessage(g_hwndMessageAutoComms, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+
+			wchar_t* message = ConvertToLPWSTR(Message);
+
+			SendMessage(g_hwndMessageAutoComms, EM_REPLACESEL, FALSE, (LPARAM)message);
+			SendMessage(g_hwndMessageAutoComms, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
+			SendMessage(g_hwndMessageAutoComms, EM_SCROLLCARET, 0, 0);
+
+			
+		}
+
+		BoardConfrimSelect = 0;
+	}
+
+}
+
+

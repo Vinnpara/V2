@@ -266,6 +266,11 @@ void SerialPort::SetHandle(HANDLE& outHandle)
     this->handler = outHandle;
 }
 
+void SerialPort::GetHandle(HANDLE& outHandle)
+{
+    outHandle = this->handler;
+}
+
 void SerialPort::SetBaudRate(SerialSpeed BaudRate) {
 
     if (this->handler != INVALID_HANDLE_VALUE) {
