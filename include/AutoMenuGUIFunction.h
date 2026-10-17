@@ -43,7 +43,8 @@ private:
         "Board 1",
         "Board 2",
         "Board 3",
-        "Conf. slection"
+        "Conf. slection",
+        "Connect"
     };
 
 };

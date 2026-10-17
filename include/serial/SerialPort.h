@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include<SerialConnectionSpeed.h>
+#include <DataConcentrator.h>
 
 #include <string>
 #include <vector>
@@ -36,6 +37,7 @@ public:
     ~SerialPort();
 
     void SetHandle(HANDLE& outHandle);
+    void GetHandle(HANDLE& outHandle);
 
     int readSerialPort(char *buffer, unsigned int buf_size);
     int ReadSerialPortAfterPeek(char* buffer, unsigned int buf_size);

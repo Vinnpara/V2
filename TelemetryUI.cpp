@@ -55,6 +55,12 @@ ArduinoReceiver ArdMotorSteer(MOTOR_STEER_BOARD);
 
 //static float TotalElapsedTime;
 
+static int NumberOfMessagesCommPorts = 0;
+
+static bool PrintDiagnosisMessages = 0,
+                  MessageAdded = 0,
+            TryConnection;
+
 float TelemetryUI::ReturnTotalTime() {
 
     return TotalElapsedTime;
@@ -77,7 +83,9 @@ void TelemetryUI::DirectConnectArd(DataConcentrator& DC)
 
 }
 
-void TelemetryUI::AssignBoards(DataConcentrator& DC) {
+
+
+void TelemetryUI::AssignBoards() {
 /*
 * Messages:
 * Board assignments, cyan
@@ -90,12 +98,135 @@ void TelemetryUI::AssignBoards(DataConcentrator& DC) {
 
     bool run = true;
 
+    DataConcentrator DC;
+
+    bool MessageAdd;
+
+    std::string MSBName,
+        GYROName,
+        RADARName;
+
+    int MSBBaud = 0,
+        FoundPort = 0,
+        GYROBaud = 0,
+        RADARBaud = 0,
+        GYROFoundPort = 0,
+        RADARFoundPort = 0;
+
     while (run)
     {
         tWindow->Assignments();
-        tWindow->GetBoardNames();
 
+        tWindow->GetBoardNames();
         tWindow->SetBoardParamaters();
+
+        if (tWindow->ArduinoConfirmCommPorts())
+        {
+            tWindow->UpdateCommPortsMessages(DC);
+
+            BoardAssingmentAndBuadRate = tWindow->GetBoardsAndRates();
+
+            for (const auto& pair : BoardAssingmentAndBuadRate)
+            {
+                //std::cout << "\nBoard and rate " << pair.first << ": " << pair.second << "\n";
+
+                if (pair.first == "MSB")
+                {
+                    MSBName = pair.first;
+                    MSBBaud = pair.second;
+                }
+                if (pair.first == "GYRO")
+                {
+                    GYROName = pair.first;
+                    GYROBaud = pair.second;
+                }
+                if (pair.first == "RADAR")
+                {
+                    RADARName = pair.first;
+                    RADARBaud = pair.second;
+                }
+
+            }
+
+            tWindow->ResetArduinoCommPorts();
+        }
+
+
+        if (tWindow->ArduinoConnectionRequest())
+        {
+            
+            TryConnection = 1;
+            
+            tWindow->ResetArduinoConnectionRequest();
+        }
+
+        if (TryConnection)
+        {
+
+            //MSB CONNECTION;
+            DC.AddMessage("13:Connecting MSB ", 5008);
+            /*DC.CheckMapIncrement(NumberOfMessagesCommPorts);*/
+
+            //ArdMotorSteer.SignalTryingConnection(DC, 5008, true);
+
+            DC.PreparePrintMessage();
+            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+            tWindow->GetMessageToprint(DC.GetPrintMessage());
+            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+            
+            //HWND DiagBoxHndlr = GetDiagnosisArdCommsWindHandler();
+
+            AttemptConnectionMSB( DC, MSBName, FoundPort, MSBBaud, 0, 0);
+
+            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+            DC.PreparePrintMessage();
+            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+            tWindow->GetMessageToprint(DC.GetPrintMessage());
+            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+            DC.RemoveMessage(5008);
+
+            //GYRO CONNECTION
+            DC.AddMessage("13:Connecting GYRO ", 3011);
+            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+            DC.PreparePrintMessage();
+            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+            tWindow->GetMessageToprint(DC.GetPrintMessage());
+            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+            AttemptConnectionGYRO(DC, GYROName, GYROFoundPort, GYROBaud, FoundPort, 0);
+
+            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+            DC.PreparePrintMessage();
+            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+            tWindow->GetMessageToprint(DC.GetPrintMessage());
+            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+            DC.RemoveMessage(3011);
+
+            //RADAR CONNECTION
+            DC.AddMessage("13:Connecting RADAR ", 4011);
+            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+            DC.PreparePrintMessage();
+            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+            tWindow->GetMessageToprint(DC.GetPrintMessage());
+            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+            AttemptConnectionRADAR(DC, RADARName, RADARFoundPort, RADARBaud, FoundPort, GYROFoundPort);
+
+            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+            DC.PreparePrintMessage();
+            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+            tWindow->GetMessageToprint(DC.GetPrintMessage());
+            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+            DC.RemoveMessage(4011);
+
+
+            TryConnection = 0;
+        }
+
+        
 
         if (!tWindow->ProcessMessages())
         {
@@ -105,148 +236,32 @@ void TelemetryUI::AssignBoards(DataConcentrator& DC) {
             //std::cout << "\nBOARD_2 " << tWindow->board2;
             //std::cout << "\nBOARD_3 " << tWindow->board3;
 
-            
-            
         }
 
-        Sleep(1);
+        DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+
+        DC.PreparePrintMessage();
+        DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+
+        tWindow->GetMessageToprint(DC.GetPrintMessage());
+        tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+        //Sleep(1);
 
     }
 
-    /*
-    if (tWindow->GetNumberOfBoards() > 0)
-    {
-        std::cout << "\nBoards selected";
 
-        Boards = tWindow->ReturnBoardNames();
-
-        for (int i = 0; i < tWindow->GetNumberOfBoards(); i++)
-        {
-            std::cout << "\nBoard " <<i<<" "<< Boards[i];
-        }
-
-    }
-    */
-
-   // tWindow->ShowBoardParams();
 
     int ArdBoard1 = tWindow->board1;
     int ArdBoard2 = tWindow->board2;
     int ArdBoard3 = tWindow->board3;
 
-    BoardAssingmentAndBuadRate = tWindow->GetBoardsAndRates();
-
-    std::string MSBName,
-                GYROName,
-                RADARName;
-
-    int MSBBaud = 0,
-        FoundPort = 0,
-        GYROBaud = 0,
-        RADARBaud = 0,
-        GYROFoundPort = 0,
-        RADARFoundPort = 0;
-
-    for (const auto& pair : BoardAssingmentAndBuadRate) 
-    {
-        //std::cout << "\nBoard and rate " << pair.first << ": " << pair.second << "\n";
-
-        if (pair.first == "MSB")
-        {
-            MSBName = pair.first;
-            MSBBaud = pair.second;
-        }
-        if (pair.first == "GYRO")
-        {
-            GYROName = pair.first;
-            GYROBaud = pair.second;
-        }
-        if (pair.first == "RADAR")
-        {
-            RADARName = pair.first;
-            RADARBaud = pair.second;
-        }
-
-    }
-
-    std::cout << "\nMSB and rate demand found as " << MSBName << " " << MSBBaud;
-    std::cout << "\nGYRO and rate demand found as " << GYROName << " " << GYROBaud;
-    std::cout << "\nRADAR and rate demand found as " << RADARName << " " << RADARBaud;
-
-    //ArdMotorSteer.AssignPort((SerialName)ArdBoard1); Older code used to this 
-                                                     // Changed to SetArdPort to 
-                                                     //Maintain consistency.
-                                                     // 
-    if (ArdMotorSteer.FindArduinoBoardPort(MSBName, FoundPort, MSBBaud)) 
-    {
-        ArdMotorSteer.SetArdPort(FoundPort, DC);
-        ArdMotorSteer.SetBaudRate(MSBBaud);
-        ArdMotorSteer.InitializedBoard();
-
-    }
-
-    /*
-    if (ArdGyro.FindArduinoBoardPort(GYROName, GYROFoundPort, GYROBaud, FoundPort))
-    {
-        ArdGyro.SetArdPort(GYROFoundPort, DC);
-        ArdGyro.SetBaudRate(GYROBaud);
-        ArdGyro.InitializedBoard();
-    }
-    */
-
-    if (ArdGyro.FindArduinoBoardPortHserial(GYROName, GYROFoundPort, GYROBaud, FoundPort))
-    {
-        //ArdGyro.SetArdPort(GYROFoundPort, DC);
-        //ArdGyro.SetBaudRate(GYROBaud);
-        ArdGyro.InitializedBoard();
-    }
-
-    if (ArdGyro.FindArduinoBoardPort(RADARName, RADARFoundPort, RADARBaud, GYROFoundPort))
-    {
-        ArdRadar.SetArdPort(RADARFoundPort, DC);
-        ArdRadar.SetBaudRate(RADARBaud);
-        ArdRadar.InitializedBoard();
-    }
-
-
-
-    /*
-    ArdMotorSteer.SetArdPort((SerialName)ArdBoard1, DC);
-    ArdMotorSteer.SetBaudRate(BAUD_RATE_115200);
-    */
-    //ArdRadar.AssignPort((SerialName)ArdBoard2);
-    //ArdRadar.SetBaudRate(BAUD_RATE_9600);
-
-    //ArdRadar.SetArdPort((SerialName)ArdBoard2, DC);
-    //ArdRadar.SetBaudRate(BAUD_RATE_9600);
-
-    //std::cout << "\n Board Selected " << (SerialName)ArdBoard2 << " " << tWindow->board2;
-
-    //ArdGyro.AssignPort((SerialName)ArdBoard3, BAUD_RATE_57600);
-
-    //char* GyroPort = "\\\\.\\COM19";
-    //ArdGyro.SetArdPort(GyroPort, DC);
-    //ArdGyro.SetBaudRate(BAUD_RATE_115200);
-    //ArdGyro.InitializedBoard();
 
     delete tWindow;
     
-
-    /*
-    * Updating messages
-    */
-
-    std::string Message = {"13:Board ports are "};
-    std::string P1, P2, P3;
-    P1 = std::to_string((SerialName)ArdBoard1);
-    P2 = std::to_string((SerialName)ArdBoard2);
-    P3 = std::to_string((SerialName)ArdBoard3);
-
-    std::string MessageFinal = Message + P1 + ", " + P2 +", " + P3;
-
-    DC.SetMessageStatus(MessageFinal, 1001, MESSAGE_ON);
-
 }
+
+
 
 void TelemetryUI::ViewDiagnostics() {
 
@@ -372,6 +387,294 @@ void TelemetryUI::EstablishComms(static bool& CommsEstablished, static bool& Rea
 
     if (CommsEstablished)
         ReadyforFirstReading = 1;
+}
+
+void TelemetryUI::AttemptConnections()
+{
+   
+    std::string MSBName,
+        GYROName,
+        RADARName;
+
+    int MSBBaud = 0,
+        FoundPort = 0,
+        GYROBaud = 0,
+        RADARBaud = 0,
+        GYROFoundPort = 0,
+        RADARFoundPort = 0;
+
+    for (const auto& pair : BoardAssingmentAndBuadRate)
+    {
+        //std::cout << "\nBoard and rate " << pair.first << ": " << pair.second << "\n";
+
+        if (pair.first == "MSB")
+        {
+            MSBName = pair.first;
+            MSBBaud = pair.second;
+        }
+        if (pair.first == "GYRO")
+        {
+            GYROName = pair.first;
+            GYROBaud = pair.second;
+        }
+        if (pair.first == "RADAR")
+        {
+            RADARName = pair.first;
+            RADARBaud = pair.second;
+        }
+
+    }
+
+    //std::cout << "\nMSB and rate demand found as " << MSBName << " " << MSBBaud;
+    //std::cout << "\nGYRO and rate demand found as " << GYROName << " " << GYROBaud;
+    //std::cout << "\nRADAR and rate demand found as " << RADARName << " " << RADARBaud;
+
+    //ArdMotorSteer.AssignPort((SerialName)ArdBoard1); Older code used to this 
+                                                     // Changed to SetArdPort to 
+                                                     //Maintain consistency.
+                                                     // 
+
+    if (ArdMotorSteer.FindArduinoBoardPort(MSBName, FoundPort, MSBBaud))
+    {
+        //ArdMotorSteer.SetArdPort(FoundPort, DC);
+        //ArdMotorSteer.SetBaudRate(MSBBaud);
+        ArdMotorSteer.InitializedBoard();
+
+    }
+
+    /*
+    if (ArdGyro.FindArduinoBoardPort(GYROName, GYROFoundPort, GYROBaud, FoundPort))
+    {
+        ArdGyro.SetArdPort(GYROFoundPort, DC);
+        ArdGyro.SetBaudRate(GYROBaud);
+        ArdGyro.InitializedBoard();
+    }
+    */
+
+    if (ArdGyro.FindArduinoBoardPortHserial(GYROName, GYROFoundPort, GYROBaud, FoundPort))
+    {
+        //ArdGyro.SetArdPort(GYROFoundPort, DC);
+        //ArdGyro.SetBaudRate(GYROBaud);
+        ArdGyro.InitializedBoard();
+    }
+
+    if (ArdRadar.FindArduinoBoardPortHserial(RADARName, RADARFoundPort, RADARBaud, GYROFoundPort))
+    {
+        //ArdRadar.SetArdPort(RADARFoundPort, DC);
+        //ArdRadar.SetBaudRate(RADARBaud);
+        ArdRadar.InitializedBoard();
+    }
+}
+
+void TelemetryUI::AttemptConnectionMSB(static bool& one, static bool& two, static int& three, HWND DiagHndl, DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
+{
+
+    //DC.AddMessage(MSBCOn, 5008);
+
+    /*
+    5008 Attempting to connect to MSB, 5009 MSB connected OR MSB not found
+    */
+    if (ArdMotorSteer.FindArduinoBoardPortHserial(DiagHndl, DC, expectedName, outPortNumber, buad, 0))
+    {
+
+        ArdMotorSteer.InitializedBoard();
+
+    }
+    else
+    {
+        std::string Tot = "11:Warning, MSB ";
+
+    }
+
+
+}
+
+void TelemetryUI::AttemptConnectionMSB(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
+{
+    std::string Att = "13:Connecting to ";
+    std::string MSB = " MSB ",
+                GYRO = " GYRO ",
+                RADAR = " RADAR ";
+    std::string Conn = "Connected to port ";
+    std::string NotCon = "Not Connected ";
+
+    std::string MSBCOn = Att + MSB;
+
+    //DC.AddMessage(MSBCOn, 5008);
+
+    /*
+    5008 Attempting to connect to MSB, 5009 MSB connected OR MSB not found
+    */
+    if (ArdMotorSteer.FindArduinoBoardPortHserial(DC, expectedName, outPortNumber, buad,0))
+    {
+        //ArdMotorSteer.SetArdPort(FoundPort, DC);
+        //ArdMotorSteer.SetBaudRate(MSBBaud);
+        ArdMotorSteer.InitializedBoard();
+
+        std::string Tot = "13:MSB " + Conn + std::to_string(outPortNumber);
+        //DC.AddMessage(Tot, 5009);
+    }
+    else
+    {
+        std::string Tot = "11:Warning, MSB " + NotCon;
+        //DC.AddMessage(Tot, 5009);
+    }
+    //DC.RemoveMessage(5008);
+}
+
+void TelemetryUI::AttemptConnectionGYRO(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
+{
+    std::string Att = "13:Connecting to ";
+    std::string MSB = " MSB ",
+                GYRO = " GYRO ",
+                RADAR = " RADAR ";
+    std::string Conn = "Connected to port ";
+    std::string NotCon = "Not Connected ";
+
+    std::string GyroCOn = Att + GYRO;
+    
+    //DC.AddMessage(GyroCOn, 3011);
+
+
+    /*
+     3008 Attempting to connect to MSB, 3009 MSB connected OR MSB not found
+     */
+
+    if (ArdGyro.FindArduinoBoardPortHserial(expectedName, outPortNumber, buad, PrevPort))
+    {
+        //ArdGyro.SetArdPort(GYROFoundPort, DC);
+        //ArdGyro.SetBaudRate(GYROBaud);
+        ArdGyro.InitializedBoard();
+
+        std::string Tot = "13:GYRO " + Conn + std::to_string(outPortNumber);
+        DC.AddMessage(Tot, 3012);
+    }
+    else
+    {
+        std::string Tot = "11:Warning, GYRO " + NotCon;
+        DC.AddMessage(Tot, 3012);
+    }
+   // DC.RemoveMessage(3011);
+}
+
+void TelemetryUI::AttemptConnectionRADAR(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
+{
+    std::string Att = "13:Connecting to ";
+    std::string MSB = " MSB ",
+                GYRO = " GYRO ",
+                RADAR = " RADAR ";
+    std::string Conn = "Connected to port ";
+    std::string NotCon = "Not Connected ";
+
+    std::string GyroCOn = Att + RADAR;
+
+    DC.AddMessage(GyroCOn, 4011);
+
+    if (ArdRadar.FindArduinoBoardPortHserial(expectedName, outPortNumber, buad, PrevPort))
+    {
+        //ArdRadar.SetArdPort(RADARFoundPort, DC);
+        //ArdRadar.SetBaudRate(RADARBaud);
+        ArdRadar.InitializedBoard();
+
+        std::string Tot = "13:RADAR " + Conn + std::to_string(outPortNumber);
+        DC.AddMessage(Tot, 4012);
+    }
+    else
+    {
+        std::string Tot = "11:Warning, RADAR " + NotCon;
+        DC.AddMessage(Tot, 4012);
+    }
+   // DC.RemoveMessage(4011);
+
+}
+
+void TelemetryUI::AttemptConnections(DataConcentrator& DC)
+{
+    std::string MSBName,
+        GYROName,
+        RADARName;
+
+    int MSBBaud = 0,
+        FoundPort = 0,
+        GYROBaud = 0,
+        RADARBaud = 0,
+        GYROFoundPort = 0,
+        RADARFoundPort = 0;
+
+    for (const auto& pair : BoardAssingmentAndBuadRate)
+    {
+        //std::cout << "\nBoard and rate " << pair.first << ": " << pair.second << "\n";
+
+        if (pair.first == "MSB")
+        {
+            MSBName = pair.first;
+            MSBBaud = pair.second;
+        }
+        if (pair.first == "GYRO")
+        {
+            GYROName = pair.first;
+            GYROBaud = pair.second;
+        }
+        if (pair.first == "RADAR")
+        {
+            RADARName = pair.first;
+            RADARBaud = pair.second;
+        }
+
+    }
+
+    //std::cout << "\nMSB and rate demand found as " << MSBName << " " << MSBBaud;
+    //std::cout << "\nGYRO and rate demand found as " << GYROName << " " << GYROBaud;
+    //std::cout << "\nRADAR and rate demand found as " << RADARName << " " << RADARBaud;
+
+    //ArdMotorSteer.AssignPort((SerialName)ArdBoard1); Older code used to this 
+                                                     // Changed to SetArdPort to 
+                                                     //Maintain consistency.
+                                                     // 
+    std::string Att = "13:Connecting to ";
+    std::string MSB = " MSB ",
+                GYRO = " GYRO ",
+                RADAR = " RADAR ";
+    std::string Conn = "Connected to port ";
+    std::string NotCon = "Not Connected ";
+
+    std::string MSBCOn = Att + MSB;
+
+    
+    if (ArdMotorSteer.FindArduinoBoardPort(MSBName, FoundPort, MSBBaud))
+    {
+        //ArdMotorSteer.SetArdPort(FoundPort, DC);
+        //ArdMotorSteer.SetBaudRate(MSBBaud);
+        ArdMotorSteer.InitializedBoard();
+
+        std::string Tot = "13:MSB " + Conn + std::to_string(FoundPort);
+
+    }
+
+
+    /*
+    if (ArdGyro.FindArduinoBoardPort(GYROName, GYROFoundPort, GYROBaud, FoundPort))
+    {
+        ArdGyro.SetArdPort(GYROFoundPort, DC);
+        ArdGyro.SetBaudRate(GYROBaud);
+        ArdGyro.InitializedBoard();
+    }
+    */
+
+    if (ArdGyro.FindArduinoBoardPortHserial(GYROName, GYROFoundPort, GYROBaud, FoundPort))
+    {
+        //ArdGyro.SetArdPort(GYROFoundPort, DC);
+        //ArdGyro.SetBaudRate(GYROBaud);
+        ArdGyro.InitializedBoard();
+    }
+
+    if (ArdRadar.FindArduinoBoardPortHserial(RADARName, RADARFoundPort, RADARBaud, GYROFoundPort))
+    {
+        //ArdRadar.SetArdPort(RADARFoundPort, DC);
+        //ArdRadar.SetBaudRate(RADARBaud);
+        ArdRadar.InitializedBoard();
+    }
+
 }
 
 void TelemetryUI::EstablishedCommunicationsArdGyro(static bool &GyroArduinoCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC)
@@ -1177,9 +1480,9 @@ void TelemetryUI::RequestPitch()
 
 void TelemetryUI::SignalReadyToBoard()
 {
-    DWORD StartTimeSend = GetTickCount();
+    DWORD StartTimeSend = GetTickCount64();
 
-    while (GetTickCount() - StartTimeSend < 50)
+    while (GetTickCount64() - StartTimeSend < 50)
     {
         ArdMotorSteer.SendPCReadiness();
         ArdGyro.SendPCReadiness();
@@ -2238,28 +2541,28 @@ void TelemetryUI::DetectBoardReadinessGyro(int Duration, static bool& TimerElaps
     if (TimerElapsed && (BoardReadinessCounter < 1))
     {
 
-        if (DC.CheckMessageExistence(4009))
+        if (DC.CheckMessageExistence(3009))
         {
-            DC.SwapMessage(MessageOFF, 4010, 4009);
+            DC.SwapMessage(MessageOFF, 3010, 3009);
         }
         else
         {
-            DC.SetMessageStatus(MessageOFF, 4010, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 4009, MESSAGE_OFF);
+            DC.SetMessageStatus(MessageOFF, 3010, MESSAGE_ON);
+            DC.SetMessageStatus(MessageON, 3009, MESSAGE_OFF);
         }
         //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
     }
     if (TimerElapsed && (BoardReadinessCounter > 0))
     {
 
-        if (DC.CheckMessageExistence(4010))
+        if (DC.CheckMessageExistence(3010))
         {
-            DC.SwapMessage(MessageON, 4009, 4010);
+            DC.SwapMessage(MessageON, 3009, 3010);
         }
         else
         {
-            DC.SetMessageStatus(MessageOFF, 4010, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 4009, MESSAGE_ON);
+            DC.SetMessageStatus(MessageOFF, 3010, MESSAGE_OFF);
+            DC.SetMessageStatus(MessageON, 3009, MESSAGE_ON);
         }
 
         //std::cout << "\nHeartbeat detected Gyro ";

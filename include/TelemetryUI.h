@@ -47,12 +47,23 @@ public:
 	//check functions with a '/**/' above them. Perhaps could get rid of
 
 	TelemetryUI();
-	void AssignBoards(DataConcentrator &DC);
+	void AssignBoards();
+	//void AssignBoards(HWND WndHndl, std::map<std::string, int> Mapboards);
 
 	void DelayForArduinoInit();
 
 	void InitializeTelemetry();
 	void UpdateValuues(SerialPort& Serial);
+
+
+	void AttemptConnections();
+	void AttemptConnections(DataConcentrator& DC);
+
+	void AttemptConnectionMSB(static bool &one, static bool &two, static int &three, HWND DiagHndl, DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
+
+	void AttemptConnectionMSB(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
+	void AttemptConnectionGYRO(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
+	void AttemptConnectionRADAR(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
 
 	void EstablishedCommunicationsArdGyro (static bool &GyroArduinoCommsEstablished, static bool &TimerElapsed, DataConcentrator& DC);
 	void EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC);
@@ -115,6 +126,8 @@ public:
 	void DrawDiagnosticsData(TestWindow window);
 
 	void EstablishComms(static bool& CommsEstablished, static bool &ReadyforFirstReading);
+
+
 
 	float ReturnPitch() 
 	{
@@ -219,6 +232,11 @@ public:
 	void InitializeDataFile();
 	void RecordData();
 	void CloseDataFile();
+
+	//static int NumberOfMessagesCommPorts;
+
+	//static bool PrintDiagnosisMessages,
+		//MessageAdded;
 
 private:
 	
@@ -333,6 +351,8 @@ private:
 		                                  ArdMSBBoardReadniess;
 
 	std::map<std::string, int> BoardAssingmentAndBuadRate;
+
+
 
 	//std::ofstream DataFile("Pitch_v_time.csv");
 };

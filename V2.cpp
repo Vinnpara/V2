@@ -156,7 +156,8 @@ int main()
     
     //Main class that will handle all failiure, warning, and infromation 
     //Messages
-    DataConcentrator DC1; 
+    DataConcentrator DC0,
+                     DC1; 
 
     // glfw: initialize and configure
     // ------------------------------
@@ -275,11 +276,40 @@ int main()
     //COM8 RADAR
     //COM9 GYRO
 
-    TL1.AssignBoards(DC1);
+    /*
+    * -----------------------------------------------------------------------
+    * ********************* SERIAL CONNECTION MENU **************************
+    * -----------------------------------------------------------------------
+    */
+    /*
+    CallBackSelection Sel = ARD_SELECTION_AUTO_PORT_WINDOW;
+
+    TestWindow* ArdSelWind = new TestWindow(Sel);
+
+    bool run = true;
+
+    while (run)
+    {
+        if (!ArdSelWind->ProcessMessages())
+        {
+            run = false;
+
+        }
+    }
+
+    delete ArdSelWind;
+    */
+    TL1.AssignBoards();
 
     //TL1.DirectConnectArd(DC1);
 
     TL1.InitializeTelemetry();
+
+    /*
+    * -----------------------------------------------------------------------
+    * ************************ OPENCV INIT. *********************************
+    * -----------------------------------------------------------------------
+    */
 
     cv::VideoCapture WebCAm(0);
 
@@ -288,14 +318,13 @@ int main()
     cv::Mat Frame;
     TL1.OpenSerial();
 
-
-    //TL1.DelayForArduinoInit();
-
-    //TestWindow* tWindow = new TestWindow(true);
-    //TestWindow* tWindow = new TestWindow(true);
-
-
     TL1.SignalReadyToBoard();
+
+    /*
+    * -----------------------------------------------------------------------
+    * ********************* START OF MAIN LOOP ******************************
+    * -----------------------------------------------------------------------
+    */
 
     //TL1.RequestPitch();
 
