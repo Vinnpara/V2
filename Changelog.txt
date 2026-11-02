@@ -38,3 +38,8 @@ source files.
 
 17/10/2026
 Upgraded UI to automatically find all boards. Added Diagnosis UI window to display status
+
+11/02/2026
+New arduino class to handle serial connections. Class and its children allow for distinct objects
+for each board as opposed to a single class handling all arduinos. Now able to have a a more
+generic approach when handling Arduino class in Telemetry class

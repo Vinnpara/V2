@@ -105,57 +105,7 @@ ArduinoReceiver::ArduinoReceiver(SerialName PortName) {
 
 }
 
-void ArduinoReceiver::AssignPort(SerialName PortName, SerialSpeed BaudRate) {
-    switch (PortName)
-    {
-    case COM3:
-    {
-        SerialPort Serial(ARDPort, BaudRate);
-        Ard = Serial;
-        break;
-    }
 
-    case COM1:
-    {
-        SerialPort Serial2(ARDPort, BaudRate);
-        Ard = Serial2;
-        break;
-    }
-
-    case COM5:
-    {
-        SerialPort Serial3(ARDPort, BaudRate);
-        Ard = Serial3;
-        break;
-    }
-    case COM4:
-    {
-        SerialPort Serial4(ARDPort, BaudRate);
-        Ard = Serial4;
-        break;
-    }
-    case COM7:
-    {
-        SerialPort Serial5(ARDPort, BaudRate);
-        Ard = Serial5;
-        break;
-    }
-    case COM8:
-    {
-        SerialPort Serial6(ARDPort, BaudRate);
-        Ard = Serial6;
-        break;
-    }
-    case COM9:
-    {
-        SerialPort Serial6(ARDPort, BaudRate);
-        Ard = Serial6;
-        break;
-    }
-
-    }
-
-}
 
 ArduinoReceiver::ArduinoReceiver(SerialName PortName, SerialSpeed BaudRate) {
 
@@ -211,117 +161,7 @@ ArduinoReceiver::ArduinoReceiver(SerialName PortName, SerialSpeed BaudRate) {
 
 }
 
-void ArduinoReceiver::AssignPort(SerialName PortName) {
 
-
-
-    switch (PortName)
-    {
-    case COM3:
-    {
-        SerialPort Serial(ARDPort);
-        Ard = Serial;
-        break;
-    }
-
-    case COM1:
-    {
-        SerialPort Serial2(ARDPort2);
-        Ard = Serial2;
-        break;
-    }
-
-    case COM5:
-    {
-        SerialPort Serial3(ARDPort3);
-        Ard = Serial3;
-        break;
-    }
-    case COM4:
-    {
-        SerialPort Serial4(ARDPort4);
-        Ard = Serial4;
-        break;
-    }
-    case COM7:
-    {
-        SerialPort Serial5(ARDPort5);
-        Ard = Serial5;
-        break;
-    }
-    case COM8:
-    {
-        SerialPort Serial6(ARDPort6);
-        Ard = Serial6;
-        break;
-    }
-    case COM9:
-    {
-        SerialPort Serial6(ARDPort7);
-        Ard = Serial6;
-        break;
-    }
-
-    }
-
-
-}
-
-void ArduinoReceiver::SetArdPort(SerialName PortName) {
-
-
-
-    switch (PortName)
-    {
-    case COM3:
-    {
-        //SerialPort Serial(ARDPort);
-        Ard.InitializeSerial(ARDPort);
-        break;
-    }
-
-    case COM1:
-    {
-        //SerialPort Serial2(ARDPort2);
-        Ard.InitializeSerial(ARDPort2);
-        break;
-    }
-
-    case COM5:
-    {
-        //SerialPort Serial3(ARDPort3);
-        Ard.InitializeSerial(ARDPort3);
-        break;
-    }
-    case COM4:
-    {
-        //SerialPort Serial4(ARDPort4);
-        Ard.InitializeSerial(ARDPort4);
-        break;
-    }
-    case COM7:
-    {
-        //SerialPort Serial5(ARDPort5);
-        Ard.InitializeSerial(ARDPort5);
-        break;
-    }
-    case COM8:
-    {
-        //SerialPort Serial6(ARDPort6);
-        Ard.InitializeSerial(ARDPort6);
-        break;
-    }
-    case COM9:
-    {
-        //SerialPort Serial6(ARDPort7);
-        Ard.InitializeSerial(ARDPort7);
-        break;
-    }
-
-    }
-
-
-}
 
 std::string ArduinoReceiver::GetBoardMessage()
 {
@@ -391,102 +231,6 @@ int ArduinoReceiver::GetBoardMessageCode()
     }
 }
 
-void ArduinoReceiver::SetArdPort(SerialName PortName, DataConcentrator& DC)
-{
- /*
-* Messages:
-* Board initilization, cyan or red
-* code 8001, 8002 Radar
-* code 8003, 8004 Gyroscope
-* code 8005, 8006 Motor steer
- */
-    
-    
-    bool Serialinitialized = 0;
-    
-    switch (PortName)
-    {
-    case COM3:
-    {
-        //SerialPort Serial(ARDPort);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort);
-        break;
-    }
-
-    case COM1:
-    {
-        //SerialPort Serial2(ARDPort2);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort2);
-        break;
-    }
-
-    case COM5:
-    {
-        //SerialPort Serial3(ARDPort3);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort3);
-        break;
-    }
-    case COM4:
-    {
-        //SerialPort Serial4(ARDPort4);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort4);
-        break;
-    }
-    case COM7:
-    {
-        //SerialPort Serial5(ARDPort5);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort5);
-        break;
-    }
-    case COM8:
-    {
-        //SerialPort Serial6(ARDPort6);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort6);
-        break;
-    }
-    case COM9:
-    {
-        //SerialPort Serial6(ARDPort7);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort7);
-        break;
-    }
-    case COM6:
-    {
-        //SerialPort Serial6(ARDPort7);
-        Serialinitialized = Ard.InitializeSerialM(ARDPort8);
-        break;
-    }
-
-    }
-
-    std::string SerialStatus;
-    std::string Board = GetBoardMessage();
-
-    if (Serialinitialized)
-    {
-        
-        SerialStatus = { "13:Ardunio initialized " };
-        std::string CompleteMessage = SerialStatus + Board;
-
-        int code = 8000 + (int)ArduinoType;
-
-        std::cout << "\nBOARD INIT " << Board <<" " << code;
-
-        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
-
-    }
-    else
-    {
-        
-        SerialStatus = { "11: Warning, Ardunio not initialized " };
-        std::string CompleteMessage = SerialStatus + Board;
-
-        int code = 8000 + ((int)ArduinoType * 2);
-        
-        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
-    }
-
-}
 
 void ArduinoReceiver::SetArdPort(char* PortName, DataConcentrator& DC)
 {
@@ -530,44 +274,6 @@ void ArduinoReceiver::SetArdPort(char* PortName, DataConcentrator& DC)
 
 }
 
-void ArduinoReceiver::SetArdPort(int PortName, DataConcentrator& DC)
-{
-/*
-* Messages:
-* Board initilization, cyan or red
-* code 8001, 8002 Radar
-* code 8003, 8004 Gyroscope
-* code 8005, 8006 Motor steer
-*/
-    bool Serialinitialized = 0;
-
-    Serialinitialized = Ard.InitializeSerialM(PortName);
-
-    std::string SerialStatus;
-    std::string Board = GetBoardMessage();
-
-    if (Serialinitialized)
-    {
-
-        SerialStatus = { "13:Ardunio initialized " };
-        std::string CompleteMessage = SerialStatus + Board;
-
-
-        int code = 8000 + (int)ArduinoType;
-
-        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
-    }
-    else
-    {
-
-        SerialStatus = { "11: Warning, Ardunio not initialized " };
-        std::string CompleteMessage = SerialStatus + Board;
-
-        int code = 8000 + ((int)ArduinoType * 2);
-
-        DC.SetMessageStatus(CompleteMessage, code, MESSAGE_ON);
-    }
-}
 
 void ArduinoReceiver::SetBaudRate(SerialSpeed BaudRate) {
 
@@ -581,20 +287,6 @@ void ArduinoReceiver::SetBaudRate(int BaudRate)
 
     Ard.SetBaudRate(BaudRate);
 }
-
-void ArduinoReceiver::ArdInitialize() {
-
-    FirstPass = true;
-    ValidRoll = false;
-    ValidPitch = false;
-    ValidAccelX = false;
-    ValidAccelY = false;
-    ValidAccelZ = false;
-}
-
-void ArduinoReceiver::ArduinoFirstPass(){
-}
-
 
 void ArduinoReceiver::RequestReadData(SerialPort& Serial, SerialOrder Command, static bool PCReady){
     bool TransferFail;
@@ -701,69 +393,6 @@ void ArduinoReceiver::KeepSerialOpen() {
     TransferFail = Ard.writeSerialPort(buff, 1);
 }
 
-bool ArduinoReceiver::RequestedCommandReceived(SerialOrder Command) {
-    bool ExpectedCommand = 0;
-
-    SerialOrder ReceivedType;
-
-    if (Ard.isConnected()) {
-
-        ReceivedType = read_order(Ard);
-
-        if (ReceivedType == Command)
-            ExpectedCommand = 1;
-
-        //std::cout << "\n RequestedCommandReceived ARD RETRYING COMMAND " << ReceivedType <<" "<< Command << std::endl;
-    }
-    return ExpectedCommand;
-
-}
-
-bool ArduinoReceiver::ReadAndSendRequestedData(SerialOrder CommandExpected, int8_t Command) {
-
-    bool ExpectedCommand = 0;
-
-    SerialOrder ReceivedType;
-
-    if (Ard.isConnected()) {
-
-        ReceivedType = read_order(Ard);
-
-        if (ReceivedType == CommandExpected) {
-            ExpectedCommand = 1;
-
-            bool TransferFail, TF2;
-            char buff[1] = { STEER_COMMAND };
-            //char buff2[1] = { Command };
-            TransferFail = Ard.writeSerialPort(buff, 1);
-            //TF2= Ard.writeSerialPort(buff2, 1);
-
-           
-        }
-        //std::cout << "\n RequestedCommandReceived ARD RETRYING COMMAND " << ReceivedType - 10 <<" "<< CommandExpected << std::endl;
-    }
-    return ExpectedCommand;
-
-}
-
-void ArduinoReceiver::CheckSentCommand(SerialOrder Command){
-    SerialOrder ReceivedType;
-
-    if (Ard.isConnected()) {
-
-        ReceivedType = read_order(Ard);
-
-        if (ReceivedType == Command) {
-            
-            if(STEER_COMMAND == Command)
-             SteeringAngleSent = read_i8(Ard);
-
-
-        }
-
-    }
-
-}
 
 void ArduinoReceiver::ReadPitchRoll(SerialPort& Serial) {
 
@@ -935,133 +564,6 @@ void ArduinoReceiver::ReadBuffer(SerialPort& Serial, SerialOrder Command, static
         std::cout << "\nARDUINO DISCONNECTED " << std::endl;*/
 }
 
-void ArduinoReceiver::ReadBufferArduino3Accel2Attitude() {
-    char BufferIn[MAX_BUFFER];
-
-    Ard.readSerialPort(BufferIn, 12);
-
-    char *BuffPointer, 
-         *BuffPointer2;
-
-    int *OrderPointerPitch,
-        *OrderPointerRoll;
-
-    int32_t *PitchValuePointer,
-            *RollValuePointer;
-
-    BuffPointer2 = BufferIn;
-    BuffPointer = BuffPointer2;
-
-    OrderPointerPitch = (int*)BuffPointer;
-    int EnumReadFromBufferAsInt = *OrderPointerPitch;
-    BuffPointer += sizeof(int);
-
-    PitchValuePointer = (int32_t*)BuffPointer;
-    int32_t ValueReadFromBufferPitch = *PitchValuePointer;
-    BuffPointer += sizeof(int32_t);
-
-    OrderPointerRoll = (int*)BuffPointer;
-    int EnumReadFromBufferAsIntRoll = *OrderPointerRoll;
-    BuffPointer += sizeof(int);
-
-    RollValuePointer = (int32_t*)BuffPointer;
-    int32_t ValueReadFromBufferRoll = *RollValuePointer;
-
-    ReadOrder1 = (SerialOrder)EnumReadFromBufferAsInt;
-    ReadOrder2 = (SerialOrder)EnumReadFromBufferAsIntRoll;
-
-    ConvertedPitch = (float)(ValueReadFromBufferPitch / 1000);
-    ConvertedRoll = (float)(ValueReadFromBufferRoll / 1000);
-
-
-
-}
-
-void ArduinoReceiver::ReadArduino3Attitudes() {
-
-    
-
-    ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
-    RequestReadData(Ard, REQUEST_PITCH, ValidCommandRoll);
-    ReadBuffer(Ard, REQUEST_PITCH, ValidCommandRoll);
-
-    if (ValidCommandRoll) {
-        ValidRoll = true;
-    }
-
-
-    if (ValidRoll) {
-        RequestReadData(Ard, REQUEST_ROLL, ValidCommandPitch);
-        ReadBuffer(Ard, REQUEST_ROLL, ValidCommandPitch);
-    }
-
-    if (ValidCommandPitch);
-    ValidPitch = true;
-
-    if (ValidPitch) {
-
-        RequestReadData(Ard, REQUEST_YAW, ValidCommandYaw);
-        ReadBuffer(Ard, REQUEST_YAW, ValidCommandYaw);
-    }
-
-
-}
-
-void ArduinoReceiver::ReadArduinoAttitudeAccel() {
-
-
-    ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
-    RequestReadData(Ard, REQUEST_PITCH, ValidCommandRoll);
-    ReadBuffer(Ard, REQUEST_PITCH, ValidCommandRoll);
-
-    if (ValidCommandRoll) {
-        ValidRoll = true;
-    }
-
-
-    if (ValidRoll) {
-        RequestReadData(Ard, REQUEST_ROLL, ValidCommandPitch);
-        ReadBuffer(Ard, REQUEST_ROLL, ValidCommandPitch);
-    }
-
-    if (ValidCommandPitch);
-    ValidPitch = true;
-
-    if (ValidPitch) {
-
-        RequestReadData(Ard, REQUEST_YAW, ValidCommandYaw);
-        ReadBuffer(Ard, REQUEST_YAW, ValidCommandYaw);
-    }
-
-    if (ValidCommandYaw);
-    ValidAccelX = true;
-
-    if (ValidAccelX) {
-
-        RequestReadData(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
-        ReadBuffer(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
-    }
-
-    if (ValidCommandAccelX);
-    ValidAccelY = true;
-
-    if (ValidAccelY) {
-
-        RequestReadData(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
-        ReadBuffer(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
-    }
-
-    if (ValidCommandAccelZ);
-    ValidAccelZ = true;
-
-    if (ValidAccelZ) {
-
-        RequestReadData(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
-        ReadBuffer(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
-
-    }
-
-}
 
 void ArduinoReceiver::PeekAndRead(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand)
 {
@@ -1161,197 +663,9 @@ void ArduinoReceiver::ReadPitchRoll(static bool& ValidRoll, static bool& ValidPi
     //std::cout << "\n Valid Pitch " << ValidPitch;
 }
 
-void  ArduinoReceiver::ReadArduino3Accel2Attitude() {
 
-    RequestReadData(Ard, REQUEST_ROLL, true);
-    ReadBuffer(Ard, REQUEST_ROLL, ValidCommandRoll);
 
-    if (ValidCommandRoll) {
-        ValidRoll = true;
-    }
 
-
-    if (ValidRoll) {
-        RequestReadData(Ard, REQUEST_PITCH, ValidRoll);
-        ReadBuffer(Ard, REQUEST_PITCH, ValidCommandPitch);
-    }
-
-    /*if (ValidCommandPitch);
-     ValidPitch = true;
-
-    if (ValidPitch);
-     ValidAccelX = true;*/
-
-    //if (ValidAccelX) {
-
-        RequestReadData(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
-        ReadBuffer(Ard, REQUEST_ACCEL_X, ValidCommandAccelX);
-    //}
-
-    if (ValidCommandAccelX);
-     ValidAccelY = true;
-
-    if (ValidAccelY) {
-
-        RequestReadData(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
-        ReadBuffer(Ard, REQUEST_ACCEL_Y, ValidCommandAccelY);
-    }
-
-    if (ValidCommandAccelY);
-     ValidAccelZ = true;
-
-    if (ValidAccelZ) {
-
-        RequestReadData(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
-        ReadBuffer(Ard, REQUEST_ACCEL_Z, ValidCommandAccelZ);
-
-    }
-
-    if (ValidCommandAccelZ);
-     ValidTime = true;
-
-    if (ValidTime) {
-
-       // RequestReadData(Ard, REQUEST_TIME, ValidCommandTime);
-        //ReadBuffer(Ard, REQUEST_TIME, ValidCommandTime);
-
-    }
-
-}
-
-void ArduinoReceiver::ReadRadar() {
-
-    if (ValidCommandYaw) {
-        RequestReadData(Ard, REQUEST_RADAR);
-        ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
-    }
-    if (ValidRadarVal) {
-        RequestReadData(Ard, REQUEST_RADAR_POS);
-        ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
-    }
-
-}
-
-void ArduinoReceiver::ReadRadar2() {
-    
-    RequestReadData(Ard, REQUEST_RADAR);
-    ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
-
-
-   if (ValidRadarVal) {
-
-      ValidRadarValue = true;
-
-   }
-
-   if (ValidRadarValue) {
-       RequestReadData(Ard, REQUEST_RADAR_POS);
-       ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
-   }
-}
-
-void ArduinoReceiver::ReadRadarDefaultPort() {
-
-    RequestReadData(Ard, REQUEST_RADAR);
-    ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
-
-
-    if (ValidRadarVal) {
-
-        ValidRadarValue = true;
-
-    }
-
-    if (ValidRadarValue) {
-        RequestReadData(Ard, REQUEST_RADAR_POS);
-        ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
-    }
-
-}
-
-void ArduinoReceiver::ReadAllVals() {
-
-    ///RequestReadDataFirstRequest(arduino, REQUEST_PITCH, FirstPass);
-    RequestReadData(Ard, REQUEST_PITCH, ValidCommandPitch);
-    ReadBuffer(Ard, REQUEST_PITCH, ValidCommandPitch);
-
-    if (ValidCommandPitch)
-        ValidPitch = true;
-
-    if (ValidPitch) {
-        //cout << "VALID ROLL " << ValidRoll;
-        RequestReadData(Ard, REQUEST_ROLL, ValidCommandRoll);
-        ReadBuffer(Ard, REQUEST_ROLL, ValidCommandRoll);
-    }
-
-    if (ValidCommandRoll);
-    ValidRoll = true;
-
-    if (ValidRoll) {
-
-        RequestReadData(Ard, REQUEST_YAW, ValidCommandYaw);
-        ReadBuffer(Ard, REQUEST_YAW, ValidCommandYaw);
-    }
-
-    if (ValidCommandYaw) {
-
-        ValidYaw = true;
-    }
-
-    if (ValidYaw) {
-        RequestReadData(Ard, REQUEST_RADAR);
-        ReadBuffer(Ard, REQUEST_RADAR, ValidRadarVal);
-    }
-
-    if (ValidRadarVal) {
-
-        ValidRadarValue = true;
-
-    }
-
-    if (ValidRadarValue) {
-        RequestReadData(Ard, REQUEST_RADAR_POS);
-        ReadBuffer(Ard, REQUEST_RADAR_POS, ValidRadarPos);
-    }
-}
-
-void ArduinoReceiver::SendCommandI8(SerialOrder CommandType, int8_t Command) {
-
-    SerialOrder ReceivedType;
-    bool ExpectedCommand=0;
-
-    if (Ard.isConnected()) {
-
-        ReceivedType = read_order(Ard);
-        //cout << "\nENUM RECEVIED " << ReceivedType << endl;
-
-        if ((Command - 10) == ReceivedType) {
-            ExpectedCommand = true;
-        }
-        else
-            ExpectedCommand = false;
-
-        if (ExpectedCommand) {
-
-            WriteCommandI8(Ard, CommandType);
-            WriteCommandI8(Ard, Command);
-            //std::cout << "\nENUM RECEVIED " << ReceivedType << std::endl;
-        }
-
-    }
-
-}
-
-bool ArduinoReceiver::MonitorArduinoReadiness()
-{
-   bool ArduinoReady = RequestedCommandReceived(ARDUINO_READY);
-
-   //std::cout << "\n Comms established " << ArduinoReady;
-
-
-
-   return ArduinoReady;
-};
 void ArduinoReceiver::SignalPCReadiness()
 {
     RequestReadData(Ard, PC_READY);
@@ -1625,39 +939,6 @@ void ArduinoReceiver::SendMessageToArdTotal(SerialOrder Type, int command, Seria
 
 }
 
-bool ArduinoReceiver::ListenForHeartBeat(const char &HeatBeatCharacter)
-{
-    bool HeartBeat;
-    /*char BufferIn[MAX_BUFFER];
-
-    unsigned char incomingbyte ;
-    incomingbyte = Ard.Peek(BufferIn);
-    int arda = Ard.ReadSerialPortAfterPeek(BufferIn, 1);
-
-    
-
-    //std::cout << "\nHeartbeat read "<< incomingbyte;
-    //std::cout << "\nHeartbeat read " << BufferIn[0];
-
-    if (HeatBeatCharacter == incomingbyte)
-    {
-        //int arda = Ard.ReadSerialPortAfterPeek(BufferIn, 1);
-        //std::cout << "\nHeartbeat Detected! ";
-        return 1;
-    }
-    else
-        return 0;*/
-    
-    CircularBuffer<unsigned char> CircularBufferIn{ 50 };
-    std::vector<std::string>Packets;
-
-    const char* HBChar = &HeatBeatCharacter;
-
-    ReadIntoBuffer(CircularBufferIn);
-    HeartBeat = ParseBufferForItem(CircularBufferIn, Packets, HBChar);
-
-    return HeartBeat;
-}
 
 bool ArduinoReceiver::PeekForData(unsigned char DataToCheck)
 {
@@ -2750,9 +2031,6 @@ void ArduinoReceiver::ParseBufferRadT(CircularBuffer< unsigned char >& Buff, boo
 
     while (run)
     {
-       
-
-
         if (Buff.size() > 3)
         {
 
@@ -2858,40 +2136,22 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                 StartMarkerIndex = -1;
 
             unsigned int BuffSize = Buff.size();
-            //std::cout << "\n Size of CB " << BuffSize;
 
             for (int i = Buff.size() - 1; i > -1; i--)
             {
-                //std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
-
-
-                //if (Buff.size() > 0)
-            }
-
-            for (int i = Buff.size() - 1; i > -1; i--)
-            {
-               // std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
 
                 if (Buff.peek(i) == ']')
                 {
-                    //std::cout << "\nEnd at index  " << i;
+                    
                     EndMarkerIndex = i;
                     //Remove the Startmarker
                     if (Buff.size() > 0)
                         Buff.ReadByte();
                     break;
                 }
-                //if (Buff.size() > 0)
-                    //Buff.ReadByte();
+
             }
 
-            for (int i = Buff.size() - 1; i > -1; i--)
-            {
-                //std::cout << "\n In buffer at index  " << i << " " << Buff.peek(i);
-            }
-
-            unsigned int BuffSize2 = Buff.size();
-            //std::cout << "\n Size of CB2 " << BuffSize2;
 
             if (Buff.size() > 0)
             {
@@ -2906,13 +2166,6 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                 }
             }
 
-            for (int i = Buff.size() - 1; i > -1; i--)
-            {
-                if (Buff.size() > 0) {
-                    /* if (Buff.peek(i) == '[')
-                         std::cout << "\n After first removal of initial data in buffer at index  " << i << " " << Buff.peek(i);*/
-                }
-            }
 
             for (int i = Buff.size() - 1; i > -1; i--)
             {
@@ -2925,25 +2178,6 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                     }
                 }
             }
-
-            /*for (int i = Buff.size() - 1; i > -1; i--)
-            {
-                if (Buff.size() > 0)
-                {
-                    
-                    char data = Buff.peek(i);
-
-                    //std::cout << "\nComms radar peek buff "<< data;
-
-                    if ((SerialOrder)data == ARD_COMMS_EST)
-                    {
-                        BoardReadiness = 1;
-                        //std::cout << "\nComms established radar ";
-                    }
-                   
-                }
-            }*/
-
 
             std::string DataPacket;
 
@@ -2962,31 +2196,13 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                     if (!Buff.IsEmpty())
                     {
                         Buff.ReadByte();
-                        //std::cout << "\nPacking buffer, for loop number at: " << i << " Buff size " << Buff.size() << " Buff content " << Buff.peek(i) << " Buff at data " << data;
                         DataPacket.push_back(data);
                     }
                 }
             }
 
-            for (int i = Buff.size() - 1; i > -1; i--)
-            {
-                //if (Buff.size() > 2)
-                  //std::cout << "\nAfter removal of packet, in buffer at index  " << i << " " << Buff.peek(i);
-            }
-
-
-            //std::cout << "\n Size of CB3 " << Buff.size() << " Data packet size " << DataPacket.size();
-
             std::reverse(DataPacket.begin(), DataPacket.end());
-            /*
-            if (DataPacket.size() > 0)
-            {
-                for (int i = 0; i < DataPacket.size(); i++)
-                {
-                    std::cout << "\nData packet " << DataPacket;
-                }
-            }
-            */
+
             Packets.push_back(DataPacket);
 
         }
@@ -3006,8 +2222,6 @@ void ArduinoReceiver::ParseBufferRad(CircularBuffer< unsigned char >& Buff, bool
                     if ((SerialOrder)std::stoi(Packets[i]) == ARD_COMMS_EST)
                         BoardReadiness = 1;
                 }
-
-                //std::cout << "\nData packet in vector " << Packets[i]<<" at "<<i <<" Ard type "<< ArduinoType;
 
             }
         }
@@ -3663,26 +2877,6 @@ bool ArduinoReceiver::ValidSerialOrder(SerialOrder order)
         return false; //No valid order has been found.
     }
     }
-}
-
-void ArduinoReceiver::SendCommand2I8(SerialOrder CommandType, int8_t Command) {
-
-
-    Write2CommandsI8(Ard, Command, (int8_t)CommandType); 
-
-}
-
-void ArduinoReceiver::SendCommand4I8(int8_t* Values) {
-
-    Write4CommandsI8(Ard, Values);
-
-}
-
-void ArduinoReceiver::SteeringI8Command(SerialOrder CommandType, int8_t Command) {
-   
-
-   SendCommandI8(CommandType, Command);
-
 }
 
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArduinoBoard.cpp" />
     <ClCompile Include="ArduinoReceiver.cpp" />
     <ClCompile Include="AutoMenuGUIFunction.cpp" />
     <ClCompile Include="DataConcentrator.cpp" />
@@ -26,14 +27,19 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphicRender.cpp" />
     <ClCompile Include="GUIFunction.cpp" />
+    <ClCompile Include="GyroBoard.cpp" />
     <ClCompile Include="Improc.cpp" />
     <ClCompile Include="Lane.cpp" />
     <ClCompile Include="Line.cpp" />
     <ClCompile Include="MessageHandler.cpp" />
+    <ClCompile Include="MSBoard.cpp" />
     <ClCompile Include="Radar.cpp" />
+    <ClCompile Include="RadarBoard.cpp" />
     <ClCompile Include="RadarUI.cpp" />
     <ClCompile Include="RadarVirtual.cpp" />
+    <ClCompile Include="ReceiverBoard.cpp" />
     <ClCompile Include="ResourceHandle.cpp" />
+    <ClCompile Include="SenderBoard.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="SerialComms.cpp" />
     <ClCompile Include="SetMenuGUIFunction.cpp" />
@@ -50,8 +56,10 @@
     <ClInclude Include="BoardSelection.h" />
     <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="GraphicRender.h" />
+    <ClInclude Include="include\ArduinoBoard.h" />
     <ClInclude Include="include\ArduinoReceiver.h" />
     <ClInclude Include="include\AutoMenuGUIFunction.h" />
+    <ClInclude Include="include\BoardMessageIndentifier.h" />
     <ClInclude Include="include\camera.h" />
     <ClInclude Include="include\ColorSelection.h" />
     <ClInclude Include="include\DataConcentrator.h" />
@@ -62,13 +70,18 @@
     <ClInclude Include="include\graph\Shader.h" />
     <ClInclude Include="include\GUICallBackSelection.h" />
     <ClInclude Include="include\GUIFunction.h" />
+    <ClInclude Include="include\GyroBoard.h" />
     <ClInclude Include="include\Improc.h" />
     <ClInclude Include="include\Lane.h" />
     <ClInclude Include="include\MessageHandler.h" />
+    <ClInclude Include="include\MSBoard.h" />
     <ClInclude Include="include\Radar.h" />
+    <ClInclude Include="include\RadarBoard.h" />
     <ClInclude Include="include\RadarUI.h" />
     <ClInclude Include="include\RadarVirtual.h" />
+    <ClInclude Include="include\ReceiverBoard.h" />
     <ClInclude Include="include\ResourceHandle.h" />
+    <ClInclude Include="include\SenderBoard.h" />
     <ClInclude Include="include\SerialConnectionSpeed.h" />
     <ClInclude Include="include\SerialPortSelection.h" />
     <ClInclude Include="include\SetMenuGUIFunction.h" />
