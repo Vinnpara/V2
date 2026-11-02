@@ -49,7 +49,8 @@ static bool PC_not_Ready=1,
             PositiveRadarSweep =1,
             NegativeRadarSweep =0,
             SendingBoardName = false,
-            BoardFoundByPC = false;
+            BoardFoundByPC = false,
+            BoardRequested = false;
 
 unsigned long previousMillis = 0,
               previousMillis2 = 0,
@@ -124,7 +125,7 @@ if(Serial.available()>0)
 
 ReadAndParseDataSTD();
 
-if(!BoardFoundByPC)
+if(!BoardFoundByPC && BoardRequested)
  SendBoardName();
 
 //ProcessInformation();
@@ -133,7 +134,7 @@ MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-if(BoardFoundByPC)
+if(BoardFoundByPC && !CommsEstablished)
 {
   SignalArdReady();
   SendDataPacketHB();
@@ -147,6 +148,8 @@ if(CommsEstablished)
    //RadarSweep();
    SendDataPackets(RADAR_DISTANCE,MeasuredDistance);
    SendDataPackets(RADAR_POSITION,ServoPosition);
+   SignalArdReady();
+   SendDataPacketHB();
    SignalArdCommsEst();
    //BulbON();
 }
@@ -489,10 +492,11 @@ void ReadAndParseDataSTD()
          ValidPCHeartBeatCounter++;
       }
 
-      if(Peeked == 'G')
+      if(Peeked == 'R')
       {
-        SendingBoardName =1;
+        //SendingBoardName =1;
         SendBoardName();
+        BoardRequested = 1;
       }
 
       if((int)Peeked == BOARD_FOUND)

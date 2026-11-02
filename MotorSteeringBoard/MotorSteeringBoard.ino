@@ -4,7 +4,7 @@
      
            /\
           /  \
-         /    \motor_speed
+         /    \
            ||
            
           USER
@@ -140,7 +140,8 @@ static  bool StartValid = 0,
              MotorSteerSetupComplete =0,
              InitDelayTimer = 0,
              DelayStart =0,
-             BoardFoundByPC = 0;
+             BoardFoundByPC = 0,
+             BoardRequested = false;
 
 static char BuffInComing[20]; //11 works for the STR only command
 static uint8_t idx = 0;
@@ -237,7 +238,7 @@ MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-if(!BoardFoundByPC)
+if(!BoardFoundByPC && BoardRequested)
 {
   SendBoardName();
 }
@@ -272,15 +273,20 @@ else
 {
  //BulbOFF();
 
-  if(PacektsRecieved > 0)
-    PacektsRecieved =0;
+  //if(PacektsRecieved > 0)
+    //PacektsRecieved =0;
  
 }
 
 if(BoardFoundByPC)
  BulbON();
 else
+{
  BulbOFF();
+ 
+ if(PacektsRecieved > 0)
+  PacektsRecieved =0;
+}
 
 if (millis() - lastRttReport > 2000 && rttCount > 0)
 {
@@ -663,7 +669,8 @@ void ReadAndParseDataSTD()
       {
         SendingBoardName =1;
         SendBoardName();
-
+        BoardRequested = 1;
+        
         if(BoardNameReq == 0)
           BoardNameReq = millis();
       }

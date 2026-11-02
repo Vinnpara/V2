@@ -163,15 +163,16 @@ static  bool StartValid = 0,
              EndValid =0,
              SendingBoardName =0,
              Calibrated = false,
-             BoardFoundByPC = false;
+             BoardFoundByPC = false,
+             BoardRequested = false;
              
 //static unsigned long loopCount = 0;
 //static unsigned long lastRateCheck = 0;
 
-const unsigned long SEND_INTERVAL_MS = 10;   // 100 Hz
+const unsigned long SEND_INTERVAL_MS = 25; //10 Used to work, but not after optimization 
 static unsigned long lastSendTime = 0;
 
-const unsigned long SEND_INTERVAL_MSHB = 10;   // 100 Hz
+const unsigned long SEND_INTERVAL_MSHB = 30;   
 static unsigned long lastSendTimeHB = 0;
 
 ///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -234,7 +235,7 @@ if (millis() - lastRateCheck >= 1000)
 
 ReadAndParseDataSTD();
 
-if(!BoardFoundByPC)
+if(!BoardFoundByPC && BoardRequested)
 {
  SendBoardName();
 }
@@ -262,7 +263,7 @@ MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-if(BoardFoundByPC && (millis() - lastSendTime >= SEND_INTERVAL_MSHB))
+if(BoardFoundByPC && (millis() - lastSendTimeHB >= SEND_INTERVAL_MSHB))
 {
   lastSendTimeHB = millis();
   SignalArdReady();
@@ -723,6 +724,7 @@ void ReadAndParseDataSTD()
       if(Peeked == 'G')
       {
         SendingBoardName =1;
+        BoardRequested = 1;
         //SendBoardName();
       }
 

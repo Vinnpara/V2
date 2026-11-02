@@ -919,10 +919,27 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
 
     std::wstring portName = L"\\\\.\\COM" + std::to_wstring(portNumber);
 
+    std::cout << "\nNow trying " << expectedName << " port "<< portNumber;
+       //<< SpecialChar <<"\nBaud "<< Baud<<" Ident "<< SpecialChar;
 
     this->connected = false;
 
-
+    DWORD flags;
+    /*
+    if (GetHandleInformation(handler, &flags) == 0)
+        std::cout << "\nHANDLE INVLAID OR CLOSED. BEFORE";
+    
+    if (this->handler == INVALID_HANDLE_VALUE)
+    {
+        std::cout << "\nHANDLE INVLAID OR CLOSED. BEFORE";
+    }
+    
+    if (this->handler != INVALID_HANDLE_VALUE && this->handler != nullptr)
+    {
+        CloseHandle(this->handler);
+        this->handler = INVALID_HANDLE_VALUE;
+    }
+    */
     this->handler = CreateFileW(portName.c_str(),
         GENERIC_READ | GENERIC_WRITE,
         0,
@@ -932,6 +949,9 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
         NULL);
 
     bool SerialInitialized = 1;
+
+    //if (GetHandleInformation(handler, &flags) == 0)
+        //std::cout << "\nHANDLE INVLAID OR CLOSED. AFTER";
 
     if (this->handler == INVALID_HANDLE_VALUE) {
 
@@ -945,9 +965,10 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
             //printf("\nERROR!!!_1");
             SerialInitialized = 0;
         }
-
+        std::cout << "\nINVALID HANDLE";
         return false; //Port does not exist or in use
     }
+
 
     DCB dcbSerialParameters = { 0 };
     dcbSerialParameters.DCBlength = sizeof(dcbSerialParameters);
@@ -1005,7 +1026,7 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
 
     DWORD StartTimeSend = GetTickCount();
 
-    while (GetTickCount() - StartTimeSend < 100)
+    while (GetTickCount() - StartTimeSend < 40)
     {
 
         char query[] = { START_MARKER, SpecialChar, END_MARKER };
@@ -1046,8 +1067,8 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
         }
     }
 
-    printf("\nRESPONSE REC  ");
-    std::cout << result << " Bytes read " << bytesRead;
+    //printf("\nRESPONSE REC  ");
+    //std::cout << result << " Bytes read " << bytesRead;
 
     //printf(resp.c_str());
 
@@ -1060,6 +1081,10 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
         //CloseHandle(hSerial);
 
         return true;
+    }
+    else
+    {
+        CloseHandle(this->handler);
     }
 
 

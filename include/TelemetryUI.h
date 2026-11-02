@@ -34,6 +34,11 @@
 
 #include <DataConcentrator.h>
 
+#include "ArduinoBoard.h"
+#include "GyroBoard.h"
+#include "RadarBoard.h"
+#include "MSBoard.h"
+
 #define MS_2_TO_CMS_2 981
 #define MILISEC_TO_SEC 0.001
 
@@ -46,20 +51,14 @@ class TelemetryUI {
 public:
 	//check functions with a '/**/' above them. Perhaps could get rid of
 
+
 	TelemetryUI();
 	void AssignBoards();
-	//void AssignBoards(HWND WndHndl, std::map<std::string, int> Mapboards);
-
+	void InitializeTelemetry();
 	void DelayForArduinoInit();
 
-	void InitializeTelemetry();
-	void UpdateValuues(SerialPort& Serial);
-
-
-	void AttemptConnections();
-	void AttemptConnections(DataConcentrator& DC);
-
-	void AttemptConnectionMSB(static bool &one, static bool &two, static int &three, HWND DiagHndl, DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
+	void AssignBoardsAndRates();
+	std::unique_ptr<ArduinoBoard> MakeBoard(BoardSelection Name);
 
 	void AttemptConnectionMSB(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
 	void AttemptConnectionGYRO(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
@@ -74,43 +73,32 @@ public:
 	void ListenForArduinoReadiness(BoardSelection Board, static bool& ArduinoReady, DataConcentrator& DC);
 	void ListenForMSBRequest(bool& RequestReceived, static bool& NoFirstRequest, static int &RequestCounter,  static DWORD& lastSendTime, DataConcentrator& DC);
 
-	void DetectGyroHeartBeat(int Duration, static bool &TimerElapsed, static int& HeartBeatCounter);
+
 	void DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool &HeartBeatDetected, static bool &HBDetectedGlobal, static int& HeartBeatCounter, DataConcentrator& DC);
-	void DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static int& HeartBeatCounter);
 	void DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);
 
-	void DetectMSBHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);
 
 	void DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
 	void DetectBoardReadinessGyro(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
 	void DetectBoardReadinessMSB(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
 
-	void SendHeartBeat(int Duration);
+
 	void SendHeartBeat(DataConcentrator& DC);
-	void RequestData(SerialOrder DataRequest);
 
 	void CheckArduinoConnections();
-	void DirectCommandMSB(DataConcentrator& DC, static DWORD& lastSendTime);
 
+	void DirectCommandMSB(DataConcentrator& DC, static DWORD& lastSendTime);
 	void DirectCommandMSBTimer(DataConcentrator& DC, static DWORD& lastSendTime);
 
-	void UpdateValues6Axis(float y, float p, float r, float Ax, float Ay, float Az);
-	void UpdateValues3Attitude(float y, float p, float r);
-	void UpdateValues3Accel(float Ax, float Ay, float Az);
-	void Update2Axis3Accel();
-	void Update2Axis3AccelFromBuffer();
-	void Update2Axis3Accel(static bool& RollReceived, static bool& PitchReceived, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
+
 	void UpdateGyroAccel(bool &HBDetected, bool& BoardReadiness, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
 	void UpdateGyroAccelT();
-
 	void RequestPitch();
 	void SignalReadyToBoard();
-
 	void DirectConnectArd(DataConcentrator& DC);
 	
-	void UpdateValuesRadar(bool& HBDetected, static bool& RadarArduinoCommsEstablished);
 	void UpdateValuesRadar(bool& HBDetected, bool& BoardReadiness, static bool& RadarArduinoCommsEstablished);
-
+	void UpdateValuesRadar();
 	void UpdateValuesMSB(bool& HBDetected, bool& BoardReadiness, static bool& MSBArduinoCommsEstablished);
 	
 	void TimerAnchorPoint();
@@ -118,16 +106,28 @@ public:
 
 	void HandleCommsEstMessaging(static bool CommsEst, DataConcentrator& DC);
 
-	void UpdateValuesRadar();
 	void CloseSerial();
 
-	void ViewDiagnostics();
-	void UpdateDiagnosticsWindow(TestWindow window);
-	void DrawDiagnosticsData(TestWindow window);
+	void EstablishComms(DataConcentrator& DC);
+	void MonitorCommsStatus(DataConcentrator& DC);
+	void BoardsSendAndReceive();
+	void SignalPCReadiness();
 
-	void EstablishComms(static bool& CommsEstablished, static bool &ReadyforFirstReading);
+	void MonitorCommsStateGyro(static bool& TimerElapsed, static bool& GyroArduinoCommsEstablished, DataConcentrator& DC);
+	void MonitorCommsStateRadar(static bool& TimerElapsed, static bool& RadarArduinoCommsEstablished, DataConcentrator& DC);
+	void MonitorCommsStateMSB(static bool& TimerElapsed, static bool& MSBArduinoCommsEstablished, DataConcentrator& DC);
 
+	void DetectBoardReadinessRADAR(int Duration, bool& BoardReadinessDetected, DataConcentrator& DC);
+	void DetectBoardReadinessGYRO(int Duration, bool& BoardReadinessDetected, DataConcentrator& DC);
 
+	void DetectHeartBeatRADAR(int Duration, bool& HBDetected, DataConcentrator& DC);
+	void DetectHeartBeatGYRO(int Duration, bool& HBDetected, DataConcentrator& DC);
+
+	void UpdateGyroData();
+	void UpdateRadar();
+	void UpdateMotorSteerCommand(static DWORD& lastSendTime);
+
+	void ClearDataPackets();
 
 	float ReturnPitch() 
 	{
@@ -237,6 +237,10 @@ public:
 
 	//static bool PrintDiagnosisMessages,
 		//MessageAdded;
+
+	/*ARCHIVED*/
+	void UpdateValuues(SerialPort& Serial); /*Archive*/
+	void DetectMSBHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);/*Archive*/
 
 private:
 	
@@ -352,7 +356,19 @@ private:
 
 	std::map<std::string, int> BoardAssingmentAndBuadRate;
 
+	std::vector<std::unique_ptr<ArduinoBoard>> BoardsSelection;
 
+	static bool BoardsCommsEstablished[5],
+		        BoardsCommsEstablishedTimer[5],
+		        BoardReady[5],
+		        BoardReadyTimer[5],
+		        HeartBeatTimer[5];
+
+	static int GYROidx,
+		       RADARidx,
+		       MSBidx,
+		       BoardReadinessCounter[5],
+		       BoardHeartBeatCounter[5];
 
 	//std::ofstream DataFile("Pitch_v_time.csv");
 };
