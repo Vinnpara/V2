@@ -24,13 +24,19 @@ float MSBoard::ConvertValue(float ValX, float m, float C)
 
 void MSBoard::CommandMSBSingleMotor()
 {
-	int SteerCommand = (int)ConvertValue(RawSteer, 48.0f, 58.0f);
+
+	//int SteerCommand = (int)ConvertValue(RawSteer, 4.80f, 5.80f); // 48.0f, 58.0f
 	
 	float RawThrottleCommand = ConvertValue(RawThrottle, 50.0f, 50.0f);
     int ThrottleFWD = (int)RawThrottleCommand + 1;   //Adding offset
 
-    float RawReverseCommand = ConvertValue(RawReverse, 50.0f, 50.0f);
+    float RawReverseCommand = ConvertValue(RawReverse, 1.0f, 0.0);
     int ThrottleREV = (int)RawReverseCommand + 1;
+
+
+	int SteerCommand = (int)RawSteer;
+
+	//std::cout << "\nThrottle, reverse, steer " << ThrottleFWD << " " << ThrottleREV << " " << RawSteer;
 	
 	if (ThrottleFWD > ThrottleREV)
     {
@@ -38,7 +44,7 @@ void MSBoard::CommandMSBSingleMotor()
 	}
 	else if (ThrottleFWD < ThrottleREV)
 	{
-		SendMessageArd(STEER_COMMAND, SteerCommand, MOTOR_REV_LEFT, ThrottleFWD);
+		SendMessageArd(STEER_COMMAND, SteerCommand, MOTOR_REV_LEFT, ThrottleREV);
 	}
 	else
 	{

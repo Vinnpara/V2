@@ -272,9 +272,6 @@ int main()
 
     Rad1.RadarInitalize();
 
-    //COM5 MOTOR
-    //COM8 RADAR
-    //COM9 GYRO
 
     /*
     * -----------------------------------------------------------------------
@@ -307,6 +304,8 @@ int main()
     * -----------------------------------------------------------------------
     * ********************* START OF MAIN LOOP ******************************
     * -----------------------------------------------------------------------
+    * *********** Make sure the Arduino sending rate is lower than the program 
+    ************* excecution rate
     */
 
     //TL1.RequestPitch();
@@ -330,7 +329,9 @@ int main()
 
     while (!glfwWindowShouldClose(window) ) {
 
-        DWORD Time1 = GetTickCount64();
+        auto t0Main = std::chrono::steady_clock::now();
+
+        //DWORD Time1 = GetTickCount64();
 
         int ControllerPresent = 0;
         //cout << "\n COntroller status " << ControllerPresent;
@@ -380,8 +381,8 @@ int main()
 
         TL1.ClearDataPackets();
 
-        DWORD Time2 = GetTickCount64();
-        DWORD TimeElapsed = Time2 - Time1;
+        //DWORD Time2 = GetTickCount64();
+        //DWORD TimeElapsed = Time2 - Time1;
         //std::cout << "\nTime elapsed " << TimeElapsed;
         
         /*
@@ -528,13 +529,13 @@ int main()
 
         int16_t RadarValue = 0, RadarPosition = 0;
 
+        //4-5 ms
+
         RadarValue = TL1.GetRadarVal();
         RadarPosition = TL1.GetRadarPos();
 
-        Rad1.UpdateValues(RadarValue, RadarPosition);
-        Rad1.RadarDraw();
-
-
+        //Rad1.UpdateValues(RadarValue, RadarPosition); //Commented out to speed up program. 4-5 ms (250 - 200 Hz)
+        //Rad1.RadarDraw();
 
         TL1.RecordData();
 
@@ -554,6 +555,10 @@ int main()
 
         //TL1.DirectCommandMSBTimer(DC1, lastSendTime);
 
+
+        //With the Radar draw functions
+        //20-17 ms (50 - 28 Hz)
+
         DC1.CheckMapIncrement(NumberOfMessages);
 
         DC1.PreparePrintMessage();
@@ -572,6 +577,9 @@ int main()
         MSBFirstReading = 0;
 
 
+        //With Radar draw: 20-25 ms (50 - 40 Hz), 7-9 ms without (142 - 111 Hz)
+        auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0Main).count();
+        //std::cout << "\nTime elapsed, total program " << ms;
     }
 
     //ARD1.CloaseSerial();

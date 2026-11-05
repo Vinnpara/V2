@@ -76,6 +76,12 @@ static  bool StartValid = 0,
              EndValid =0,
              Calibrated = false;
 
+const unsigned long SEND_INTERVAL_MS = 20; //CAUTION: Make sure PC program  
+static unsigned long lastSendTime = 0;  //executes at a faster rate than this
+
+const unsigned long SEND_INTERVAL_MSHB = 20;//CAUTION: Make sure PC program 
+static unsigned long lastSendTimeHB = 0;   //executes at a faster rate than this             
+
 //---------------------ARDUINO_NAME-------------------------
 //------------------------RADAR-----------------------------
 // Give this specific board a unique name (Max 20 characters)
@@ -134,17 +140,19 @@ MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-if(BoardFoundByPC && !CommsEstablished)
+if(BoardFoundByPC && !CommsEstablished && (millis() - lastSendTimeHB >= SEND_INTERVAL_MSHB))
 {
+  lastSendTimeHB = millis();
   SignalArdReady();
   SendDataPacketHB();
 }
 
 
-DisplayStatus();
+//DisplayStatus();
 
-if(CommsEstablished)
+if(CommsEstablished && (millis() - lastSendTime >= SEND_INTERVAL_MS))
 {
+   lastSendTime = millis();
    //RadarSweep();
    SendDataPackets(RADAR_DISTANCE,MeasuredDistance);
    SendDataPackets(RADAR_POSITION,ServoPosition);
@@ -166,7 +174,7 @@ if(Serial.available() && !CommsEstablished)
   //FlashBulb(25);
 }
 
-if(BoardFoundByPC)
+if(CommsEstablished)
  BulbON();
 else
  BulbOFF();

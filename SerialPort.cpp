@@ -632,11 +632,19 @@ bool SerialPort::IndetifySerialPort(int portNumber, const std::string& expectedN
 
     }
 
+    timeouts.ReadIntervalTimeout = MAXDWORD; //Adding to help with MSB buffer overflows
+    timeouts.ReadTotalTimeoutConstant = 0;
+    timeouts.ReadTotalTimeoutMultiplier = 0;
+    timeouts.WriteTotalTimeoutConstant = 0;  // Maximum ms wait for writing
+    timeouts.WriteTotalTimeoutMultiplier = 0;
+
+    /*
     timeouts.ReadIntervalTimeout = 50; //Adding to help with MSB buffer overflows
     timeouts.ReadTotalTimeoutConstant = 500;
     timeouts.ReadTotalTimeoutMultiplier = 10;
     timeouts.WriteTotalTimeoutConstant = 50;  // Maximum ms wait for writing
     timeouts.WriteTotalTimeoutMultiplier = 10;
+    */
 
     SetCommTimeouts(hSerial, &timeouts);
 
@@ -655,30 +663,6 @@ bool SerialPort::IndetifySerialPort(int portNumber, const std::string& expectedN
         WriteFile(hSerial, query, sizeof(query), &bytesWritten, nullptr);
 
     }
-
-    /*
-    // Read response
-    char response[32] = { 0 };
-
-    DWORD bytesRead = 0;
-    COMSTAT HandleStatus;
-    DWORD Errors;
-
-    unsigned int toRead = 0;
-
-    //ReadFile(this->handler, response, 128, &bytesRead, NULL);
-
-    bytesRead = ReadFile(hSerial, response, sizeof(response) - 1, &bytesRead, nullptr);
-
-    //response[bytesRead] = '\0';
-
-    std::string resp(response);
-
-    printf("\nRESPONSE REC  ");
-    std::cout << response <<" Bytes read "<< bytesRead;
-
-    */
-
 
     DWORD bytesRead = 0;
     std::string result;
