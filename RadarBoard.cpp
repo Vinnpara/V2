@@ -64,12 +64,12 @@ void RadarBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         case ARD_COMMS_EST:
         {
             CommsEst = 1;
-            //std::cout << "\n Rad dist ";
+            //std::cout << "\n Rad Comms est  ";
             break;
         }
         case ARDUINO_READY:
         {
-            BoardReady = 1;
+            //BoardReady = 1;
             //std::cout << "\n Rad board ready ";
             break;
         }

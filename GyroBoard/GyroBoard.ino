@@ -169,11 +169,11 @@ static  bool StartValid = 0,
 //static unsigned long loopCount = 0;
 //static unsigned long lastRateCheck = 0;
 
-const unsigned long SEND_INTERVAL_MS = 25; //10 Used to work, but not after optimization 
-static unsigned long lastSendTime = 0;
+const unsigned long SEND_INTERVAL_MS = 10; //CAUTION: Make sure PC program  
+static unsigned long lastSendTime = 0;  //executes at a faster rate than this
 
-const unsigned long SEND_INTERVAL_MSHB = 30;   
-static unsigned long lastSendTimeHB = 0;
+const unsigned long SEND_INTERVAL_MSHB = 10;//CAUTION: Make sure PC program 
+static unsigned long lastSendTimeHB = 0;   //executes at a faster rate than this
 
 ///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // ================================================================
@@ -263,7 +263,7 @@ MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-if(BoardFoundByPC && (millis() - lastSendTimeHB >= SEND_INTERVAL_MSHB))
+if(BoardFoundByPC && (millis() - lastSendTimeHB >= SEND_INTERVAL_MSHB) && !CommsEstablished)
 {
   lastSendTimeHB = millis();
   SignalArdReady();
@@ -275,14 +275,21 @@ if(CommsEstablished && (millis() - lastSendTime >= SEND_INTERVAL_MS))
 {
 
    lastSendTime = millis();
-   SendDataPackets(MEASURED_PITCH,pitch);
-   SendDataPackets(MEASURED_ROLL,roll);
-   //SignalArdCommsEst();
+   
+   //if(Calibrated)
+   //{
+     SendDataPackets(MEASURED_PITCH,pitch);
+     SendDataPackets(MEASURED_ROLL,roll);
+     SendDataPackets(MEASURED_YAW,yaw);     
+   //}
+   SignalArdCommsEst();
+   SignalArdReady();
+   SendDataPacketHB();   
    //SendingBoardName = 0;
    //BulbON();
 }
 
-if(CommsEstablished)
+if(Calibrated)
  BulbON();
 else
  BulbOFF();

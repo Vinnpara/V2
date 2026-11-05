@@ -52,10 +52,43 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         char OrderRecievedChar = 0;
         int OrderReceived = 0;
         SerialOrder Order = HELLO;
+        std::string OrderStr;
 
-        OrderRecievedChar = (char)DataPacket[0];
-        OrderReceived = OrderRecievedChar - '0';
+        for (int i = 0; i < DataPacket.size(); i++)
+        {
+            char tmp = DataPacket[i];
+
+            if (tmp == ':')
+                break;
+            else
+                OrderStr.push_back(DataPacket[i]);
+
+        }
+
+        //OrderRecievedChar = (char)DataPacket[0];
+        //OrderReceived = OrderRecievedChar - '0';
+
+        bool IsAllNUmber = 0;
+        bool CharFound = 0;
+        
+        for (int i = 0; i < OrderStr.size(); i++)
+        {
+            if (!std::isdigit(OrderStr[i]))
+                CharFound = 1;
+        }
+
+        IsAllNUmber = !CharFound;
+
+        if (!OrderStr.empty() && IsAllNUmber)
+        {
+            OrderReceived = std::stoi(OrderStr);
+
+            //std::cout << "\nData packet Gyro " << OrderReceived << " " << IsAllNUmber;
+        }
+
         Order = (SerialOrder)OrderReceived;
+
+        //std::cout << "\nData packet Gyro " << OrderStr <<" "<< IsAllNUmber;
 
         switch (Order)
         {
@@ -115,25 +148,28 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         }
         case MEASURED_YAW:
         {
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
 
-            if (DataPacket[0] != ':')
+            std::string StrY;
+
+            for (int i = DataPacket.size(); i > -1; i--)
             {
-                //std::cout << "\n Second member no good " << DataPacket;
-                break;
+                if (DataPacket[i] == ':')
+                    break;
+                else
+                    StrY.push_back(DataPacket[i]);
+
             }
-
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
-
+            
+            std::reverse(StrY.begin(), StrY.end());
+            //std::cout << "\nMeasured yaw " << StrY;
 
             float measureval = 0;
 
-            if (isValidFloat(DataPacket))
-                measureval = std::stof(DataPacket);
+            //if (isValidFloat(StrY))
+                
+            measureval = std::stof(StrY);
+
+            //std::cout << "\nMeasured yaw " << measureval <<" "<< StrY;
 
             Yaw = measureval;
             break;
@@ -214,12 +250,12 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         case ARD_COMMS_EST:
         {
             CommsEst = 1;
-            //std::cout << "\n Rad dist ";
+            //std::cout << "\n Gyro Comms est ";
             break;
         }
         case ARDUINO_READY:
         {
-            BoardReady = 1;
+            //BoardReady = 1;
             //std::cout << "\n Gyro board ready ";
             break;
         }

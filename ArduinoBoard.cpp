@@ -414,31 +414,11 @@ void ArduinoBoard::ParseBuffer()
                 HearBeat = 1;
                 //std::cout << "\nHeartBeat ";
             }
-            else
-            {
-                //HearBeat = 0;
-            }
-            /*
-            if (c == (char)ARDUINO_READY)
-            {
-                BoardReady = 1;
-                std::cout << "\Ard ready ";
-            }
-            else
-            {
-                BoardReady = 0;
-            }
-            */
             if (c == START_MARKER)
             {
                 FoundStart = 1;
-
-                //std::cout << "\nStrt found ";
-
-                //if (!DataPacket.empty())
-                //{
                 DataPacket.clear();
-                //}
+
             }
             else if (FoundStart)
             {
@@ -462,45 +442,8 @@ void ArduinoBoard::ParseBuffer()
             run = false;
 
         }
-        //std::cout << "\n Size of CB " << Buffer.size();
-        //DWORD Time2 = GetTickCount64();
 
-        //DWORD TimeElapsed = Time2 - Time1;
-        //std::cout << "\nTime elapsed " << TimeElapsed;
-
-        /*
-        if (!DataPackets.empty())
-        {
-            for (int i = 0; i < DataPackets.size(); i++)
-            {
-
-                if (!DataPackets[i].empty() && std::all_of(DataPackets[i].begin(), DataPackets[i].end(), ::isdigit))
-                {
-                    if ((SerialOrder)std::stoi(DataPackets[i]) == ARD_COMMS_EST)
-                    {
-                        CommsEst = 1;
-                        //std::cout << "\nComms est ";
-                    }
-                    if ((SerialOrder)std::stoi(DataPackets[i]) == ARDUINO_READY)
-                    {
-                        BoardReady = 1;
-                        //std::cout << "\nBoard ready ";
-                    }
-                }
-
-                //std::cout << "\nData packet in vector " << DataPackets[i];
-
-            }
-        }
-        else
-        {
-            //std::cout << "\nEMPTY ";
-        }
-        */
     }
-    DWORD Time2 = GetTickCount64();
-    DWORD TimeElapsed = Time2 - Time1;
-    //std::cout << "\nTime elapsed " << TimeElapsed;
 
     //std::cout << "\nPackets size " << DataPackets.size();
 
@@ -536,6 +479,24 @@ void ArduinoBoard::RefineDataPackets()
 
             int DecimalColonCounter = 0;
 
+            //std::cout << "\nPacket content in "<< i<<" " << DataPackets[i];
+
+
+            if (DataPackets[i].size() < 2 && DataPackets[i].size() > 0)
+            {
+                std::string ReadyOrCommsEst = DataPackets[i];
+                std::string ArdReady = std::to_string((int)ARDUINO_READY);
+
+
+               if (ReadyOrCommsEst == ArdReady)
+               {
+                        BoardReady = 1;
+                        //std::cout << "\nArd ready ";
+               }
+                
+            }
+
+            //std::cout << "\nPacket content in " << i << " " << ReadyOrCommsEst<< " " <<DataPackets[i].size();
 
             std::string DataPacket = DataPackets[i];
             char OrderRecievedChar = 0;
@@ -545,11 +506,44 @@ void ArduinoBoard::RefineDataPackets()
             if (DataPacket.size() > 1)
             {
                 OrderRecievedChar = (char)DataPacket[0];
-                OrderReceived = OrderRecievedChar - '0';
+
+                std::string OrderStr;
+
+                for (int i = 0; i < DataPacket.size(); i++)
+                {
+                    char tmp = DataPacket[i];
+                    
+                    if (tmp == ':')
+                        break;
+                    else
+                        OrderStr.push_back(DataPacket[i]);
+
+                }
+
+                //std::cout << "\nPacket order " << OrderStr;
+
+                bool IsAllNUmber = 0;
+                bool CharFound = 0;
+
+                for (int i = 0; i < OrderStr.size(); i++)
+                {
+                    if (!std::isdigit(OrderStr[i]))
+                        CharFound = 1;
+                }
+
+                IsAllNUmber = !CharFound;
+
+                if (!OrderStr.empty() && IsAllNUmber)
+                {
+                    OrderReceived = std::stoi(OrderStr);
+
+                    //std::cout << "\nData packet Gyro " << OrderReceived << " " << IsAllNUmber;
+                }
+
                 Order = (SerialOrder)OrderReceived;
 
                 ValidOrder = ValidSerialOrder(Order);
-                SecondMemberValid = (DataPacket[1] == ':');
+                SecondMemberValid = (DataPacket[1] == ':' || DataPacket[2] == ':');
 
                 for (int j = 0; j < DataPacket.size(); j++)
                 {
@@ -583,7 +577,7 @@ void ArduinoBoard::RefineDataPackets()
         DataPackets = RefinedPackets;
 
 
-
+        
 
     }
 }

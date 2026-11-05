@@ -639,7 +639,10 @@ void TelemetryUI::BoardsSendAndReceive()
 {
     for (int i = 0; i < BoardsSelection.size(); i++)
     {
+        auto t0 = std::chrono::steady_clock::now();
         BoardsSelection[i]->SendAndReceive();
+        auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        //std::cout << "\nTime elapsed " << ms << " " << BoardsSelection[i]->GetName();
     }
 }
 
@@ -1495,12 +1498,16 @@ void TelemetryUI::UpdateGyroData()
             {
                 Pitch = Gy->GetPitch();
                 Roll = Gy->GetRoll();
-                //AccelX = ArdGyro.GetAccelX();
-                //AccelY = ArdGyro.GetAccelY();
-                //AccelZ = ArdGyro.GetAccelZ();
+                Yaw = Gy->GetYaw();
             }
         }
     }
+
+    VM1->UpdateAttitudeValues(Yaw, Pitch, Roll);
+    VM1->Draw();
+    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(PtchRead, "%f", Pitch);
+    sprintf_s(YawRead, "%f", Yaw);
 }
 
 void TelemetryUI::UpdateRadar()
@@ -1523,15 +1530,28 @@ void TelemetryUI::UpdateMotorSteerCommand(static DWORD& lastSendTime)
 {
     int SteerCommand = (int)SteerAngle;
 
+    //float RawSteerCommand = ConvertValue(SteerAngle, 48.0f, 58.0f);
+    //int SteerIn = (int)RawSteerCommand;
+
+    /*
     float RawThrottleCommand = ConvertValue(ThrottleAngle, 50.0f, 50.0f);
     int ThrottleFWD = (int)RawThrottleCommand + 1;   //Adding offset
 
     float RawReverseCommand = ConvertValue(ReverseAngle, 50.0f, 50.0f);
     int ThrottleREV = (int)RawReverseCommand + 1;
-    
+
+    */
+    float RawThrottleCommand = ThrottleAngle * -100;
+    int ThrottleFWD = (int)RawThrottleCommand + 1;   //Adding offset
+
+    float RawReverseCommand = (float)ReverseAngle;
+    int ThrottleREV = (int)RawReverseCommand + 1;
+
     DWORD now = GetTickCount64();
     const DWORD SEND_INTERVAL_MS = 10;   // 20 == 50 Hz, 10 == 100 Hz. Both seem fine
     
+    //std::cout << "\nThrottle, reverse, steer " << SteerAngle << " " << ThrottleAngle << " "<< ReverseAngle;
+
     for (int i = 0; i < BoardsSelection.size(); i++)
     {
         if (BoardsSelection[i]->GetName() == "MSB")
@@ -1540,9 +1560,9 @@ void TelemetryUI::UpdateMotorSteerCommand(static DWORD& lastSendTime)
             {
                 if (now - lastSendTime >= SEND_INTERVAL_MS)
                 {
-                    M->SetSteer((float)SteerCommand);
-                    M->SetThrottle((float)ThrottleFWD);
-                    M->SetReverse((float)ThrottleREV);
+                    M->SetSteer((float)SteerAngle);
+                    M->SetThrottle(ThrottleAngle);
+                    M->SetReverse(ReverseAngle);
 
                     lastSendTime = now;
                 }
@@ -1673,6 +1693,10 @@ void TelemetryUI::RenderControllerState(int InputDetected) {
         T1->RenderTextVS("CNTRL CON", 345.0f, 75.0f, 1.0f, Color);
     else 
         T1->RenderTextVS("CNTRL NOT CON", 345.0f, 75.0f, 1.0f, Color);
+
+    T1->RenderTextVS(std::to_string(SteerAngle), 14.0f, 375.0f, 1.0f, Color);
+    T1->RenderTextVS(std::to_string(TrothleAngle), 14.0f, 415.0f, 1.0f, Color);
+    T1->RenderTextVS(std::to_string(ReverseAngle), 14.0f, 455.0f, 1.0f, Color);
 }
 
 void TelemetryUI::RenderAxis(const float* AxesArr) {
@@ -1711,6 +1735,7 @@ void  TelemetryUI::RenderRawSteerAngle(const float* AxesArr) {
 
     SteerAngle = SteerIn;
     TrothleAngle = ThrottleIn;
+    ReverseAngle = ReverseIn;
 
     //ArdMotorSteer.KeepSerialActive();
 

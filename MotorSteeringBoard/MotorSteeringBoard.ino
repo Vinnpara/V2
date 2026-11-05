@@ -571,7 +571,7 @@ void ProcessInformationSingleMotor()
         if(MotorLeftFwd)
         {
             int MotorCommandLeft = (int)BuffInComing[i+2];
-            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 3.55,-3.55);
+            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 1.0,0.0);//3.55, -3.55
             DriveMotorsCommand(MotorCommandLeftAct);
             
             motor_speed = MotorCommandLeftAct;
@@ -581,7 +581,7 @@ void ProcessInformationSingleMotor()
         if(MotorLeftRev)
         {
             int MotorCommandLeft = (int)BuffInComing[i+2];
-            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 3.55,-3.55);
+            int MotorCommandLeftAct = ConvertValue(MotorCommandLeft, 1.0,0.0);//3.55, -3.55
             DriveMotorsCommand(MotorCommandLeftAct);
                         
             motor_speed = MotorCommandLeftAct;
@@ -1144,10 +1144,10 @@ void DisplayStatus()
   DisplayMessage("L", 1, 50);
   DisplayMessageInt(motor_speed, 20, 50);
 
-  if(SendingBoardName)
-  {
-    DisplayMessage("NR", 50, 50);
-  }
+  //if(SendingBoardName)
+  //{
+    //DisplayMessage("NR", 50, 50);
+  //}
 
   //DisplayMessage("R", 65, 50);
   //DisplayMessageInt(ValidMotorRight, 80, 50);  

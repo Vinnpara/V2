@@ -43,3 +43,9 @@ Upgraded UI to automatically find all boards. Added Diagnosis UI window to displ
 New arduino class to handle serial connections. Class and its children allow for distinct objects
 for each board as opposed to a single class handling all arduinos. Now able to have a a more
 generic approach when handling Arduino class in Telemetry class
+
+11/04/2026
+Using the Radar draw function, the program runs at 20-25 ms (50 - 40 Hz), and 7-9 ms without (142 - 111 Hz)
+If using the gyro at a 10 ms (100 Hz) send rate, program must run faster or else gyro reading will lag.
+Arduino boards solution now works pretty much as earlier with added flexiblitiy of generic user funcs.
+Now also reads yaw, and 2-digit serial orders
