@@ -32,6 +32,8 @@ public:
 
 
 	const char* GetName() override { return "RADAR"; };
+	BoardSelection GetBoardIdent() override { return RADAR_BOARD; };
+	int GetPort() override { return Port; };
 
 	//send/receive
 	void SendAndReceive() override;

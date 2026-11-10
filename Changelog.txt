@@ -49,3 +49,7 @@ Using the Radar draw function, the program runs at 20-25 ms (50 - 40 Hz), and 7-
 If using the gyro at a 10 ms (100 Hz) send rate, program must run faster or else gyro reading will lag.
 Arduino boards solution now works pretty much as earlier with added flexiblitiy of generic user funcs.
 Now also reads yaw, and 2-digit serial orders
+
+11/09/2026
+Optimized telemetry class, More generic functions. Although will need minor mods to support baords outside of 
+gyro, radar, msb. also did some cleanup.

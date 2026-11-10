@@ -217,53 +217,11 @@ int main()
     for (int i = 0; i < 172; i++) {
         RadarValues.push_back(0.0);
     }
-    static bool FirstPass;
-    FirstPass = true;
 
-    static bool RollReceived=false,
-                PitchReceived = false,
-                GyroArduinoReady = false,
-                GyroArduinoCommsEstablished = false,
-                GyroFirstReading = true,
-                GyroHeartBeatTimerElapsed =false,
-                GyroArduinoCommunicationsEstablished = false,
-                GyroArduinoCommsLost =0,
-                HBDetectedGyroGlobal = 0,
-                GyroCommsEstTimer = 0,
-                GyroBoardReadinessTimerElapsed = 0,
-                GyroBoardReady = false;
+    static bool PrintDiagnosisMessages = 0,
+                MessageAdded =0;
 
-    static bool RadarArduinoReady = false,
-                RadarArduinoCommsEstablished = false,
-                RadarFirstReading = true,
-                RadarHeartBeatTimerElapsed = false,
-                RadarBoardReady = false,
-                RadarBoardReadinessTimerElapsed = false,
-                HBStatus = 0,
-                RadarArduinoCommsLost = 0,
-                PrintDiagnosisMessages = 0,
-                MessageAdded =0,
-                RadarCommsEstTimer = 0;
-
-    static bool MSBArduinoReady = false,
-                MSBArduinoCommsEstablished = false,
-                MSBFirstReading = true,
-                MSBHeartBeatTimerElapsed = false,
-                MSBBoardReady = false,
-                MSBBoardReadinessTimerElapsed = false,
-                MSBHBStatus = 0,
-                MSBArduinoCommsLost = 0,
-                MSBCommsEstTimer = 0,
-                MSBNoFirstReq = 1;
-
-    static int GyroHeartBeatCounter =0,
-               RadarHeartBeatCounter = 0,
-               RadarBoardReadyCounter = 0,
-               NumberOfMessages = 0,
-               GyroBoardReadyCounter = 0,
-               MSBHeartBeatCounter = 0,
-               MSBBoardReadyCounter = 0,
-               MSBRequestCounter = 0;
+    static int NumberOfMessages = 0;
 
 
     unsigned int CharVAO, CharVBO=0, CommonVBO=0;
@@ -281,8 +239,6 @@ int main()
 
     TL1.AssignBoards();
 
-    //TL1.DirectConnectArd(DC1);
-
     TL1.InitializeTelemetry();
 
     /*
@@ -295,10 +251,8 @@ int main()
 
     Vision V1(WebCAm);
 
-    cv::Mat Frame;
-    TL1.OpenSerial();
+    cv::Mat Frame; 
 
-    TL1.SignalReadyToBoard();
 
     /*
     * -----------------------------------------------------------------------
@@ -371,7 +325,6 @@ int main()
             DC1.SetMessageStatus(ControllerStatus, 9002, MESSAGE_ON);
         }
 
-        
         TL1.SignalPCReadiness();
         TL1.UpdateMotorSteerCommand(lastSendTime);
         TL1.BoardsSendAndReceive();
@@ -381,105 +334,6 @@ int main()
 
         TL1.ClearDataPackets();
 
-        //DWORD Time2 = GetTickCount64();
-        //DWORD TimeElapsed = Time2 - Time1;
-        //std::cout << "\nTime elapsed " << TimeElapsed;
-        
-        /*
-        TL1.CheckArduinoConnections();
-        
-        //Establishing Comms Gyro
-        
-        if (GyroFirstReading || !GyroArduinoCommsEstablished || !GyroBoardReady)
-        {
-            TL1.EstablishedCommunicationsArdGyro(GyroArduinoCommsEstablished, GyroCommsEstTimer, DC1);
-            
-            if(!DC1.CheckMessageExistence(1008) && GyroCommsEstTimer)
-              DC1.AddMessage("13:Establishing comms Gyro ...", 1008);
-        }
-
-
-        if (GyroArduinoCommsEstablished)
-        {
-            if (DC1.CheckMessageExistence(1008))
-              DC1.RemoveMessage(1008);
-
-            TL1.HandleCommsEstMessaging(GyroArduinoCommsEstablished, DC1);
-        }
-
-        if (!GyroBoardReady)
-        {
-            TL1.ListenForArduinoReadiness(GYROSCOPE_BOARD, GyroBoardReady, DC1);
-        }
-
-        //Establishing Comms Radar
-
-        if (RadarFirstReading || !RadarArduinoCommsEstablished || !RadarBoardReady)
-        {
-            TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished, RadarCommsEstTimer, DC1);
-            
-            if (!DC1.CheckMessageExistence(1009) && RadarCommsEstTimer)
-              DC1.AddMessage("13:Establishing comms Radar ...", 1009);
-        }
-
-        if (RadarArduinoCommsEstablished)
-        {
-            if (DC1.CheckMessageExistence(1009))
-               DC1.RemoveMessage(1009);
-        }
-
-        if (!RadarBoardReady)
-        {
-            TL1.ListenForArduinoReadiness(RadarBoardReady, DC1);
-        }
-
-        //Establishing Comms MSB
-
-        bool MSBRequest;
-
-
-        TL1.ListenForMSBRequest(MSBRequest, MSBNoFirstReq, MSBRequestCounter, lastSendTime2, DC1);
-
-        //TL1.EstablishedCommunicationsArdRadar(RadarArduinoCommsEstablished);
-        TL1.SendHeartBeat(DC1);
-
-        if (!GyroFirstReading && GyroArduinoCommsEstablished && GyroBoardReady)
-        {
-            bool HBdetectedGyro = 0,
-                 BoardReadyDetectGyro = 0;
-
-
-            TL1.UpdateGyroAccel(HBdetectedGyro, BoardReadyDetectGyro, GyroArduinoCommsEstablished, GyroFirstReading);
-            TL1.DetectGyroHeartBeat(2.0, GyroHeartBeatTimerElapsed, HBdetectedGyro, HBDetectedGyroGlobal, GyroHeartBeatCounter, DC1);
-            TL1.DetectBoardReadinessGyro(2.0, GyroBoardReadinessTimerElapsed, BoardReadyDetectGyro, GyroBoardReadyCounter, DC1);
-        }
-
-        //TL1.DetectGyroHeartBeat(TimerDuration, GyroHeartBeatTimerElapsed, HBdetectedGyro, GyroHeartBeatCounter, DC1);
-        GyroArduinoCommsEstablished = HBDetectedGyroGlobal;
-
-        if (HBDetectedGyroGlobal && !GyroBoardReady)
-        {
-            GyroArduinoCommsEstablished = 0;
-        }
-        
-
-        if (!RadarFirstReading && RadarArduinoCommsEstablished && RadarBoardReady)
-        {
-            bool HBdetectedRad = 0,
-                 BoardReadyDetectRad = 0;
-
-            TL1.UpdateValuesRadar(HBdetectedRad, BoardReadyDetectRad, RadarArduinoCommsEstablished);
-            TL1.DetectHeartBeat(TimerDuration, RadarHeartBeatTimerElapsed, HBdetectedRad, HBStatus, RadarHeartBeatCounter, DC1);
-            TL1.DetectBoardReadiness(TimerDuration, RadarBoardReadinessTimerElapsed, BoardReadyDetectRad, RadarBoardReadyCounter, DC1);
-        }
-
-
-        if (HBStatus && !RadarBoardReady)
-        {
-            RadarArduinoCommsEstablished = 0; //Communications lost, but HB detected. Need to re-establish comms
-        }
-        
-        */
         TL1.CalcVelocity();
         
         DiagWindow->UpdateDaignostcs(TL1.ReturnPitch(),TL1.ReturnRoll(),TL1.ReturnYaw(), TL1.GetPitchValid(), TL1.GetRollValid(), TL1.ReturnTime());
@@ -544,17 +398,8 @@ int main()
 
         glfwSwapBuffers(window);
         
-        //cout << "\nITERATION DONE";
 
         //Data concentrates done here
-
-        //if (MSBFirstReading || MSBRequest)
-        //{
-            //TL1.DirectCommandMSB(DC1, lastSendTime);
-        //}
-
-        //TL1.DirectCommandMSBTimer(DC1, lastSendTime);
-
 
         //With the Radar draw functions
         //20-17 ms (50 - 28 Hz)
@@ -572,9 +417,6 @@ int main()
 
         DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
 
-        GyroFirstReading = 0;
-        RadarFirstReading = 0;
-        MSBFirstReading = 0;
 
 
         //With Radar draw: 20-25 ms (50 - 40 Hz), 7-9 ms without (142 - 111 Hz)

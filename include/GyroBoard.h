@@ -35,6 +35,8 @@ public:
 	float GetAccelZ() { return AccelZ;}	
 
 	const char* GetName() override { return "GYRO"; };
+	BoardSelection GetBoardIdent() override { return GYROSCOPE_BOARD; };
+	int GetPort() override { return Port; };
 
 	//send/receive
 	void SendAndReceive() override;

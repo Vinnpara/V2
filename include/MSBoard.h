@@ -35,6 +35,8 @@ public:
 	void SetReverse(float ReverseCommand) { this->RawReverse = ReverseCommand; };
 
 	const char* GetName() override { return "MSB"; };
+	BoardSelection GetBoardIdent() override { return MOTOR_STEER_BOARD; };
+	int GetPort() override { return Port; };
 
 	//send/receive
 	void SendAndReceive() override;
