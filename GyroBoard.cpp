@@ -54,6 +54,8 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         SerialOrder Order = HELLO;
         std::string OrderStr;
 
+        //std::cout << "\nData packet Gyro " << DataPacket;
+
         for (int i = 0; i < DataPacket.size(); i++)
         {
             char tmp = DataPacket[i];
@@ -87,8 +89,6 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         }
 
         Order = (SerialOrder)OrderReceived;
-
-        //std::cout << "\nData packet Gyro " << OrderStr <<" "<< IsAllNUmber;
 
         switch (Order)
         {
@@ -149,25 +149,25 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         case MEASURED_YAW:
         {
 
-            std::string StrY;
+            std::string StrRaw;
 
             for (int i = DataPacket.size(); i > -1; i--)
             {
                 if (DataPacket[i] == ':')
                     break;
                 else
-                    StrY.push_back(DataPacket[i]);
+                    StrRaw.push_back(DataPacket[i]);
 
             }
             
-            std::reverse(StrY.begin(), StrY.end());
+            std::reverse(StrRaw.begin(), StrRaw.end());
             //std::cout << "\nMeasured yaw " << StrY;
 
             float measureval = 0;
 
             //if (isValidFloat(StrY))
                 
-            measureval = std::stof(StrY);
+            measureval = std::stof(StrRaw);
 
             //std::cout << "\nMeasured yaw " << measureval <<" "<< StrY;
 

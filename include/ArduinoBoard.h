@@ -90,8 +90,9 @@ public:
 	
 	/*Misc*/
 	static bool IsPortInUse(int port);
-
 	virtual const char* GetName() =0;
+	virtual BoardSelection GetBoardIdent() = 0;
+	virtual int GetPort() = 0;
 
 	bool BoardReady,
 		CommsEst;

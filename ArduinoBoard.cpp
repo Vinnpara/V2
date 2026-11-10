@@ -256,8 +256,8 @@ bool ArduinoBoard:: FindArduinoBoard(const std::string& expectedName, int& outPo
             {
                 outPortNumber = port;
 
-                if (ClaimPort(port))
-                    std::cout << "\nPort claimed " << port;
+                //if (ClaimPort(port))
+                    //std::cout << "\nPort claimed " << port;
                 //else
                     //std::cout << "\nNO PORT CLAIMED " << port;
 
@@ -494,6 +494,18 @@ void ArduinoBoard::RefineDataPackets()
                         //std::cout << "\nArd ready ";
                }
                 
+            }
+
+            if (DataPackets[i].size() < 4 && DataPackets[i].size() > 0)
+            {
+                std::string ReadyOrCommsEst = DataPackets[i];
+                std::string CommsEstStr = std::to_string((int)ARD_COMMS_EST);
+
+                if (ReadyOrCommsEst == CommsEstStr)
+                {
+                    CommsEst = 1;
+                    //std::cout << "\nArd ready ";
+                }
             }
 
             //std::cout << "\nPacket content in " << i << " " << ReadyOrCommsEst<< " " <<DataPackets[i].size();

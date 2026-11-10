@@ -50,122 +50,74 @@ using namespace std::chrono_literals;
 class TelemetryUI {
 public:
 	//check functions with a '/**/' above them. Perhaps could get rid of
+	
 
+	TelemetryUI(); /*INTERFACE*/
+	void AssignBoards(); /*INTERFACE*/
+	void InitializeTelemetry(); /*INTERFACE*/
 
-	TelemetryUI();
-	void AssignBoards();
-	void InitializeTelemetry();
-	void DelayForArduinoInit();
-
-	void AssignBoardsAndRates();
 	std::unique_ptr<ArduinoBoard> MakeBoard(BoardSelection Name);
 
-	void AttemptConnectionMSB(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
-	void AttemptConnectionGYRO(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
-	void AttemptConnectionRADAR(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2);
+	//Main interface funcs
+	void MonitorCommsStatus(DataConcentrator& DC);/*INTERFACE*/
+	void BoardsSendAndReceive(); /*INTERFACE*/
+	void SignalPCReadiness(); /*INTERFACE*/
+	void UpdateGyroData(); /*INTERFACE*/
+	void UpdateRadar(); /*INTERFACE*/
+	void UpdateMotorSteerCommand(static DWORD& lastSendTime); /*INTERFACE*/
 
-	void EstablishedCommunicationsArdGyro (static bool &GyroArduinoCommsEstablished, static bool &TimerElapsed, DataConcentrator& DC);
-	void EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC);
-	void EstablishedCommunicationsMSB(static bool& MSBCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC);
-
-
-	void ListenForArduinoReadiness(static bool& RadarArduinoReady, DataConcentrator& DC);
-	void ListenForArduinoReadiness(BoardSelection Board, static bool& ArduinoReady, DataConcentrator& DC);
-	void ListenForMSBRequest(bool& RequestReceived, static bool& NoFirstRequest, static int &RequestCounter,  static DWORD& lastSendTime, DataConcentrator& DC);
-
-
-	void DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool &HeartBeatDetected, static bool &HBDetectedGlobal, static int& HeartBeatCounter, DataConcentrator& DC);
-	void DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);
-
-
-	void DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
-	void DetectBoardReadinessGyro(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
-	void DetectBoardReadinessMSB(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC);
-
-
-	void SendHeartBeat(DataConcentrator& DC);
-
-	void CheckArduinoConnections();
-
-	void DirectCommandMSB(DataConcentrator& DC, static DWORD& lastSendTime);
-	void DirectCommandMSBTimer(DataConcentrator& DC, static DWORD& lastSendTime);
-
-
-	void UpdateGyroAccel(bool &HBDetected, bool& BoardReadiness, static bool& GyroArduinoCommsEstablished, static bool& FirstReading);
-	void UpdateGyroAccelT();
-	void RequestPitch();
-	void SignalReadyToBoard();
-	void DirectConnectArd(DataConcentrator& DC);
-	
-	void UpdateValuesRadar(bool& HBDetected, bool& BoardReadiness, static bool& RadarArduinoCommsEstablished);
-	void UpdateValuesRadar();
-	void UpdateValuesMSB(bool& HBDetected, bool& BoardReadiness, static bool& MSBArduinoCommsEstablished);
-	
-	void TimerAnchorPoint();
+	void TimerAnchorPoint(); /*INTERFACE*/
 	void TimerFunction(int Duration);
 
-	void HandleCommsEstMessaging(static bool CommsEst, DataConcentrator& DC);
+	void CloseSerial(); /*INTERFACE*/
 
-	void CloseSerial();
+	//Message handlers
+	void ShowConnectionMessage(BoardSelection board, DataConcentrator& Dc);
+	void ShowConnectionSuccessFul(BoardSelection board, int port, bool success, DataConcentrator& Dc);
 
-	void EstablishComms(DataConcentrator& DC);
-	void MonitorCommsStatus(DataConcentrator& DC);
-	void BoardsSendAndReceive();
-	void SignalPCReadiness();
+	void DetectHB(int duration, DataConcentrator& DC, std::vector<std::pair<int, bool>> BoardHeartBeat);
+	void DetectBoardReadiness(int duration, DataConcentrator& DC, std::vector<std::pair<int, bool>> BoardReadiness);
+	void DetectCommsEst(int duration, DataConcentrator& DC, std::vector<std::pair<int, bool>> BoardCommsEst);
 
-	void MonitorCommsStateGyro(static bool& TimerElapsed, static bool& GyroArduinoCommsEstablished, DataConcentrator& DC);
-	void MonitorCommsStateRadar(static bool& TimerElapsed, static bool& RadarArduinoCommsEstablished, DataConcentrator& DC);
-	void MonitorCommsStateMSB(static bool& TimerElapsed, static bool& MSBArduinoCommsEstablished, DataConcentrator& DC);
+	void ClearDataPackets(); /*INTERFACE*/
 
-	void DetectBoardReadinessRADAR(int Duration, bool& BoardReadinessDetected, DataConcentrator& DC);
-	void DetectBoardReadinessGYRO(int Duration, bool& BoardReadinessDetected, DataConcentrator& DC);
-
-	void DetectHeartBeatRADAR(int Duration, bool& HBDetected, DataConcentrator& DC);
-	void DetectHeartBeatGYRO(int Duration, bool& HBDetected, DataConcentrator& DC);
-
-	void UpdateGyroData();
-	void UpdateRadar();
-	void UpdateMotorSteerCommand(static DWORD& lastSendTime);
-
-	void ClearDataPackets();
-
-	float ReturnPitch() 
+	float ReturnPitch() /*INTERFACE*/
 	{
 		return Pitch;
 	}
-	float ReturnRoll()
+	float ReturnRoll() /*INTERFACE*/
 	{
 		return Roll;
 	}
-	float ReturnYaw()
+	float ReturnYaw() /*INTERFACE*/
 	{
 		return Yaw;
 	}
-	float ReturnAccelX() {
+	float ReturnAccelX() /*INTERFACE*/  {
 
 		return AccelX;
 	}
 
-	float ReturnAccelY() {
+	float ReturnAccelY() /*INTERFACE*/  {
 
 		return AccelY;
 	}
 
-	float ReturnAccelZ() {
+	float ReturnAccelZ() /*INTERFACE*/  {
 
 		return AccelZ;
 	}
 
-	bool GetPitchValid() {
+	bool GetPitchValid() /*INTERFACE*/ {
 		return PitchValid;
 	}
 
-	bool GetRollValid() {
+	bool GetRollValid() /*INTERFACE*/  {
 		return RollValid;
 	}
 
-	int16_t GetRadarPos();
-	int16_t GetRadarVal();
+	int16_t GetRadarPos(); /*INTERFACE*/
+	int16_t GetRadarVal(); /*INTERFACE*/
 
 	int ReturnRadarVal() 
 	{
@@ -176,71 +128,58 @@ public:
 		return (int)RadarPos;
 	};
 
-	int16_t ReturnSteerAngle()
+	int16_t ReturnSteerAngle() /*INTERFACE*/
 	{
 		return (int16_t)SteerAngle;
 	};
-	int16_t ReturnThrottleAngle()
+	int16_t ReturnThrottleAngle() /*INTERFACE*/
 	{
 		return (int16_t)TrothleAngle;
 	};
 	unsigned long ReturnTime() {
 		return ElapsedTime;
 	}
-	float ReturnVelx()
+	float ReturnVelx() /*INTERFACE*/
 	{
 		return VelocityX;
 	}
-	float ReturnVely()
+	float ReturnVely() /*INTERFACE*/
 	{
 		return VelocityY;
 	}
-	float ReturnVelocityCombined()
+	float ReturnVelocityCombined() /*INTERFACE*/
 	{
 		return VelocityCombined;
 	}
-	static float ReturnTotalTime();
+	static float ReturnTotalTime(); /*INTERFACE*/
 
 
 	~TelemetryUI();
 
-	void RenderYaw();
-	void RenderPitch();
-	void RenderRoll();
+	void RenderYaw(); /*INTERFACE*/
+	void RenderPitch(); /*INTERFACE*/
+	void RenderRoll(); /*INTERFACE*/
 
 	void RenderAccelX();
 	void RenderAccelY();
 	void RenderAccelZ();
 
-	void RenderRadar();
-	void RenderControllerState(int InputDetected);
-	void RenderAxis(const float *AxesArr);
+	void RenderRadar(); /*INTERFACE*/
+	void RenderControllerState(int InputDetected); /*INTERFACE*/
+	void RenderAxis(const float *AxesArr); /*INTERFACE*/
 
-	void RenderRawSteerAngle(const float* AxesArr);
+	void RenderRawSteerAngle(const float* AxesArr); /*INTERFACE*/
 	void RenderRawSteerAngleAndMotorSpeed(const float* AxesArr);
 
-	void CalcVelocity();
+	void CalcVelocity(); /*INTERFACE*/
 
-	void RenderModel();
-	void OpenSerial();
-    
-	/*void RecordData(std::ofstream DataFile);
-	void OpenFile(std::ofstream DataFile);
-	void CloseFile(std::ofstream DataFile);*/
+	void RenderModel(); /*INTERFACE*/
+	void OpenSerial(); /*INTERFACE*/
 
-	void GetRecStartStopCommand(bool start, bool stop);
-	void InitializeDataFile();
-	void RecordData();
-	void CloseDataFile();
-
-	//static int NumberOfMessagesCommPorts;
-
-	//static bool PrintDiagnosisMessages,
-		//MessageAdded;
-
-	/*ARCHIVED*/
-	void UpdateValuues(SerialPort& Serial); /*Archive*/
-	void DetectMSBHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC);/*Archive*/
+	void GetRecStartStopCommand(bool start, bool stop); /*INTERFACE*/
+	void InitializeDataFile(); /*INTERFACE*/
+	void RecordData(); /*INTERFACE*/
+	void CloseDataFile(); /*INTERFACE*/
 
 private:
 	
@@ -254,13 +193,19 @@ private:
 
 	float maxval(float max, float min, float& val);
 	void FilterVal(float max, float min, float& val);
-	void ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand);
 	void RequestReadData(SerialPort& Serial, SerialOrder Command);
 	void RequestReadData(SerialPort& Serial, SerialOrder Command, static bool& CommandNotReady);
 	int16_t LimitValueInt32(int32_t MaxValue, int32_t MinValue, int32_t& ReadValue);
-	void ReTryRequest(SerialPort& Serial, SerialOrder Command);
 	int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue);
-	float ConvertValue(float RadarValX, float m, float C);
+	float ConvertValue(float RadarValX, float m, float C); //USED
+
+	int GetIdx(BoardSelection board);
+	int GetCode(BoardSelection board);
+	std::string GetBoardNameStr(BoardSelection board);
+
+	void AddHBMessage(BoardSelection board, bool detected, DataConcentrator& DC);
+	void AddBoardReadyMessage(BoardSelection board, bool detected, DataConcentrator& DC);
+	void AddCommsEstMessage(BoardSelection board, bool detected, DataConcentrator& DC);
 
 	//TestWindow* DiagWindow = new TestWindow(true);
 
@@ -332,27 +277,12 @@ private:
 		 RecStart,
 		 RecStop;
 
-	std::chrono::steady_clock::time_point LastReset,
-		                                  LastReset2,
-		                                  LastReset3,
-		                                  LastReset4,
-		                                  LastReset5,
-		                                  LastReset6,
-		                                  LastReset7,
-		                                  LastReset8,
-		                                  LastReset9,
-		                                  LastReset10,
-		                                  LastReset11,
-	                                      Now,
-		                                  ArdGyroHeartbeat,
-		                                  ArdRadarHeartBeat,
-		                                  ArdRadarBoardReadniess,
-		                                  ArdGyroCommsEst,
-		                                  ArdRadarCommsEst,
-		                                  ArdGyroBoardReadniess,
-		                                  ArdMSBCommsEst,
-		                                  ArdMSBHeartBeat,
-		                                  ArdMSBBoardReadniess;
+	std::chrono::steady_clock::time_point ResetHB,
+		                                  ResetBoardReady,
+		                                  ResetBoardCommsEst,
+		                                  ArdHeartbeat,
+		                                  ArdBoardReady,
+		                                  ArdCommsEst;
 
 	std::map<std::string, int> BoardAssingmentAndBuadRate;
 
@@ -362,13 +292,23 @@ private:
 		        BoardsCommsEstablishedTimer[5],
 		        BoardReady[5],
 		        BoardReadyTimer[5],
-		        HeartBeatTimer[5];
+		        HeartBeatTimer[5],
+		        HeartBeatTimerElapsed,
+		        BoardReadyTimerElpased,
+		        CommsEstTimerElapsed;
 
 	static int GYROidx,
 		       RADARidx,
 		       MSBidx,
 		       BoardReadinessCounter[5],
-		       BoardHeartBeatCounter[5];
+		       BoardHeartBeatCounter[5],
+		       BoardCommsEstCounter[5];
+
+
+	std::vector<std::pair<int, int>>BoardsAndIndex;
+	const int GyroMsgCode = 3000,
+		      RadarMsgCode = 4000,
+		      MSBMsgCode = 5000;
 
 	//std::ofstream DataFile("Pitch_v_time.csv");
 };

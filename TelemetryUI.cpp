@@ -43,23 +43,6 @@
 TextRender* T1;
 VehicleModel* VM1;
 
-//char output[MAX_DATA_LENGTH];
-//char incomingData[MAX_DATA_LENGTH];
-char* Port = "\\\\.\\COM3";
-//char input[MAX_DATA_LENGTH];
-
-//ArduinoReceiver Ard1;
-
-//ArduinoReceiver ArdRadar(COM8);
-//ArduinoReceiver ArdGyro(COM9);
-//ArduinoReceiver ArdMotorSteer(COM5);
-
-ArduinoReceiver ArdRadar(RADAR_BOARD);
-ArduinoReceiver ArdGyro(GYROSCOPE_BOARD);
-ArduinoReceiver ArdMotorSteer(MOTOR_STEER_BOARD);
-
-//static float TotalElapsedTime;
-
 static int NumberOfMessagesCommPorts = 0;
 
 static bool PrintDiagnosisMessages = 0,
@@ -70,6 +53,9 @@ bool TelemetryUI::BoardsCommsEstablished[5];
 bool TelemetryUI::BoardsCommsEstablishedTimer[5];
 bool TelemetryUI::BoardReadyTimer[5];
 bool TelemetryUI::HeartBeatTimer[5];
+bool TelemetryUI::HeartBeatTimerElapsed;
+bool TelemetryUI::BoardReadyTimerElpased;
+bool TelemetryUI::CommsEstTimerElapsed;
 
 int TelemetryUI::GYROidx = 0;
 int TelemetryUI::RADARidx = 0;
@@ -77,6 +63,7 @@ int TelemetryUI::MSBidx = 0;
 
 int TelemetryUI::BoardReadinessCounter[5];
 int TelemetryUI::BoardHeartBeatCounter[5];
+int TelemetryUI::BoardCommsEstCounter[5];
 
 float TelemetryUI::ReturnTotalTime() {
 
@@ -89,16 +76,6 @@ TelemetryUI::TelemetryUI() {
 
 }
 
-void TelemetryUI::DirectConnectArd(DataConcentrator& DC)
-{
-    //Diagnosis only, directly connect an arduino
-    
-    char* GyroPort = "\\\\.\\COM19";
-    ArdGyro.SetArdPort(GyroPort, DC);
-    ArdGyro.SetBaudRate(BAUD_RATE_115200);
-    ArdGyro.InitializedBoard();
-
-}
 
 std::unique_ptr<ArduinoBoard> TelemetryUI::MakeBoard(BoardSelection Name)
 {
@@ -217,16 +194,31 @@ void TelemetryUI::AssignBoards() {
                 {
                     BoardsSelection[i]->SetBaudRate(MSBBaud);
                     MSBidx = i;
+
+                    std::pair<int, int>MSBPair;
+                    MSBPair.first = MOTOR_STEER_BOARD;
+                    MSBPair.second = i;
+                    BoardsAndIndex.push_back(MSBPair);
                 }
                 if (BoardsSelection[i]->GetName() == "GYRO")
                 {
                     BoardsSelection[i]->SetBaudRate(GYROBaud);
                     GYROidx = i;
+
+                    std::pair<int, int>GYROPair;
+                    GYROPair.first = GYROSCOPE_BOARD;
+                    GYROPair.second = i;
+                    BoardsAndIndex.push_back(GYROPair);
                 }
                 if (BoardsSelection[i]->GetName() == "RADAR")
                 {
                     BoardsSelection[i]->SetBaudRate(RADARBaud);
+                    RADARidx = i;
 
+                    std::pair<int, int>RADARPair;
+                    RADARPair.first = RADAR_BOARD;
+                    RADARPair.second = i;
+                    BoardsAndIndex.push_back(RADARPair);
                 }
 
             }
@@ -243,69 +235,27 @@ void TelemetryUI::AssignBoards() {
             for (int i = 0; i < BoardsSelection.size(); i++)
             {
                 
-                std::cout << "\nBoard Number " << BoardsSelection.size();
+                //std::cout << "\nBoard Number " << BoardsSelection.size();
                 
-                BoardsSelection[i]->ConnectArduino();
+                ShowConnectionMessage(BoardsSelection[i]->GetBoardIdent(), DC);
+
+                DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+                DC.PreparePrintMessage();
+                DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+                tWindow->GetMessageToprint(DC.GetPrintMessage());
+                tWindow->ShowCommsPortData(PrintDiagnosisMessages);
+
+                bool Connected = BoardsSelection[i]->ConnectArduino();
+
+                ShowConnectionSuccessFul(BoardsSelection[i]->GetBoardIdent(), BoardsSelection[i]->GetPort(), Connected, DC);
+
+                DC.CheckMapIncrement(NumberOfMessagesCommPorts);
+                DC.PreparePrintMessage();
+                DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
+                tWindow->GetMessageToprint(DC.GetPrintMessage());
+                tWindow->ShowCommsPortData(PrintDiagnosisMessages);
             }
             
-
-            /*
-            //MSB CONNECTION;
-            DC.AddMessage("13:Connecting MSB ", 5008);
-
-            DC.PreparePrintMessage();
-            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
-            tWindow->GetMessageToprint(DC.GetPrintMessage());
-            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
-            
-            //HWND DiagBoxHndlr = GetDiagnosisArdCommsWindHandler();
-
-            AttemptConnectionMSB( DC, MSBName, FoundPort, MSBBaud, 0, 0);
-
-            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
-            DC.PreparePrintMessage();
-            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
-            tWindow->GetMessageToprint(DC.GetPrintMessage());
-            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
-
-            DC.RemoveMessage(5008);
-            
-            //GYRO CONNECTION
-            DC.AddMessage("13:Connecting GYRO ", 3011);
-            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
-            DC.PreparePrintMessage();
-            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
-            tWindow->GetMessageToprint(DC.GetPrintMessage());
-            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
-
-            AttemptConnectionGYRO(DC, GYROName, GYROFoundPort, GYROBaud, FoundPort, 0);
-
-            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
-            DC.PreparePrintMessage();
-            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
-            tWindow->GetMessageToprint(DC.GetPrintMessage());
-            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
-
-            DC.RemoveMessage(3011);
-            
-            //RADAR CONNECTION
-            DC.AddMessage("13:Connecting RADAR ", 4011);
-            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
-            DC.PreparePrintMessage();
-            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
-            tWindow->GetMessageToprint(DC.GetPrintMessage());
-            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
-
-            AttemptConnectionRADAR(DC, RADARName, RADARFoundPort, RADARBaud, FoundPort, GYROFoundPort);
-
-            DC.CheckMapIncrement(NumberOfMessagesCommPorts);
-            DC.PreparePrintMessage();
-            DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
-            tWindow->GetMessageToprint(DC.GetPrintMessage());
-            tWindow->ShowCommsPortData(PrintDiagnosisMessages);
-
-            DC.RemoveMessage(4011);
-            */
 
             TryConnection = 0;
         }
@@ -315,15 +265,10 @@ void TelemetryUI::AssignBoards() {
         if (!tWindow->ProcessMessages())
         {
             run = false;
-            //std::cout << "Close window";
-            //std::cout << "\nBOARD_1 " << tWindow->board1;
-            //std::cout << "\nBOARD_2 " << tWindow->board2;
-            //std::cout << "\nBOARD_3 " << tWindow->board3;
 
         }
 
         DC.CheckMapIncrement(NumberOfMessagesCommPorts);
-
         DC.PreparePrintMessage();
         DC.ReprintMessage(PrintDiagnosisMessages, MessageAdded);
 
@@ -359,289 +304,56 @@ void TelemetryUI::InitializeTelemetry() {
 }
 
 
-
-
-void TelemetryUI::AttemptConnectionMSB(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
-{
-    std::string Att = "13:Connecting to ";
-    std::string MSB = " MSB ",
-                GYRO = " GYRO ",
-                RADAR = " RADAR ";
-    std::string Conn = "Connected to port ";
-    std::string NotCon = "Not Connected ";
-
-    std::string MSBCOn = Att + MSB;
-
-    //DC.AddMessage(MSBCOn, 5008);
-
-    /*
-    5008 Attempting to connect to MSB, 5009 MSB connected OR MSB not found
-    */
-    if (ArdMotorSteer.FindArduinoBoardPortHserial(DC, expectedName, outPortNumber, buad,0))
-    {
-        //ArdMotorSteer.SetArdPort(FoundPort, DC);
-        //ArdMotorSteer.SetBaudRate(MSBBaud);
-        ArdMotorSteer.InitializedBoard();
-
-        std::string Tot = "13:MSB " + Conn + std::to_string(outPortNumber);
-        //DC.AddMessage(Tot, 5009);
-    }
-    else
-    {
-        std::string Tot = "11:Warning, MSB " + NotCon;
-        //DC.AddMessage(Tot, 5009);
-    }
-    //DC.RemoveMessage(5008);
-}
-
-void TelemetryUI::AttemptConnectionGYRO(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
-{
-    std::string Att = "13:Connecting to ";
-    std::string MSB = " MSB ",
-                GYRO = " GYRO ",
-                RADAR = " RADAR ";
-    std::string Conn = "Connected to port ";
-    std::string NotCon = "Not Connected ";
-
-    std::string GyroCOn = Att + GYRO;
-    
-    //DC.AddMessage(GyroCOn, 3011);
-
-
-    /*
-     3008 Attempting to connect to MSB, 3009 MSB connected OR MSB not found
-     */
-
-    if (ArdGyro.FindArduinoBoardPortHserial(expectedName, outPortNumber, buad, PrevPort))
-    {
-        //ArdGyro.SetArdPort(GYROFoundPort, DC);
-        //ArdGyro.SetBaudRate(GYROBaud);
-        ArdGyro.InitializedBoard();
-
-        std::string Tot = "13:GYRO " + Conn + std::to_string(outPortNumber);
-        DC.AddMessage(Tot, 3012);
-    }
-    else
-    {
-        std::string Tot = "11:Warning, GYRO " + NotCon;
-        DC.AddMessage(Tot, 3012);
-    }
-   // DC.RemoveMessage(3011);
-}
-
-void TelemetryUI::AttemptConnectionRADAR(DataConcentrator& DC, const std::string& expectedName, int& outPortNumber, int buad, int PrevPort, int PrevPort2)
-{
-    std::string Att = "13:Connecting to ";
-    std::string MSB = " MSB ",
-                GYRO = " GYRO ",
-                RADAR = " RADAR ";
-    std::string Conn = "13:Connected to port ";
-    std::string NotCon = "11:Not Connected ";
-
-    std::string GyroCOn = Att + RADAR;
-
-    DC.AddMessage(GyroCOn, 4011);
-
-    if (ArdRadar.FindArduinoBoardPortHserial(expectedName, outPortNumber, buad, PrevPort))
-    {
-        //ArdRadar.SetArdPort(RADARFoundPort, DC);
-        //ArdRadar.SetBaudRate(RADARBaud);
-        ArdRadar.InitializedBoard();
-
-        std::string Tot = "13:RADAR " + Conn + std::to_string(outPortNumber);
-        DC.AddMessage(Tot, 4012);
-    }
-    else
-    {
-        std::string Tot = "11:Warning, RADAR " + NotCon;
-        DC.AddMessage(Tot, 4012);
-    }
-   // DC.RemoveMessage(4011);
-
-}
-
 void TelemetryUI::MonitorCommsStatus(DataConcentrator& DC)
 {
+    std::vector<std::pair<int, bool>> BoardHBStatus;
+    std::vector<std::pair<int, bool>> BoardReadinessStatus;
+    std::vector<std::pair<int, bool>> BoardCommsEstStatus;
+
     for (int i = 0; i < BoardsSelection.size(); i++)
     {
-        if (BoardsSelection[i]->GetName() == "GYRO")
-        {
-            bool HeartBeatDetected, BoardReady;
+        
+        std::pair<int, bool>HbStatus;
+        std::pair<int, bool>BoardReadyStatus;
+        std::pair<int, bool>BoardCommsStatus;
 
-            HeartBeatDetected = BoardsSelection[i]->GetHearBeat();
-            BoardReady = BoardsSelection[i]->GetBoardReadiness();
+        HbStatus.first = BoardsSelection[i]->GetBoardIdent();
+        HbStatus.second = BoardsSelection[i]->GetHearBeat();
 
-            DetectBoardReadinessGYRO(2, BoardReady, DC);
-            DetectHeartBeatGYRO(2, HeartBeatDetected, DC);
+        BoardReadyStatus.first = BoardsSelection[i]->GetBoardIdent();
+        BoardReadyStatus.second = BoardsSelection[i]->GetBoardReadiness();
 
-            BoardsSelection[i]->SetHeartBeat(HeartBeatDetected);
-            BoardsSelection[i]->SetBoardReadiness(BoardReady);
+        BoardCommsStatus.first = BoardsSelection[i]->GetBoardIdent();
+        BoardCommsStatus.second = BoardsSelection[i]->GetCommsEstState();
 
-        }
-        if (BoardsSelection[i]->GetName() == "RADAR")
-        {
-            bool HeartBeatDetected, BoardReady;
+        BoardHBStatus.push_back(HbStatus);
+        BoardReadinessStatus.push_back(BoardReadyStatus);
+        BoardCommsEstStatus.push_back(BoardCommsStatus);
 
-            HeartBeatDetected = BoardsSelection[i]->GetHearBeat();
-            BoardReady = BoardsSelection[i]->GetBoardReadiness();
-
-            DetectBoardReadinessRADAR(2, BoardReady, DC);
-            DetectHeartBeatRADAR(2, HeartBeatDetected, DC);
-
-            BoardsSelection[i]->SetHeartBeat(HeartBeatDetected);
-            BoardsSelection[i]->SetBoardReadiness(BoardReady);
-        }
     }
-}
 
-void TelemetryUI::EstablishComms(DataConcentrator& DC)
-{
+    DetectHB(2, DC, BoardHBStatus);
+    DetectBoardReadiness(2, DC, BoardReadinessStatus);
+    DetectCommsEst(2, DC, BoardCommsEstStatus);
+
+
     for (int i = 0; i < BoardsSelection.size(); i++)
     {
-        if (BoardsSelection[i]->GetName() == "GYRO")
-        {
-            GYROidx = i;
-            if (!BoardsCommsEstablished[GYROidx])
-                BoardsCommsEstablished[GYROidx] = BoardsSelection[i]->EstablishComms();
-
-            MonitorCommsStateGyro(BoardsCommsEstablishedTimer[GYROidx], BoardsCommsEstablished[GYROidx], DC);
-        }
-        if (BoardsSelection[i]->GetName() == "RADAR")
-        {
-            RADARidx = i;
-            if (!BoardsCommsEstablished[RADARidx])
-                BoardsCommsEstablished[RADARidx] = BoardsSelection[i]->EstablishComms();
-
-            MonitorCommsStateRadar(BoardsCommsEstablishedTimer[RADARidx], BoardsCommsEstablished[RADARidx], DC);
-
-        }
-    }
-}
-
-void TelemetryUI::MonitorCommsStateGyro(static bool& TimerElapsed, static bool& GyroArduinoCommsEstablished, DataConcentrator& DC)
-{
-    ArdGyroCommsEst = std::chrono::steady_clock::now();
-
-    std::chrono::seconds TimerDuration(1);
-
-    if (ArdGyroCommsEst - LastReset7 >= TimerDuration)
-    {
-        LastReset7 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        TimerElapsed = 0;
+        bool tst = 0;
+        BoardsSelection[i]->SetHeartBeat(tst);
+        BoardsSelection[i]->SetBoardReadiness(tst);
+        BoardsSelection[i]->SetCommsEstState(tst);
     }
 
-    if (TimerElapsed)
-    {
-        HandleCommsEstMessaging(GyroArduinoCommsEstablished, DC);
-    }
-
-}
-
-void TelemetryUI::MonitorCommsStateRadar(static bool& TimerElapsed, static bool& RadarArduinoCommsEstablished, DataConcentrator& DC)
-{
-
-    std::string MessageON = { "13:Arduino Radar Comms est " },
-        MessageOFF = { "12:Caution, Arduino Radar Comms not est " };
-
-    ArdRadarCommsEst = std::chrono::steady_clock::now();
-
-    std::chrono::seconds TimerDuration(1);
-
-    if (ArdRadarCommsEst - LastReset6 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset6 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-    if (TimerElapsed)
-    {
-
-        if (RadarArduinoCommsEstablished)
-        {
-            if (DC.CheckMessageExistence(1005))
-            {
-                DC.SwapMessage(MessageON, 1004, 1005);
-                //std::cout << "\nThe OFF DOES exist ";
-            }
-            else
-            {
-                DC.SetMessageStatus(MessageON, 1004, MESSAGE_ON);
-                DC.SetMessageStatus(MessageOFF, 1005, MESSAGE_OFF);
-                //std::cout << "\nThe OFF did not exist ";
-            }
-        }
-        else
-        {
-            if (DC.CheckMessageExistence(1004))
-            {
-                DC.SwapMessage(MessageOFF, 1005, 1004);
-                //std::cout << "\nThe ON DOES exist ";
-            }
-            else
-            {
-                DC.SetMessageStatus(MessageON, 1004, MESSAGE_OFF);
-                DC.SetMessageStatus(MessageOFF, 1005, MESSAGE_ON);
-                //std::cout << "\nThe ON Did not exist ";
-            }
-            //std::cout << "\n No comms GYRO";
-        }
-
-    }
-}
-
-void TelemetryUI::MonitorCommsStateMSB(static bool& TimerElapsed, static bool& MSBArduinoCommsEstablished, DataConcentrator& DC)
-{
-    std::string MessageON = { "13:Arduino MSB ready flag det " },
-        MessageOFF = { "12:Caution, MSB ready flag not det " };
-
-    if (MSBArduinoCommsEstablished)
-    {
-        if (DC.CheckMessageExistence(1015))
-        {
-            DC.SwapMessage(MessageON, 1014, 1015);
-            //std::cout << "\nThe OFF DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1014, MESSAGE_ON);
-            DC.SetMessageStatus(MessageOFF, 1015, MESSAGE_OFF);
-            //std::cout << "\nThe OFF did not exist ";
-        }
-    }
-    else
-    {
-        if (DC.CheckMessageExistence(1014))
-        {
-            DC.SwapMessage(MessageOFF, 1015, 1014);
-            //std::cout << "\nThe ON DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1014, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageOFF, 1015, MESSAGE_ON);
-            //std::cout << "\nThe ON Did not exist ";
-        }
-        //std::cout << "\n No comms GYRO";
-    }
 }
 
 void TelemetryUI::BoardsSendAndReceive()
 {
     for (int i = 0; i < BoardsSelection.size(); i++)
     {
-        auto t0 = std::chrono::steady_clock::now();
+        //auto t0 = std::chrono::steady_clock::now();
         BoardsSelection[i]->SendAndReceive();
-        auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        //auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         //std::cout << "\nTime elapsed " << ms << " " << BoardsSelection[i]->GetName();
     }
 }
@@ -654,422 +366,6 @@ void TelemetryUI::SignalPCReadiness()
         BoardsSelection[i]->SendPCReadiness();
         BoardsSelection[i]->SignalBoardFound();
     }
-}
-
-void TelemetryUI::EstablishedCommunicationsArdGyro(static bool &GyroArduinoCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC)
-{
- /*
- * Comms established Cyan, and amber. Cyan if comms established (1002), 
- * Amber (1003) if not.
- */
-
-    
-    std::vector<std::string> DataPackets;
-
-    if (!GyroArduinoCommsEstablished)
-        ArdGyro.EstablishComms(GyroArduinoCommsEstablished, DataPackets);
-    
-    ArdGyroCommsEst = std::chrono::steady_clock::now();
-
-    std::chrono::seconds TimerDuration(1);
-
-    if (ArdGyroCommsEst - LastReset7 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset7 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-   // std::string MessageON = { "13:Arduino Gyro Comms est " },
-              //  MessageOFF = { "12:Caution, Arduino Gyro Comms not est " };
-    
-    if (TimerElapsed)
-    {
-        HandleCommsEstMessaging(GyroArduinoCommsEstablished, DC);
-    }
-
-
-
-}
-
-void TelemetryUI::EstablishedCommunicationsArdRadar(static bool& RadarArduinoCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC)
-{
- /*
- * Comms established Cyan, and amber. Cyan if comms established (1004),
- * Amber (1005) if not.
- */
-    
-    
-    std::vector<std::string> DataPackets;
-
-    if (!RadarArduinoCommsEstablished)
-        ArdRadar.EstablishComms(RadarArduinoCommsEstablished, DataPackets);
-
-    //ArdRadar.EstablishComms(RadarArduinoCommsEstablished, DataPackets);
-
-    std::string MessageON = { "13:Arduino Radar Comms est " },
-                MessageOFF = { "12:Caution, Arduino Radar Comms not est " };
-
-    ArdRadarCommsEst = std::chrono::steady_clock::now();
-
-    std::chrono::seconds TimerDuration(1);
-
-    if (ArdRadarCommsEst - LastReset6 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset6 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-    if (TimerElapsed)
-    {
-        
-        
-        if (RadarArduinoCommsEstablished)
-        {
-            if (DC.CheckMessageExistence(1005))
-            {
-                DC.SwapMessage(MessageON, 1004, 1005);
-                //std::cout << "\nThe OFF DOES exist ";
-            }
-            else
-            {
-                DC.SetMessageStatus(MessageON, 1004, MESSAGE_ON);
-                DC.SetMessageStatus(MessageOFF, 1005, MESSAGE_OFF);
-                //std::cout << "\nThe OFF did not exist ";
-            }
-        }
-        else
-        {
-            if (DC.CheckMessageExistence(1004))
-            {
-                DC.SwapMessage(MessageOFF, 1005, 1004);
-                //std::cout << "\nThe ON DOES exist ";
-            }
-            else
-            {
-                DC.SetMessageStatus(MessageON, 1004, MESSAGE_OFF);
-                DC.SetMessageStatus(MessageOFF, 1005, MESSAGE_ON);
-                //std::cout << "\nThe ON Did not exist ";
-            }
-            //std::cout << "\n No comms GYRO";
-        }
-
-        
-        /*
-        if (RadarArduinoCommsEstablished)
-        {
-            DC.SetMessageStatus(MessageON, 1004, MESSAGE_ON);
-            DC.SetMessageStatus(MessageOFF, 1005, MESSAGE_OFF);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1004, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageOFF, 1005, MESSAGE_ON);
-        }
-        */
-    }
-}
-
-void TelemetryUI::EstablishedCommunicationsMSB(static bool& MSBCommsEstablished, static bool& TimerElapsed, DataConcentrator& DC)
-{
- /*
- * Initial MSB readiness, and amber. Cyan if comms established (1014),
- * Amber (1015) if not.
- */
-    std::vector<std::string> DataPackets;
-
-    if (!MSBCommsEstablished)
-        ArdMotorSteer.EstablishComms(MSBCommsEstablished, DataPackets);
-
-    std::string MessageON = { "13:Arduino MSB ready flag det " },
-                MessageOFF = { "12:Caution, MSB ready flag not det " };
-
-    if (MSBCommsEstablished)
-    {
-        if (DC.CheckMessageExistence(1015))
-        {
-            DC.SwapMessage(MessageON, 1014, 1015);
-            //std::cout << "\nThe OFF DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1014, MESSAGE_ON);
-            DC.SetMessageStatus(MessageOFF, 1015, MESSAGE_OFF);
-            //std::cout << "\nThe OFF did not exist ";
-        }
-    }
-    else
-    {
-        if (DC.CheckMessageExistence(1014))
-        {
-            DC.SwapMessage(MessageOFF, 1015, 1014);
-            //std::cout << "\nThe ON DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1014, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageOFF, 1015, MESSAGE_ON);
-            //std::cout << "\nThe ON Did not exist ";
-        }
-        //std::cout << "\n No comms GYRO";
-    }
-
-}
-
-void TelemetryUI::ListenForMSBRequest(bool& RequestReceived, static bool& NoFirstRequest, static int& RequestCounter, static DWORD& lastSendTime, DataConcentrator& DC)
-{
-    int currentRequestReceived = RequestCounter;
-
-    DWORD currentTime = GetTickCount64(); 
-
-    RequestReceived = ArdMotorSteer.ListenForRequest(REQUEST_COMMAND_MSB);
-
-    if (RequestReceived)
-    {
-        NoFirstRequest = 0;
-        RequestCounter++;
-        //std::cout << "\nMSB requested data ";
-    }
-
-    //std::cout << "\nMSB current and prev "<< RequestCounter<<" "<< currentRequestReceived;
-    /*
-    if (currentTime - lastSendTime >= 25)
-    {
-        lastSendTime = currentTime;
-        if (RequestCounter - currentRequestReceived == 0)
-        {
-            NoFirstRequest = 1;
-            RequestCounter = 0;
-            //std::cout << "\n--------------MSB requested data timeout-----------------";
-        }
-    }
-    */
-
-}
-
-void TelemetryUI::ListenForArduinoReadiness(static bool& RadarArduinoReady, DataConcentrator& DC)
-{
- /*
-  * Initial radar readiness, and amber. Cyan if comms established (1006),
-  * Amber (1007) if not.
-  */
-    
-    std::vector<std::string> DataPackets;
-
-    if (!RadarArduinoReady)
-        ArdRadar.ListenForArduinoReadiness(RadarArduinoReady, DataPackets);
-
-    std::string MessageON = { "13:Arduino Radar ready flag det " },
-                MessageOFF = { "12:Caution, Radar ready flag not det " };
-
-    
-    if (RadarArduinoReady)
-    {
-        if (DC.CheckMessageExistence(1007))
-        {
-            DC.SwapMessage(MessageON, 1006, 1007);
-            //std::cout << "\nThe OFF DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1006, MESSAGE_ON);
-            DC.SetMessageStatus(MessageOFF, 1007, MESSAGE_OFF);
-            //std::cout << "\nThe OFF did not exist ";
-        }
-    }
-    else
-    {
-        if (DC.CheckMessageExistence(1006))
-        {
-            DC.SwapMessage(MessageOFF, 1007, 1006);
-            //std::cout << "\nThe ON DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageON, 1006, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageOFF, 1007, MESSAGE_ON);
-            //std::cout << "\nThe ON Did not exist ";
-        }
-        //std::cout << "\n No comms GYRO";
-    }
-
-
-    
-    /*
-    
-    if (RadarArduinoReady)
-    {
-        DC.SetMessageStatus(MessageON, 1006, MESSAGE_ON);
-        DC.SetMessageStatus(MessageOFF, 1007, MESSAGE_OFF);
-    }
-    else
-    {
-        DC.SetMessageStatus(MessageON, 1006, MESSAGE_OFF);
-        DC.SetMessageStatus(MessageOFF, 1007, MESSAGE_ON);
-    }
-
-    */
-}
-
-void TelemetryUI::ListenForArduinoReadiness(BoardSelection Board, static bool& ArduinoReady, DataConcentrator& DC)
-{
- /*
-  * Initial Gyro, MSB readiness, and amber. (Radar has its custom function)
-  * Cyan if comms established (1010) Gyro, (1012) MSB
-  * Amber (1011), (1013) MSB if not. 
- */
-    std::vector<std::string> DataPackets;
-
-    std::string board;
-    int MessageON = 0,
-        MessageOFF = 0;
-
-    switch (Board)
-    {
-       case RADAR_BOARD:
-       {
-           if (!ArduinoReady)
-               ArdRadar.ListenForArduinoReadiness(ArduinoReady, DataPackets);
-
-           board = ArdRadar.GetBoardMessage();
-
-       }
-       case GYROSCOPE_BOARD:
-       {
-           if (!ArduinoReady)
-               ArdGyro.ListenForArduinoReadiness(ArduinoReady, DataPackets);
-
-           board = ArdGyro.GetBoardMessage();
-
-           MessageON = 1010;
-           MessageOFF = 1011;
-       }
-       case MOTOR_STEER_BOARD:
-       {
-           if (!ArduinoReady)
-               ArdMotorSteer.ListenForArduinoReadiness(ArduinoReady, DataPackets);
-
-           board = ArdMotorSteer.GetBoardMessage();
-
-           MessageON = 1012;
-           MessageOFF = 1013;
-
-       }
-    }
-
-
-    std::string MessageONStr = { "13:Arduino ready flag det " },
-                MessageOFFStr = { "12:Caution, ready flag not det " };
-
-    std::string MessageONComp = MessageONStr + board;
-    std::string MessageOFFComp = MessageOFFStr + board;
-    
-    if (ArduinoReady)
-    {
-        if (DC.CheckMessageExistence(MessageOFF))
-        {
-            
-            DC.SwapMessage(MessageONComp, MessageON, MessageOFF);
-            //std::cout << "\nThe OFF DOES exist ";
-        }
-        else
-        {
-            
-            DC.SetMessageStatus(MessageONComp, MessageON, MESSAGE_ON);
-            DC.SetMessageStatus(MessageOFFComp, MessageOFF, MESSAGE_OFF);
-            //std::cout << "\nThe OFF did not exist ";
-        }
-    }
-    else
-    {
-        if (DC.CheckMessageExistence(MessageON))
-        {
-            DC.SwapMessage(MessageOFFComp, MessageOFF, MessageON);
-            //std::cout << "\nThe ON DOES exist ";
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageONComp, MessageON, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageOFFComp, MessageOFF, MESSAGE_ON);
-            //std::cout << "\nThe ON Did not exist ";
-        }
-        //std::cout << "\n No comms GYRO";
-    }
-
-    
-    /*
-    
-    if (RadarArduinoReady)
-    {
-        DC.SetMessageStatus(MessageON, 1006, MESSAGE_ON);
-        DC.SetMessageStatus(MessageOFF, 1007, MESSAGE_OFF);
-    }
-    else
-    {
-        DC.SetMessageStatus(MessageON, 1006, MESSAGE_OFF);
-        DC.SetMessageStatus(MessageOFF, 1007, MESSAGE_ON);
-    }
-    */
-}
-
-void TelemetryUI::HandleCommsEstMessaging(static bool CommsEst, DataConcentrator& DC)
-{
-    std::string MessageON = { "13:Arduino Gyro Comms est " },
-        MessageOFF = { "12:Caution, Arduino Gyro Comms not est " };
-
-
-        if (CommsEst)
-        {
-            if (DC.CheckMessageExistence(1003))
-            {
-                DC.SwapMessage(MessageON, 1002, 1003);
-                //std::cout << "\nThe OFF DOES exist ";
-            }
-            else
-            {
-                DC.SetMessageStatus(MessageON, 1002, MESSAGE_ON);
-                DC.SetMessageStatus(MessageOFF, 1003, MESSAGE_OFF);
-                //std::cout << "\nThe OFF did not exist ";
-            }
-        }
-        else
-        {
-            if (DC.CheckMessageExistence(1002))
-            {
-                DC.SwapMessage(MessageOFF, 1003, 1002);
-                //std::cout << "\nThe ON DOES exist ";
-            }
-            else
-            {
-                DC.SetMessageStatus(MessageON, 1002, MESSAGE_OFF);
-                DC.SetMessageStatus(MessageOFF, 1003, MESSAGE_ON);
-                //std::cout << "\nThe ON Did not exist ";
-            }
-            //std::cout << "\n No comms GYRO";
-        }
-    
-}
-
-void TelemetryUI::ReTryRequest(SerialPort& Serial, SerialOrder Command) {
-
-    bool TransferFail;
-
-    char buff[1] = { Command };
-    TransferFail = Serial.writeSerialPort(buff, 1);
-    //cout << "\n RETRYING COMMAND " << TransferFail << endl;
-
-
 }
 
 int16_t  TelemetryUI::LimitValueInt32(int32_t MaxValue, int32_t MinValue, int32_t& ReadValue) {
@@ -1115,235 +411,6 @@ void TelemetryUI::FilterVal(float max, float min, float& val){
 
 }
 
-
-void TelemetryUI::UpdateValuesRadar() {
-    
-    //ArdRadar.ReadRadarDefaultPort();
-
-
-    Radval = std::to_string(ArdRadar.GetRadarVal());
-    Radpos = std::to_string(ArdRadar.GetRadarPos());
-
-}
-
-
-
-void TelemetryUI::UpdateValuesRadar(bool& HBDetected, bool& BoardReadiness, static bool& RadarArduinoCommsEstablished)
-{
-    /*ArdRadar.ReadRadar2();
-
-     this->RadarVal = RadarValue;
-     this->RadarPos = RadarPosition;
-
-     Radval = std::to_string(ArdRadar.GetRadarVal());
-     Radpos = std::to_string(ArdRadar.GetRadarPos());*/
-
-    CircularBuffer<unsigned char> RadarBufferIn{ 50 };
-    std::vector<std::string> DataPackets;
-
-
-    ArdRadar.ReadIntoBuffer(RadarBufferIn);
-    ArdRadar.ParseBufferRad(RadarBufferIn, HBDetected, BoardReadiness, DataPackets);
-    ArdRadar.RefineDataPackets(DataPackets);
-    ArdRadar.ProcessDataPackets(DataPackets, RADAR_BOARD);
-
-    int RadarDist = ArdRadar.GetRadarVal();
-    int RadarPos = ArdRadar.GetRadarVal();
-
-    //std::cout << "\n Radar Distance, position " << RadarDist << " " << RadarPos;
-
-}
-
-void TelemetryUI::UpdateValuesMSB(bool& HBDetected, bool& BoardReadiness, static bool& MSBArduinoCommsEstablished)
-{
-    /*ArdRadar.ReadRadar2();
-
-     this->RadarVal = RadarValue;
-     this->RadarPos = RadarPosition;
-
-     Radval = std::to_string(ArdRadar.GetRadarVal());
-     Radpos = std::to_string(ArdRadar.GetRadarPos());*/
-
-    CircularBuffer<unsigned char> RadarBufferIn{ 50 };
-    std::vector<std::string> DataPackets;
-
-
-    ArdMotorSteer.ReadIntoBuffer(RadarBufferIn);
-    ArdMotorSteer.ParseBufferRad(RadarBufferIn, HBDetected, BoardReadiness, DataPackets);
-    ArdMotorSteer.RefineDataPackets(DataPackets);
-    ArdMotorSteer.ProcessDataPackets(DataPackets, MOTOR_STEER_BOARD);
-
-    int SteerCommand = (int)SteerAngle;
-
-    //ArdMotorSteer.SendMessageToArd(STEER_COMMAND, SteerCommand);
-
-    //int RadarDist = ArdRadar.GetRadarVal();
-    //int RadarPos = ArdRadar.GetRadarVal();
-
-    //std::cout << "\nSTEER COMMAND " << SteerCommand;
-
-}
-
-void TelemetryUI::DirectCommandMSB(DataConcentrator& DC, static DWORD& lastSendTime)
-{
-    int SteerCommand = (int)SteerAngle;
-
-    //int ThrottleFWD = (int)ThrottleAngle;
-    //int ThrottleREV = (int)ReverseAngle;
-
-
-    float RawThrottleCommand = ConvertValue(ThrottleAngle, 50.0f, 50.0f);
-    int ThrottleFWD = (int)RawThrottleCommand + 1;   //Adding offset
-
-    float RawReverseCommand = ConvertValue(ReverseAngle, 50.0f, 50.0f);
-    int ThrottleREV = (int)RawReverseCommand + 1;
-
-    if (ThrottleFWD > ThrottleREV)
-    {
-        //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, MOTOR_FWD_RIGHT, ThrottleFWD, lastSendTime); //Dual motor command
-        ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, lastSendTime); //Single motor command
-        //std::cout << "\nFWD " <<ThrottleFWD;
-    }
-    else if (ThrottleFWD < ThrottleREV)
-    {
-        //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_REV_LEFT, ThrottleREV, MOTOR_REV_RIGHT, ThrottleREV, lastSendTime); //Dual motor command
-        ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_REV_LEFT, ThrottleREV, lastSendTime); //Single motor command
-        //std::cout << "\nREV " << ThrottleREV;
-    }
-    else
-    {
-       //std::cout << "\nNeutral";
-        //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, MOTOR_FWD_RIGHT, ThrottleFWD, lastSendTime); //Dual motor command
-        ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, lastSendTime); //Single motor command
-    }
-
-    //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, MOTOR_FWD_RIGHT, ThrottleFWD, lastSendTime);
-    //std::cout << "\nFWD " << ThrottleFWD <<" REV "<< ThrottleREV;
-    //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, lastSendTime);
-    //ArdMotorSteer.SendHeartBeat(DC);
-
-}
-
-void TelemetryUI::DirectCommandMSBTimer(DataConcentrator& DC, static DWORD& lastSendTime)
-{
-    DWORD now = GetTickCount64();
-    const DWORD SEND_INTERVAL_MS = 10;   // 20 == 50 Hz, 10 == 100 Hz. Both seem fine
-
-    int SteerCommand = (int)SteerAngle;
-
-    float RawThrottleCommand = ConvertValue(ThrottleAngle, 50.0f, 50.0f);
-    int ThrottleFWD = (int)RawThrottleCommand + 1;   //Adding offset
-
-    float RawReverseCommand = ConvertValue(ReverseAngle, 50.0f, 50.0f);
-    int ThrottleREV = (int)RawReverseCommand + 1;
-
-    if (now - lastSendTime >= SEND_INTERVAL_MS)
-    {
-
-        if (ThrottleFWD > ThrottleREV)
-        {
-            //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, MOTOR_FWD_RIGHT, ThrottleFWD, lastSendTime); //Dual motor command
-            ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, lastSendTime); //Single motor command
-            //std::cout << "\nFWD " <<ThrottleFWD;
-        }
-        else if (ThrottleFWD < ThrottleREV)
-        {
-            //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_REV_LEFT, ThrottleREV, MOTOR_REV_RIGHT, ThrottleREV, lastSendTime); //Dual motor command
-            ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_REV_LEFT, ThrottleREV, lastSendTime); //Single motor command
-            //std::cout << "\nREV " << ThrottleREV;
-        }
-        else
-        {
-            //std::cout << "\nNeutral";
-             //ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, MOTOR_FWD_RIGHT, ThrottleFWD, lastSendTime); //Dual motor command
-            ArdMotorSteer.SendMessageToArdTotal(STEER_COMMAND, SteerCommand, MOTOR_FWD_LEFT, ThrottleFWD, lastSendTime); //Single motor command
-        }
-
-        lastSendTime = now; //ADDED UN TESTED
-    }
-
-}
-
-void TelemetryUI::RequestPitch()
-{
-    DWORD StartTimeSend = GetTickCount();
-
-    while (GetTickCount() - StartTimeSend < 15)
-    {
-        ArdGyro.RequestPitch();
-        //cout << "\nReq pitch";
-    }
-}
-
-void TelemetryUI::SignalReadyToBoard()
-{
-    DWORD StartTimeSend = GetTickCount64();
-
-    while (GetTickCount64() - StartTimeSend < 50)
-    {
-        ArdMotorSteer.SendPCReadiness();
-        ArdGyro.SendPCReadiness();
-        ArdRadar.SendPCReadiness();
-    }
-}
-void TelemetryUI::UpdateGyroAccelT()
-{
-    CircularBuffer<unsigned char> GyroscopeBufferIn{ 50 };
-    std::vector<std::string> DataPackets;
-    
-    ArdGyro.ParseBufferRadT(GyroscopeBufferIn, DataPackets);
-}
-
-void TelemetryUI::UpdateGyroAccel(bool& HBDetected, bool& BoardReadiness, static bool& GyroArduinoCommsEstablished, static bool& FirstReading)
-{
-    float TempTime,
-        TimeInSeconds;
-
-    CircularBuffer<unsigned char> GyroscopeBufferIn{ 50 };
-    std::vector<std::string> DataPackets;
-
-    ArdGyro.RequestPitch();
-    ArdGyro.ReadIntoBuffer(GyroscopeBufferIn);
-    ArdGyro.ParseBufferRadT(GyroscopeBufferIn, HBDetected, BoardReadiness, DataPackets);
-    ArdGyro.RefineDataPackets(DataPackets);
-    ArdGyro.ProcessDataPackets(DataPackets);
-
-    Pitch = ArdGyro.GetPitch();
-    Roll = ArdGyro.GetRoll();
-
-    if (GyroArduinoCommsEstablished)
-    {
-
-        AccelX = ArdGyro.GetAccelX();
-        AccelY = ArdGyro.GetAccelY();
-        AccelZ = ArdGyro.GetAccelZ();
-
-        PitchValid = ArdGyro.GetValidPitch();
-        RollValid = ArdGyro.GetValidRoll();
-    }
-
-    ElapsedTime = ArdGyro.GetTime();
-
-    /*if (ElapsedTime >= 1000 || ElapsedTime <= -1000)
-        ElapsedTime = 0;*/
-
-        //FilterVal(180.0f, -180.0f, Yaw);
-    FilterVal(180.0f, -180.0f, Pitch);
-    FilterVal(180.0f, -180.0f, Roll);
-
-    sprintf_s(RollRead, "%f", Roll);
-    sprintf_s(PtchRead, "%f", Pitch);
-    //sprintf_s(YawRead, "%f", Yaw);
-    VM1->Update2AttiudeValues(Pitch, Roll);
-
-    TempTime = (float)ElapsedTime;
-    TimeInSeconds = (TempTime / 100);
-
-
-    TotalElapsedTime += TimeInSeconds;
-}
-
-
 int16_t  TelemetryUI::BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue) {
 
     if (ReadValue <= MinValue)
@@ -1353,138 +420,6 @@ int16_t  TelemetryUI::BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int1
         ReadValue = MaxValue;
 
     return ReadValue;
-
-}
-
-void TelemetryUI::ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand) {
-    int32_t Max = 8000000, Min = -8000000;
-
-    SerialOrder ReceivedType;
-
-    if (Serial.isConnected()) {
-
-        ReceivedType = read_order(Serial);
-        //cout << "\nENUM RECEVIED " << ReceivedType << endl;
-        switch (ReceivedType)
-        {
-        case HELLO:
-        {
-            //cout << "\nHELLO" << endl;
-            break;
-        }
-        case RADAR_DISTANCE:
-        {   //This sent as an int16_t
-            int16_t MeasuredRadarDistance = read_i16(Serial);
-            RadarVal = MeasuredRadarDistance;
-            BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
-            break;
-        }
-        case RADAR_POSITION:
-        {   //This sent as an int16_t
-            int16_t MeasuredRadarPosition = read_i16(Serial);
-            RadarPos = MeasuredRadarPosition;
-            //cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
-            break;
-        }
-        case MEASURED_ROLL:
-        {   //This sent as an int16_t
-            //int16_t Roll_Int16 = read_i16(Serial);
-
-            int32_t Roll_Int32 = read_i32(Serial);
-            int32_t Roll_Int32_lim = LimitValueInt32(Roll_Int32, Max, Min);
-            //RadarValue = MeasuredRadarDistance;
-            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            ConvertedRoll = float(Roll_Int32_lim) / 1000;
-            std::cout << "\MEASURED_ROLL " << Roll_Int32_lim << " " << ConvertedRoll << std::endl;
-            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
-            break;
-        }
-        case MEASURED_PITCH:
-        {   //This sent as an int16_t
-           // int16_t Pitch_Int16 = read_i16(Serial);
-
-            int32_t Pitch_Int32 = read_i32(Serial);
-            int32_t Pitch_Int32_lim = LimitValueInt32(Pitch_Int32, Max, Min);
-            //RadarValue = MeasuredRadarDistance;
-            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            ConvertedPitch = float(Pitch_Int32_lim) / 1000;
-            std::cout << "\MEASURED_PITCH " << Pitch_Int32_lim << " " << ConvertedPitch << std::endl;
-            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
-            break;
-        }
-        case MEASURED_YAW:
-        {   //This sent as an int16_t
-            //int16_t Yaw_Int16 = read_i16(Serial);
-
-            int32_t Yaw_Int32 = read_i32(Serial);
-            int32_t Yaw_Int32_lim = LimitValueInt32(Yaw_Int32, Max, Min);
-            //RadarValue = MeasuredRadarDistance;
-            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            ConvertedYaw = float(Yaw_Int32_lim) / 1000;
-            std::cout << "\MEASURED_YAW " << Yaw_Int32_lim << " " << ConvertedYaw << std::endl;
-            break;
-        }
-        case MEASURED_ACCEL_X:
-        {   //This sent as an int16_t
-            int16_t X_Accel_Int16 = read_i16(Serial);
-            //RadarValue = MeasuredRadarDistance;
-            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedXAccel = float(X_Accel_Int16) / 10000;
-            std::cout << "\MEASURED_X_ACCEL " << X_Accel_Int16 << " " << ConvertedXAccel << std::endl;
-            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
-            break;
-        }
-        case MEASURED_ACCEL_Y:
-        {   //This sent as an int16_t
-            int16_t Y_Pitch_Int16 = read_i16(Serial);
-            //RadarValue = MeasuredRadarDistance;
-            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedYAccel = float(Y_Pitch_Int16) / 10000;
-            std::cout << "\MEASURED_Y_ACCEL " << Y_Pitch_Int16 << " " << ConvertedYAccel << std::endl;
-            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
-            break;
-        }
-        case MEASURED_ACCEL_Z:
-        {   //This sent as an int16_t
-            int16_t Z_Pitch_int16 = read_i16(Serial);
-            //RadarValue = MeasuredRadarDistance;
-            //BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            float ConvertedZAccel = float(Z_Pitch_int16) / 10000;
-            std::cout << "\MEASURED_Y_ACCEL " << Z_Pitch_int16 << " " << ConvertedZAccel << std::endl;
-            break;
-        }
-        default:
-        {
-            //The PC is not getting any valid values so do not write into serial on ard.
-
-            //SerialOrder OrderWait = 0;
-
-            //char buff[1] = { OrderWait };
-            //bool TransferReceived = false;
-            //bool TransferFail = Serial.writeSerialPort(buff, 1);
-            //cout << "\nBAD ENUM RECEVIED " <<endl;
-            //char InternalBuffer[MAX_DATA_LENGTH];
-            //Serial.readSerialPort(InternalBuffer, MAX_DATA_LENGTH);
-            //cout << "\nUnknown command buffer: "<< InternalBuffer[0] << endl;
-            //cout << "\nUnknown command : " << ReceivedType << endl;
-
-            ReTryRequest(Serial, Command);
-        }
-
-        }
-
-        if ((Command - 10) == ReceivedType) {
-            ExpectedCommand = true;
-
-        }
-        else
-            ExpectedCommand = false;
-        //cout << "\nCommand not received   " << Command << endl;
-        std::cout << "\nORDER " << ReceivedType << std::endl;
-    }
-    else
-    std::cout << "\nARDUINO DISCONNECTED " << std::endl;
 
 }
 
@@ -1505,7 +440,7 @@ void TelemetryUI::UpdateGyroData()
 
     VM1->UpdateAttitudeValues(Yaw, Pitch, Roll);
     VM1->Draw();
-    sprintf_s(RollRead, "%f", Roll);
+    sprintf_s(RollRead, "%f", Roll); //Move to telem class? why is this a random function
     sprintf_s(PtchRead, "%f", Pitch);
     sprintf_s(YawRead, "%f", Yaw);
 }
@@ -1598,49 +533,6 @@ void TelemetryUI::RequestReadData(SerialPort& Serial, SerialOrder Command) {
 
     TransferFail = Serial.writeSerialPort(buff, 1);
 }
-
-
-void TelemetryUI::UpdateValuues(SerialPort& Serial) {
-
-
-    static bool ValidCommandRoll, 
-                ValidCommandPitch, 
-                ValidCommandYaw, 
-                ValidRadarVal, 
-                ValidRadarPos,
-                ValidRoll,
-                ValidPitch;
-
-    if (ValidCommandRoll)
-        ValidRoll = true;
-
-    if (ValidRoll) {
-        //cout << "VALID ROLL " << ValidRoll;
-        RequestReadData(Serial, REQUEST_ROLL, ValidCommandPitch);
-        ReadBuffer(Serial, REQUEST_ROLL, ValidCommandPitch);
-    }
-
-    if (ValidCommandPitch);
-    ValidPitch = true;
-
-    if (ValidPitch) {
-
-        RequestReadData(Serial, REQUEST_YAW, ValidCommandYaw);
-        ReadBuffer(Serial, REQUEST_YAW, ValidCommandYaw);
-    }
-
-    if (ValidCommandYaw) {
-        RequestReadData(Serial, REQUEST_RADAR);
-        ReadBuffer(Serial, REQUEST_RADAR, ValidRadarVal);
-    }
-    if (ValidRadarVal) {
-        RequestReadData(Serial, REQUEST_RADAR_POS);
-        ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
-    }
-
-
-}
-
 
 
 void TelemetryUI::RenderYaw() {
@@ -1845,13 +737,7 @@ int16_t TelemetryUI::GetRadarVal() {
     return RadarVal;
 }
 
-void TelemetryUI::DelayForArduinoInit()
-{
-//Meant to be used after arduino init.
-//to give time for the arduino to finish rebooting.
 
-    Sleep(2000);
-}
 
 void TelemetryUI::OpenSerial() {
 
@@ -1870,38 +756,12 @@ void TelemetryUI::RenderModel() {
 }
 void TelemetryUI::CloseSerial() {
 
-    ArdGyro.CloaseSerial();
-    ArdMotorSteer.CloaseSerial();
-    ArdRadar.CloaseSerial();
+    //ArdGyro.CloaseSerial();
+    //ArdMotorSteer.CloaseSerial();
+    //ArdRadar.CloaseSerial();
 
     std::cout << "\n Arduino Close ";
 }
-
-/*
-void TelemetryUI::RecordData(std::ofstream DataFile) {
-
-    if (DataFile.is_open()) {
-
-        DataFile << Pitch;
-        DataFile << ",";
-        DataFile << TotalElapsedTime;
-        DataFile << "\n";
-
-    }
-
-}
-
-void TelemetryUI::OpenFile(std::ofstream DataFile) {
-
-    DataFile.open("Pitch");
-}
-
-void TelemetryUI::CloseFile(std::ofstream DataFile) {
-
-    DataFile.close();
-
-}
-*/
 
 void TelemetryUI::GetRecStartStopCommand(bool start, bool stop)
 {
@@ -1986,791 +846,498 @@ TelemetryUI::~TelemetryUI() {
 
 void TelemetryUI::TimerAnchorPoint()
 {
-    LastReset = std::chrono::steady_clock::now();
-    LastReset2 = std::chrono::steady_clock::now();
-    LastReset3 = std::chrono::steady_clock::now();
-    LastReset4 = std::chrono::steady_clock::now();
-    LastReset5 = std::chrono::steady_clock::now();
-    LastReset6 = std::chrono::steady_clock::now();
-    LastReset7 = std::chrono::steady_clock::now();
-    LastReset8 = std::chrono::steady_clock::now();
-    LastReset9 = std::chrono::steady_clock::now();
-    LastReset10 = std::chrono::steady_clock::now();
-    LastReset11 = std::chrono::steady_clock::now();
+    ResetHB = std::chrono::steady_clock::now();
+    ResetBoardReady = std::chrono::steady_clock::now();
+    ResetBoardCommsEst = std::chrono::steady_clock::now();
 }
 void TelemetryUI::TimerFunction(int Duration)
 {
+    /*
     Now = std::chrono::steady_clock::now();
     std::chrono::seconds TimerDuration(Duration);
 
-
+    
     if (Now - LastReset >= TimerDuration)
     {
         std::cout << "[Reset] 2 seconds have passed! TL window\n";
 
         LastReset += TimerDuration;
     }
-
-
-}
-
-void TelemetryUI::DetectBoardReadinessRADAR(int Duration, bool& BoardReadinessDetected, DataConcentrator& DC)
-{
-    /*
-    * Board readiness detection.
-    * 4006 Radar ready detected (cyan), 4007 radar ready not detected (red)
     */
 
-    ArdRadarBoardReadniess = std::chrono::steady_clock::now();
-
-    if (BoardReadinessDetected)
-        BoardReadinessCounter[RADARidx]++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdRadarBoardReadniess - LastReset5 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset5 += TimerDuration;
-        BoardReadyTimer[RADARidx] = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        BoardReadyTimer[RADARidx] = 0;
-    }
-
-    std::string MessageON = { "13:Arduino RADAR Readiness det " },
-        MessageOFF = { "11:Warning, Readiness not det, RADAR " };
-
-    if (BoardReadyTimer[RADARidx] && (BoardReadinessCounter[RADARidx] < 1))
-    {
-
-        if (DC.CheckMessageExistence(4006))
-        {
-            DC.SwapMessage(MessageOFF, 4007, 4006);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 4006, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
-        BoardReadinessDetected = 0;
-    }
-    if (BoardReadyTimer[RADARidx] && (BoardReadinessCounter[RADARidx] > 0))
-    {
-
-        if (DC.CheckMessageExistence(4007))
-        {
-            DC.SwapMessage(MessageON, 4006, 4007);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 4006, MESSAGE_ON);
-        }
-
-        //std::cout << "\nHeartbeat detected Gyro ";
-        BoardReadinessDetected = 0;
-    }
-
-    if (BoardReadyTimer[RADARidx])
-        BoardReadinessCounter[RADARidx] = 0;
-}
-
-void TelemetryUI::DetectBoardReadinessGYRO(int Duration, bool &BoardReadinessDetected, DataConcentrator& DC)
-{
-    /*
-    * Board readiness detection. Gyro
-    * 4009 Gyro ready detected (cyan), 4010 Gyro ready not detected (red)
-    */
-
-    ArdGyroBoardReadniess = std::chrono::steady_clock::now();
-
-    if (BoardReadinessDetected)
-        BoardReadinessCounter[GYROidx]++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdGyroBoardReadniess - LastReset8 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset8 += TimerDuration;
-        BoardReadyTimer[GYROidx] = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        BoardReadyTimer[GYROidx] = 0;
-    }
-
-    std::string MessageON = { "13:Arduino GYRO Readiness det " },
-        MessageOFF = { "11:Warning, Readiness not det, GYRO " };
-
-    if (BoardReadyTimer[GYROidx] && (BoardReadinessCounter[GYROidx] < 1))
-    {
-
-        if (DC.CheckMessageExistence(3009))
-        {
-            DC.SwapMessage(MessageOFF, 3010, 3009);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 3010, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 3009, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
-        BoardReadinessDetected = 0;
-    }
-    if (BoardReadyTimer[GYROidx] && (BoardReadinessCounter[GYROidx] > 0))
-    {
-
-        if (DC.CheckMessageExistence(3010))
-        {
-            DC.SwapMessage(MessageON, 3009, 3010);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 3010, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 3009, MESSAGE_ON);
-        }
-
-        //std::cout << "\nHeartbeat detected Gyro ";
-        BoardReadinessDetected = 0;
-    }
-
-    if (BoardReadyTimer[GYROidx])
-        BoardReadinessCounter[GYROidx] = 0;
 }
 
 
-void TelemetryUI::DetectHeartBeatRADAR(int Duration, bool& HBDetected, DataConcentrator& DC)
+void TelemetryUI::ShowConnectionMessage(BoardSelection board, DataConcentrator& Dc)
 {
-    /*
-    * Heart beat detection.
-    * 4004 Radar HB detected (cyan), 4005, 4008 HB not detected (red)
-    */
+    std::string Att = "13:Connecting to ",
+        MSB = " MSB ",
+        GYRO = " GYRO ",
+        RADAR = " RADAR ";
 
-    ArdRadarHeartBeat = std::chrono::steady_clock::now();
+    int MSBConn = 5001,
+        GyroConn = 3001,
+        RadarConn = 4001;
 
-    if (HBDetected)
-        BoardHeartBeatCounter[RADARidx]++;
+    std::string TotalMessage;
 
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdRadarHeartBeat - LastReset4 >= TimerDuration)
+    switch (board)
     {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset4 += TimerDuration;
-        HeartBeatTimer[RADARidx] = 1;
+    case MOTOR_STEER_BOARD:
+    {
+        TotalMessage = Att + MSB;
+        Dc.AddMessage(TotalMessage, 5001);
+        break;
     }
-    else
+    case GYROSCOPE_BOARD:
     {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        HeartBeatTimer[RADARidx] = 0;
+        TotalMessage = Att + GYRO;
+        Dc.AddMessage(TotalMessage, 3001);
+        break;
     }
-
-    std::string MessageON = { "13:Arduino RADAR HB det " },
-        MessageOFF = { "11:Warning, HB not det, RADAR " };
-
-    if (HeartBeatTimer[RADARidx] && (BoardHeartBeatCounter[RADARidx] < 1))
+    case RADAR_BOARD:
     {
-
-
-        if (DC.CheckMessageExistence(4004))
-        {
-            DC.SwapMessage(MessageOFF, 4005, 4004);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4005, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 4004, MESSAGE_OFF);
-        }
-        HBDetected = 0;
-    }
-    if (HeartBeatTimer[RADARidx] && (BoardHeartBeatCounter[RADARidx] > 0))
-    {
-
-        if (DC.CheckMessageExistence(4005))
-        {
-            DC.SwapMessage(MessageON, 4004, 3005);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4005, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 4004, MESSAGE_ON);
-        }
-        HBDetected = 0;
+        TotalMessage = Att + RADAR;
+        Dc.AddMessage(TotalMessage, 4001);
+        break;
     }
 
-    if (HeartBeatTimer[RADARidx])
-        BoardHeartBeatCounter[RADARidx] = 0;
+    }
+
+
 }
 
-void TelemetryUI::DetectHeartBeatGYRO(int Duration, bool& HBDetected, DataConcentrator& DC)
+void TelemetryUI::ShowConnectionSuccessFul(BoardSelection board, int port, bool success, DataConcentrator& Dc)
 {
-    /*
-    * Heart beat detection.
-    * 3004 Gyro HB detected (cyan), 3005, 3006 HB not detected (red)
-    */
+    std::string Att = "13:Connected ",
+        Attf = "11:Warning, ",
+        NtCon = "NotConnected ",
+        MSB = " MSB ",
+        GYRO = " GYRO ",
+        RADAR = " RADAR ",
+        Port = " to port ",
+        PortNum = std::to_string(port);
 
-    ArdGyroHeartbeat = std::chrono::steady_clock::now();
+    int MSBConnState = 5002,
+        GyroConnState = 3002,
+        RadarConnState = 4002;
 
-    if (HBDetected)
-        BoardHeartBeatCounter[GYROidx]++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-
-    if (ArdGyroHeartbeat - LastReset3 >= TimerDuration)
+    switch (board)
     {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset3 += TimerDuration;
-        HeartBeatTimer[GYROidx] = 1;
-    }
-    else
+    case MOTOR_STEER_BOARD:
     {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        HeartBeatTimer[GYROidx] = 0;
-    }
-
-    std::string MessageON = { "13:Arduino GYRO HB det " },
-        MessageOFF = { "11:Warning, HB not det, GYRO " };
-
-    if (HeartBeatTimer[GYROidx] && (BoardHeartBeatCounter[GYROidx] < 1))
-    {
-
-        if (DC.CheckMessageExistence(3004))
+        std::string TotalMessage;
+        if (success)
         {
-            DC.SwapMessage(MessageOFF, 3005, 3004);
+            TotalMessage = Att + MSB + Port + PortNum;
         }
         else
-        {
-            DC.SetMessageStatus(MessageOFF, 3005, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 3004, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
-        HBDetected = 0;
-    }
-    if (HeartBeatTimer[GYROidx] && (BoardHeartBeatCounter[GYROidx] > 0))
-    {
+            TotalMessage = Attf + MSB + NtCon;
 
-        if (DC.CheckMessageExistence(3005))
+        Dc.AddMessage(TotalMessage, 5002);
+        break;
+    }
+    case GYROSCOPE_BOARD:
+    {
+        std::string TotalMessage;
+        if (success)
         {
-            DC.SwapMessage(MessageON, 3004, 3005);
+            TotalMessage = Att + GYRO + Port + PortNum;
         }
         else
-        {
-            DC.SetMessageStatus(MessageOFF, 3005, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 3004, MESSAGE_ON);
-        }
+            TotalMessage = Attf + GYRO + NtCon;
 
-        //std::cout << "\nHeartbeat detected Gyro ";
-        HBDetected = 0;
+        Dc.AddMessage(TotalMessage, 3002);
+        break;
+    }
+    case RADAR_BOARD:
+    {
+        std::string TotalMessage;
+        if (success)
+        {
+            TotalMessage = Att + RADAR + Port + PortNum;
+        }
+        else
+            TotalMessage = Attf + RADAR + NtCon;
+
+        Dc.AddMessage(TotalMessage, 4002);
+        break;
+    }
+
     }
 
 
-    if (HeartBeatTimer[GYROidx])
-        BoardHeartBeatCounter[GYROidx] = 0;
 }
 
-void TelemetryUI::DetectGyroHeartBeat(int Duration, static bool& TimerElapsed, bool& HeartBeatDetected,  static bool& HBDetectedGlobal, static int& HeartBeatCounter, DataConcentrator& DC)
+int TelemetryUI::GetIdx(BoardSelection board)
 {
-   /*
-   * Heart beat detection. 
-   * 3004 Gyro HB detected (cyan), 3005, 3006 HB not detected (red)
-   */
+    int idx = 0;
+    for (int i = 0; i < BoardsAndIndex.size(); i++)
+    {
+        if (BoardsAndIndex[i].first == board)
+            idx = BoardsAndIndex[i].second;
+    }
+
+    return idx;
+}
+
+int TelemetryUI::GetCode(BoardSelection board)
+{
+    int code = 0;
     
-    ArdGyroHeartbeat = std::chrono::steady_clock::now();
-
-    if (HeartBeatDetected)
-        HeartBeatCounter++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-
-    if (ArdGyroHeartbeat - LastReset3 >= TimerDuration)
+    switch (board)
     {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset3 += TimerDuration;
-        TimerElapsed = 1;
+    case MOTOR_STEER_BOARD:
+    {
+        code = MSBMsgCode;
+        break;
     }
-    else
+    case GYROSCOPE_BOARD:
     {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
+        code = GyroMsgCode;
+        break;
     }
-
-    /*
-    if (TimerElapsed && (HeartBeatCounter < 1))
-        std::cout << "WARNING: Heartbeat not detected\n";
-    if (TimerElapsed && (HeartBeatCounter > 0))
-        std::cout << "Heartbeat detected\n";
-    */
-
-    /*std::string MessageON = {"13:Arduino GYRO HB det "},
-                MessageOFF ={ "11:Warning, HB not det, GYRO "},
-                MessageOFF2 = { "11:Warning, Check ard connection, GYRO " };
-
-    if (TimerElapsed && (HeartBeatCounter < 1))
+    case RADAR_BOARD:
     {
-        HBDetectedGlobal = 0;
-        DC.SetMessageStatus(MessageOFF, 3005, MESSAGE_ON);
-        DC.SetMessageStatus(MessageOFF2, 3006, MESSAGE_ON);
-        DC.SetMessageStatus(MessageON, 3004, MESSAGE_OFF);
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
+        code = RadarMsgCode;
+        break;
     }
-    if(TimerElapsed && (HeartBeatCounter > 0))
+    default:
     {
-        HBDetectedGlobal = 1;
-        DC.SetMessageStatus(MessageOFF, 3005, MESSAGE_OFF);
-        DC.SetMessageStatus(MessageOFF2, 3006, MESSAGE_OFF);
-        DC.SetMessageStatus(MessageON, 3004, MESSAGE_ON);
-        //std::cout << "\nHeartbeat detected Gyro ";
-    }*/
-
-
-    std::string MessageON = { "13:Arduino GYRO HB det " },
-                MessageOFF = { "11:Warning, HB not det, GYRO " };
-
-    if (TimerElapsed && (HeartBeatCounter < 1))
-    {
-        HBDetectedGlobal = 0;
-        if (DC.CheckMessageExistence(3004))
-        {
-            DC.SwapMessage(MessageOFF, 3005, 3004);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 3005, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 3004, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
+        code = 1000;
+        break;
     }
-    if (TimerElapsed && (HeartBeatCounter > 0))
-    {
-        HBDetectedGlobal = 1;
-
-
-        if (DC.CheckMessageExistence(3005))
-        {
-            DC.SwapMessage(MessageON, 3004, 3005);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 3005, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 3004, MESSAGE_ON);
-        }
-
-        //std::cout << "\nHeartbeat detected Gyro ";
     }
 
-
-    if (TimerElapsed)
-        HeartBeatCounter = 0;
+    return code;
 }
 
-
-void TelemetryUI::DetectHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC)
+void TelemetryUI::DetectHB(int duration,  DataConcentrator& DC, std::vector<std::pair<int, bool>> BoardHeartBeat)
 {
-    /*
-  * Heart beat detection.
-  * 4004 Radar HB detected (cyan), 4005, 4008 HB not detected (red)
-  */
-    
-    ArdRadarHeartBeat = std::chrono::steady_clock::now();
-
-    if (HeartBeatDetected)
-        HeartBeatCounter++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdRadarHeartBeat - LastReset4 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset4 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-    /*if (TimerElapsed && (HeartBeatCounter < 1))
-    {
-        std::cout << "WARNING: Heartbeat not detected\n";
-        HeartBeatDetected = 0;
-    }
-    if (TimerElapsed && (HeartBeatCounter > 0))
-    {
-        std::cout << "Heartbeat detected\n";
-        HeartBeatDetected = 1;
-    }*/
-
-    std::string MessageON = { "13:Arduino RADAR HB det " },
-        MessageOFF = { "11:Warning, HB not det, RADAR " };
-
-    if (TimerElapsed && (HeartBeatCounter < 1))
-    {
-        
-        
-        if (DC.CheckMessageExistence(4004))
-        {
-            DC.SwapMessage(MessageOFF, 4005, 4004);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4005, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 4004, MESSAGE_OFF);
-        }
-        
-        //DC.SetMessageStatus(MessageOFF, 4005, MESSAGE_ON);
-        //DC.SetMessageStatus(MessageON, 4004, MESSAGE_OFF);
-        //std::cout << "\nWARNING: Heartbeat not detected Radar ";
-    }
-    if (TimerElapsed && (HeartBeatCounter > 0))
-    {
-        
-        if (DC.CheckMessageExistence(4005))
-        {
-            DC.SwapMessage(MessageON, 4004, 3005);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4005, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 4004, MESSAGE_ON);
-        }
-        
-        //DC.SetMessageStatus(MessageOFF, 4005, MESSAGE_OFF);
-        //DC.SetMessageStatus(MessageON, 4004, MESSAGE_ON);
-        //std::cout << "\nArduino Radar heartbeat detected Radar ";
-    }
-
-    if (TimerElapsed)
-        HeartBeatCounter = 0;
-}
-
-void TelemetryUI::DetectBoardReadiness(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC)
-{
-  /*
-  * Board readiness detection.
-  * 4006 Radar ready detected (cyan), 4007 radar ready not detected (red)
-  */
-
-    ArdRadarBoardReadniess = std::chrono::steady_clock::now();
-
-    if (BoardReadinessDetected)
-        BoardReadinessCounter++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdRadarBoardReadniess - LastReset5 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset5 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-    /*if (TimerElapsed && (BoardReadinessCounter < 1))
-        std::cout << "WARNING: Board comms ready flag not detected\n";
-    if (TimerElapsed && (BoardReadinessCounter > 0))
-        std::cout << "Board comms valid\n";*/
-    /*
-    std::string MessageON = { "13:Arduino RADAR Readiness det " },
-        MessageOFF = { "11:Warning, Readiness not det, RADAR " };
-
-    if (TimerElapsed && (BoardReadinessCounter < 1))
-    {
-        DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_ON);
-        DC.SetMessageStatus(MessageON, 4006, MESSAGE_OFF);
-    }
-    if (TimerElapsed && (BoardReadinessCounter > 0))
-    {
-        DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_OFF);
-        DC.SetMessageStatus(MessageON, 4006, MESSAGE_ON);
-    }
-    */
-    
-    std::string MessageON = { "13:Arduino RADAR Readiness det " },
-                MessageOFF = { "11:Warning, Readiness not det, RADAR " };
-
-    if (TimerElapsed && (BoardReadinessCounter < 1))
-    {
-
-        if (DC.CheckMessageExistence(4006))
-        {
-            DC.SwapMessage(MessageOFF, 4007, 4006);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 4006, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
-    }
-    if (TimerElapsed && (BoardReadinessCounter > 0))
-    {
-
-        if (DC.CheckMessageExistence(4007))
-        {
-            DC.SwapMessage(MessageON, 4006, 4007);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 4006, MESSAGE_ON);
-        }
-
-        //std::cout << "\nHeartbeat detected Gyro ";
-    }
-
-    if (TimerElapsed)
-        BoardReadinessCounter = 0;
-}
-
-void TelemetryUI::DetectBoardReadinessGyro(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC)
-{
-    /*
-    * Board readiness detection. Gyro
-    * 4009 Gyro ready detected (cyan), 4010 Gyro ready not detected (red)
-    */
-
-    ArdGyroBoardReadniess = std::chrono::steady_clock::now();
-
-    if (BoardReadinessDetected)
-        BoardReadinessCounter++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdGyroBoardReadniess - LastReset8 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset8 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-    /*if (TimerElapsed && (BoardReadinessCounter < 1))
-        std::cout << "WARNING: Board comms ready flag not detected\n";
-    if (TimerElapsed && (BoardReadinessCounter > 0))
-        std::cout << "Board comms valid\n";*/
-        /*
-        std::string MessageON = { "13:Arduino RADAR Readiness det " },
-            MessageOFF = { "11:Warning, Readiness not det, RADAR " };
-
-        if (TimerElapsed && (BoardReadinessCounter < 1))
-        {
-            DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 4006, MESSAGE_OFF);
-        }
-        if (TimerElapsed && (BoardReadinessCounter > 0))
-        {
-            DC.SetMessageStatus(MessageOFF, 4007, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 4006, MESSAGE_ON);
-        }
-        */
-
-    std::string MessageON = { "13:Arduino GYRO Readiness det " },
-        MessageOFF = { "11:Warning, Readiness not det, GYRO " };
-
-    if (TimerElapsed && (BoardReadinessCounter < 1))
-    {
-
-        if (DC.CheckMessageExistence(3009))
-        {
-            DC.SwapMessage(MessageOFF, 3010, 3009);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 3010, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 3009, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Heartbeat not detected Gyro ";
-    }
-    if (TimerElapsed && (BoardReadinessCounter > 0))
-    {
-
-        if (DC.CheckMessageExistence(3010))
-        {
-            DC.SwapMessage(MessageON, 3009, 3010);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 3010, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 3009, MESSAGE_ON);
-        }
-
-        //std::cout << "\nHeartbeat detected Gyro ";
-    }
-
-    if (TimerElapsed)
-        BoardReadinessCounter = 0;
-}
-
-void TelemetryUI::DetectBoardReadinessMSB(int Duration, static bool& TimerElapsed, bool BoardReadinessDetected, static int& BoardReadinessCounter, DataConcentrator& DC)
-{
+//3004 Gyro HB detected (cyan), 3005, HB not detected (red)
+//4004 Radar HB detected (cyan), 4005, HB not detected (red)
+//Use Can use a Pair, first variable is the board selection, second is index
 /*
-* Board readiness detection. MSB
-* 5004 Gyro ready detected (cyan), 5005 Gyro ready not detected (red)
+BoardHeartBeat[i] -> first memeber is the board ident, second is bool for HB
+
+this function will run outside the for loop in MonitorCommsStatus. It will iterate thru the BoardHeartBeat and select the
+Indx based on the BoardHeartBeat[i]  first member . 3004, 3005 gyro HB 4004, 4005 Radar HB
+Investigate the logic here, maybe timer needs to be out side of for loop. func not very realiable
 */
-    ArdMSBBoardReadniess = std::chrono::steady_clock::now();
 
-    if (BoardReadinessDetected)
-        BoardReadinessCounter++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdMSBBoardReadniess - LastReset9 >= TimerDuration)
+    ArdHeartbeat = std::chrono::steady_clock::now();
+    std::chrono::seconds TimerDuration(duration);
+    
+    if (ArdHeartbeat - ResetHB >= TimerDuration)
     {
-        //std::cout << "\nTwo seconds passed" << "Readiness "<< BoardReadinessDetected;
-        LastReset9 += TimerDuration;
-        TimerElapsed = 1;
+        ResetHB += TimerDuration;
+        HeartBeatTimerElapsed = 1;
     }
     else
     {
-        //std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
+       HeartBeatTimerElapsed = 0;
     }
 
-
-    std::string MessageON = { "13:Arduino MSB Readiness det " },
-        MessageOFF = { "11:Warning, Readiness not det, MSB " };
-
-    if (TimerElapsed && (BoardReadinessCounter < 1))
+    for (int i = 0; i < BoardHeartBeat.size(); i++)
     {
+        int Indx = BoardHeartBeat[i].first;
+        bool HBDetected = BoardHeartBeat[i].second;
 
-        if (DC.CheckMessageExistence(5004))
-        {
-            DC.SwapMessage(MessageOFF, 5005, 5004);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 5005, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 5004, MESSAGE_OFF);
-        }
-        //std::cout << "\nWARNING: Ready flag not detected MSB ";
-    }
-    if (TimerElapsed && (BoardReadinessCounter > 0))
-    {
+        if (HBDetected)
+            BoardHeartBeatCounter[Indx]++;
 
-        if (DC.CheckMessageExistence(5005))
+        if (HeartBeatTimerElapsed && (BoardHeartBeatCounter[Indx] < 1))
         {
-            DC.SwapMessage(MessageON, 5004, 5005);
+
+            AddHBMessage((BoardSelection)BoardHeartBeat[i].first, 0, DC);
+            //std::cout << "\nHeartbeat NOT detected ";
+            //HBDetected = 0;
         }
-        else
+        if (HeartBeatTimerElapsed && (BoardHeartBeatCounter[Indx] > 0))
         {
-            DC.SetMessageStatus(MessageOFF, 5005, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 5004, MESSAGE_ON);
+
+            AddHBMessage((BoardSelection)BoardHeartBeat[i].first, 1, DC);
+            //std::cout << "\nHeartbeat detected, index "<< Indx;
+            //HBDetected = 0;
         }
 
-        //std::cout << "\Ready flag detected MSB ";
-    }
-
-    if (TimerElapsed)
-        BoardReadinessCounter = 0;
-}
-
-void TelemetryUI::DetectMSBHeartBeat(int Duration, static bool& TimerElapsed, bool HeartBeatDetected, static bool& HBStatus, static int& HeartBeatCounter, DataConcentrator& DC)
-{   
-  /*
-  * Heart beat detection.
-  * 5006 MSB HB detected (cyan), 5007 HB not detected (red)
-  */
-
-    ArdMSBHeartBeat = std::chrono::steady_clock::now();
-
-    if (HeartBeatDetected)
-        HeartBeatCounter++;
-
-    std::chrono::seconds TimerDuration(Duration);
-
-    if (ArdMSBHeartBeat - LastReset10 >= TimerDuration)
-    {
-        //std::cout << "\nTwo seconds passed" << "Hartbeat "<< HeartBeatDetected;
-        LastReset10 += TimerDuration;
-        TimerElapsed = 1;
-    }
-    else
-    {
-        // std::cout << "Arduino Gyro heartbeat detected\n";
-        TimerElapsed = 0;
-    }
-
-    std::string MessageON = { "13:Arduino MSB HB det " },
-                MessageOFF = { "11:Warning, HB not det, MSB " };
-
-    if (TimerElapsed && (HeartBeatCounter < 1))
-    {
-
-
-        if (DC.CheckMessageExistence(5006))
-        {
-            DC.SwapMessage(MessageOFF, 5007, 5006);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 5007, MESSAGE_ON);
-            DC.SetMessageStatus(MessageON, 5006, MESSAGE_OFF);
-        }
+        if (HeartBeatTimerElapsed)
+            BoardHeartBeatCounter[Indx] = 0;
 
     }
-    if (TimerElapsed && (HeartBeatCounter > 0))
-    {
-
-        if (DC.CheckMessageExistence(4007))
-        {
-            DC.SwapMessage(MessageON, 5006, 5007);
-        }
-        else
-        {
-            DC.SetMessageStatus(MessageOFF, 5007, MESSAGE_OFF);
-            DC.SetMessageStatus(MessageON, 5006, MESSAGE_ON);
-        }
-
-    }
-
-    if (TimerElapsed)
-        HeartBeatCounter = 0;
 
 }
 
-void TelemetryUI::CheckArduinoConnections()
+void TelemetryUI::DetectBoardReadiness(int duration, DataConcentrator& DC, std::vector<std::pair<int, bool>> BoardReadiness)
 {
-    if (ArdMotorSteer.IsArdConnected())
+ /*
+ * Board readiness detection.
+ * 5006 MSB ready detected (cyan), 5007 MSB ready not detected (red)
+ * 4006 Radar ready detected (cyan), 4007 radar ready not detected (red)
+ * 3006 Gyro ready detected (cyan), 3007 gyro ready not detected (red)
+ * 
+ */
+    
+    ArdBoardReady = std::chrono::steady_clock::now();
+    std::chrono::seconds TimerDuration(duration);
+
+    if (ArdBoardReady - ResetBoardReady >= TimerDuration)
     {
-        //std::cout << "\nMotor Steer board connected";
+        ResetBoardReady += TimerDuration;
+        BoardReadyTimerElpased = 1;
     }
     else
     {
-        //std::cout << "\nMotor Steer board NOT connected!!!!!!!!!!!!!!";
+        BoardReadyTimerElpased = 0;
     }
 
-    if (ArdGyro.IsArdConnected())
+    for (int i = 0; i < BoardReadiness.size(); i++)
     {
-        //std::cout << "\nGyro board connected";
+        int Indx = BoardReadiness[i].first;
+        bool BaordReadyDetected = BoardReadiness[i].second;
+
+        if (BaordReadyDetected)
+            BoardReadinessCounter[Indx]++;
+
+        if (BoardReadyTimerElpased && (BoardReadinessCounter[Indx] < 1))
+        {
+
+            AddBoardReadyMessage((BoardSelection)BoardReadiness[i].first, 0, DC);
+            //std::cout << "\nHeartbeat NOT detected ";
+            //HBDetected = 0;
+        }
+        if (BoardReadyTimerElpased && (BoardReadinessCounter[Indx] > 0))
+        {
+
+            AddBoardReadyMessage((BoardSelection)BoardReadiness[i].first, 1, DC);
+            //std::cout << "\nHeartbeat detected, index "<< Indx;
+            //HBDetected = 0;
+        }
+
+        if (BoardReadyTimerElpased)
+            BoardReadinessCounter[Indx] = 0;
+
+    }
+}
+
+void TelemetryUI::DetectCommsEst(int duration, DataConcentrator& DC, std::vector<std::pair<int, bool>> BoardCommsEst)
+{    
+/*
+* Comms est detection.
+* 5008 MSB comms est detected (cyan), 5009  MSB comms est  not detected (red)
+* 4008 Radar comms est detected (cyan), 4009 comms est ready not detected (red)
+* 3008 Gyro comms est detected (cyan), 3009 comms est ready not detected (red)
+*/
+
+    ArdCommsEst = std::chrono::steady_clock::now();
+    std::chrono::seconds TimerDuration(duration);
+
+    if (ArdCommsEst - ResetBoardCommsEst >= TimerDuration)
+    {
+        ResetBoardCommsEst += TimerDuration;
+        CommsEstTimerElapsed = 1;
     }
     else
     {
-       // std::cout << "\nGyro board NOT connected!!!!!!!!!!!!!!";
+        CommsEstTimerElapsed = 0;
+    }
+
+    for (int i = 0; i < BoardCommsEst.size(); i++)
+    {
+        int Indx = BoardCommsEst[i].first;
+        bool CommsEstDetected = BoardCommsEst[i].second;
+
+        if (CommsEstDetected)
+            BoardCommsEstCounter[Indx]++;
+
+        if (CommsEstTimerElapsed && (BoardCommsEstCounter[Indx] < 1))
+        {
+
+            AddCommsEstMessage((BoardSelection)BoardCommsEst[i].first, 0, DC);
+            //std::cout << "\nHeartbeat NOT detected ";
+            //HBDetected = 0;
+        }
+        if (CommsEstTimerElapsed && (BoardCommsEstCounter[Indx] > 0))
+        {
+
+            AddCommsEstMessage((BoardSelection)BoardCommsEst[i].first, 1, DC);
+            //std::cout << "\nHeartbeat detected, index "<< Indx;
+            //HBDetected = 0;
+        }
+
+        if (CommsEstTimerElapsed)
+            BoardCommsEstCounter[Indx] = 0;
+
     }
 
 }
 
-
-void TelemetryUI::SendHeartBeat(DataConcentrator& DC)
+std::string TelemetryUI::GetBoardNameStr(BoardSelection board)
 {
-    ArdGyro.SendHeartBeat(DC);
-    ArdRadar.SendHeartBeat(DC);
-    //ArdMotorSteer.SendHeartBeat(DC);
+    std::string name;
+
+    switch (board)
+    {
+    case MOTOR_STEER_BOARD:
+    {
+        name = "MSB";
+        break;
+    }
+    case GYROSCOPE_BOARD:
+    {
+        name = "Gyro";
+        break;
+    }
+    case RADAR_BOARD:
+    {
+        name = "Radar";
+        break;
+    }
+    default:
+    {
+
+        name = "board";
+        break;
+    }
+    }
+
+    return name;
+}
+
+void TelemetryUI::AddHBMessage(BoardSelection board, bool detected, DataConcentrator& DC)
+{
+    std::string MessageON = { "13:HB detected " },
+        MessageOFF = { "11:Warning, HB not detected, " };
+
+    std::string Board = GetBoardNameStr(board);
+
+    int CodeBody = GetCode(board);
+
+    int CodeOn = CodeBody + 4;
+    int CodeOff = CodeBody + 5;
+
+    MessageON = MessageON + Board;
+    MessageOFF = MessageOFF + Board;
+
+    if (!detected)
+    {
+
+        if (DC.CheckMessageExistence(CodeOn))
+        {
+            DC.SwapMessage(MessageOFF, CodeOff, CodeOn);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageOFF, CodeOff, MESSAGE_ON);
+            DC.SetMessageStatus(MessageON, CodeOn, MESSAGE_OFF);
+        }
+        //std::cout << "\nWARNING: Heartbeat not detected ";
+    }
+    else
+    {
+
+        if (DC.CheckMessageExistence(CodeOff))
+        {
+            DC.SwapMessage(MessageON, CodeOn, CodeOff);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageOFF, CodeOff, MESSAGE_OFF);
+            DC.SetMessageStatus(MessageON, CodeOn, MESSAGE_ON);
+        }
+
+        //std::cout << "\nHeartbeat detected ";
+    }
+}
+
+void TelemetryUI::AddBoardReadyMessage(BoardSelection board, bool detected, DataConcentrator& DC)
+{
+    std::string MessageON = { "13:Board readiness detected " },
+        MessageOFF = { "11:Warning, Board readiness not detected, " };
+
+    std::string Board = GetBoardNameStr(board);
+
+    int CodeBody = GetCode(board);
+
+    int CodeOn = CodeBody + 6;
+    int CodeOff = CodeBody + 7;
+
+    MessageON = MessageON + Board;
+    MessageOFF = MessageOFF + Board;
+
+    if (!detected)
+    {
+
+        if (DC.CheckMessageExistence(CodeOn))
+        {
+            DC.SwapMessage(MessageOFF, CodeOff, CodeOn);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageOFF, CodeOff, MESSAGE_ON);
+            DC.SetMessageStatus(MessageON, CodeOn, MESSAGE_OFF);
+        }
+        //std::cout << "\nWARNING: Readiness not detected ";
+    }
+    else
+    {
+
+        if (DC.CheckMessageExistence(CodeOff))
+        {
+            DC.SwapMessage(MessageON, CodeOn, CodeOff);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageOFF, CodeOff, MESSAGE_OFF);
+            DC.SetMessageStatus(MessageON, CodeOn, MESSAGE_ON);
+        }
+
+        //std::cout << "\Readiness detected ";
+    }
+}
+
+void TelemetryUI::AddCommsEstMessage(BoardSelection board, bool detected, DataConcentrator& DC)
+{
+    std::string MessageON = { "13:Board Comms est. " },
+        MessageOFF = { "11:Warning, Board Comms not est., " };
+
+    std::string Board = GetBoardNameStr(board);
+
+    int CodeBody = GetCode(board);
+
+    int CodeOn = CodeBody + 8;
+    int CodeOff = CodeBody + 9;
+
+    MessageON = MessageON + Board;
+    MessageOFF = MessageOFF + Board;
+
+    if (!detected)
+    {
+
+        if (DC.CheckMessageExistence(CodeOn))
+        {
+            DC.SwapMessage(MessageOFF, CodeOff, CodeOn);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageOFF, CodeOff, MESSAGE_ON);
+            DC.SetMessageStatus(MessageON, CodeOn, MESSAGE_OFF);
+        }
+        //std::cout << "\nWARNING: Readiness not detected ";
+    }
+    else
+    {
+
+        if (DC.CheckMessageExistence(CodeOff))
+        {
+            DC.SwapMessage(MessageON, CodeOn, CodeOff);
+        }
+        else
+        {
+            DC.SetMessageStatus(MessageOFF, CodeOff, MESSAGE_OFF);
+            DC.SetMessageStatus(MessageON, CodeOn, MESSAGE_ON);
+        }
+
+        //std::cout << "\Readiness detected ";
+    }
 }
