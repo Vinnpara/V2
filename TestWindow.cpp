@@ -51,7 +51,7 @@ LPWSTR PitchWritten,
 	   TotalTimeElapsedWritten
 	   ;
 
-unsigned long ElpasedTime;
+float ElpasedTime;
 
 static bool RecStart,
             RecStop;
@@ -1320,7 +1320,7 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			NULL
 		); //to create buttons, textboxes ect takes 11 args
 
-		CreateWindow(TEXT("STATIC"), TEXT("dt micro Sec"),
+		CreateWindow(TEXT("STATIC"), TEXT("Rate"),
 			WS_VISIBLE | WS_CHILD,
 			TimeText.left, TimeText.top,
 			TimeText.right, TimeText.bottom,
@@ -2129,7 +2129,13 @@ void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_v
 	mbstowcs_s(&outSize3, portName2, size3, const_p3, size3 - 1);
 	YawWritten = portName2;
 
-	ElpasedTime = time;
+
+	//std::cout << "\nWINDOW PITCH VALUE.......  " << PitchWritten;
+}
+
+void TestWindow::UpdateRate(float rate)
+{
+	ElpasedTime = rate;
 	std::string str4 = std::to_string(ElpasedTime);
 	size_t size4 = str4.size() + 1;
 	const char* const_p4 = str4.c_str();
@@ -2137,9 +2143,6 @@ void TestWindow::UpdateDaignostcs(double Pitc_val, double Roll_val, double Yaw_v
 	size_t outSize4;
 	mbstowcs_s(&outSize4, portName3, size4, const_p4, size4 - 1);
 	ElapsedTimeWritten = portName3;
-
-
-	//std::cout << "\nWINDOW PITCH VALUE.......  " << PitchWritten;
 }
 
 void TestWindow::UpdateVelDiag(float velx, float vely, float velcomp) {
@@ -2523,7 +2526,7 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 	rect11.bottom = RollText.bottom;
 
 	RECT rect12;
-	rect12.left = TimeText.left + 375; //where is appears
+	rect12.left = TimeText.left + 445; //where is appears 375
 	rect12.top = TimeText.top + 85;
 	rect12.right = TimeText.right;
 	rect12.bottom = TimeText.bottom;
@@ -2577,7 +2580,8 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 	DrawText(dc, VelcWritten, -1, &rect15, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	DrawText(dc, TotalTimeElapsedWritten, -1, &rect16, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
+	
+	/*
 	if(PitchValid)
 		DrawText(dc, L"P-Y", -1, &rect10, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	else
@@ -2587,7 +2591,7 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 		DrawText(dc, L"R-Y", -1, &rect11, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	else
 		DrawText(dc, L"R-N", -1, &rect11, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
+    */
 	ReleaseDC(hWnd, dc);
 
 };

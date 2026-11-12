@@ -118,6 +118,9 @@ public:
 	void UpdateVelDiag( float velx, float vely, float velcomp);
 	void UpdateElapsedTime(float ElapsedTime);
 
+	void UpdateRate(float rate);
+
+
 	void UpdateRadarDaignostcs(int Val, int Pos);
 	void UpdateMotorSteering(int Steer, int Throttle);
 	void DisplayDiagnostics();

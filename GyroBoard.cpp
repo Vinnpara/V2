@@ -176,75 +176,71 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
         }
         case MEASURED_ACCEL_X:
         {
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
+            std::string StrRaw;
 
-            if (DataPacket[0] != ':')
+            for (int i = DataPacket.size(); i > -1; i--)
             {
-                //std::cout << "\n Second member no good " << DataPacket;
-                break;
+                if (DataPacket[i] == ':')
+                    break;
+                else
+                    StrRaw.push_back(DataPacket[i]);
+
             }
 
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
-
-            
+            std::reverse(StrRaw.begin(), StrRaw.end());
             float measureval = 0;
+            measureval = std::stof(StrRaw);
 
-            if (isValidFloat(DataPacket))
-                measureval = std::stof(DataPacket);
+            //if (measureval > 0)
+                //measureval = (measureval / 100); //Verify with gain on ard side
 
             AccelX = measureval;
             break;
         }
         case MEASURED_ACCEL_Y:
         {
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
+            std::string StrRaw;
 
-            if (DataPacket[0] != ':')
+            for (int i = DataPacket.size(); i > -1; i--)
             {
-                //std::cout << "\n Second member no good " << DataPacket;
-                break;
+                if (DataPacket[i] == ':')
+                    break;
+                else
+                    StrRaw.push_back(DataPacket[i]);
+
             }
 
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
-
+            std::reverse(StrRaw.begin(), StrRaw.end());
             float measureval = 0;
+            measureval = std::stof(StrRaw);
 
-            if (isValidFloat(DataPacket))
-                measureval = std::stof(DataPacket);
+            //if (measureval > 0)
+                //measureval = (measureval / 100); //Verify with gain on ard side
 
             AccelY = measureval;
             break;
         }
         case MEASURED_ACCEL_Z:
         {
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
+            std::string StrRaw;
 
-            if (DataPacket[0] != ':')
+            for (int i = DataPacket.size(); i > -1; i--)
             {
-                //std::cout << "\n Second member no good " << DataPacket;
-                break;
+                if (DataPacket[i] == ':')
+                    break;
+                else
+                    StrRaw.push_back(DataPacket[i]);
+
             }
 
-            std::reverse(DataPacket.begin(), DataPacket.end());
-            DataPacket.pop_back();
-            std::reverse(DataPacket.begin(), DataPacket.end());
-
+            std::reverse(StrRaw.begin(), StrRaw.end());
             float measureval = 0;
+            measureval = std::stof(StrRaw);
 
-            if (isValidFloat(DataPacket))
-                measureval = std::stof(DataPacket);
+            //if (measureval > 0)
+                //measureval = (measureval / 100); //Verify with gain on ard side
 
-            AccelZ = measureval;
+           AccelZ = measureval;
             break;
         }
         case ARD_COMMS_EST:

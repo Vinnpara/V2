@@ -53,3 +53,9 @@ Now also reads yaw, and 2-digit serial orders
 11/09/2026
 Optimized telemetry class, More generic functions. Although will need minor mods to support baords outside of 
 gyro, radar, msb. also did some cleanup.
+
+11/11/2026
+Added HB,Board ready, and comms est to MSB. MSB also uses chrono instead of dword as a timer, more accuracy <15 ms.
+Added back the radar draw. Program runs 45-50 Hz, occasional drops < 40 Hz. Gyro collection needs to be 30 Hz
+in this condition, so unable to send Acc data. Also needs about 10sec for gyro comms est. and 20sec to get readings 
+without lag.

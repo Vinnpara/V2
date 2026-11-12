@@ -243,50 +243,24 @@ if(!BoardFoundByPC && BoardRequested)
   SendBoardName();
 }
 
-if(SendingBoardName) //SendingBoardName
-{
-  
-  SendBoardName();
-
-  if (millis() - BoardNameReq > 1000) //750 was also acceptable  
-  {
-     DelayStart =1;
-  }
-
-  if(DelayStart && BoardFoundByPC) //DelayStart && BoardFoundByPC
-  {
-    SignalArdReady();
-    SendDataPacketHB();
-  }
-}
-
-
-if (CommsEstablished && SendingBoardName) //CommsEstablished && SendingBoardName
+if (CommsEstablished) //CommsEstablished && SendingBoardName
 {
   
   //ServiceSerialLink();
+  SignalArdReady();
+  SendDataPacketHB();
   SignalArdCommsEst();
 
-  //BulbON();
+  BulbON();
 }
-else
-{
- //BulbOFF();
-
-  //if(PacektsRecieved > 0)
-    //PacektsRecieved =0;
- 
-}
-
-if(BoardFoundByPC)
- BulbON();
 else
 {
  BulbOFF();
- 
- if(PacektsRecieved > 0)
+
+  if(PacektsRecieved > 0)
   PacektsRecieved =0;
 }
+
 
 if (millis() - lastRttReport > 2000 && rttCount > 0)
 {

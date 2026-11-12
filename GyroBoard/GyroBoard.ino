@@ -112,7 +112,7 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 
-const int TransferGain=1000;
+const int TransferGain=100;
 const int TransferGain2=10000;
 int32_t RollTransfer, PitchTransfer, YawTransfer,
         AccelXTranfer, AccelYTranfer, AccelZTranfer;
@@ -169,12 +169,13 @@ static  bool StartValid = 0,
 //static unsigned long loopCount = 0;
 //static unsigned long lastRateCheck = 0;
 
-const unsigned long SEND_INTERVAL_MS = 10; //CAUTION: Make sure PC program  
+const unsigned long SEND_INTERVAL_MS = 30; //CAUTION: Make sure PC program 10:100Hz, 20:50Hz, 30:33 Hz   
 static unsigned long lastSendTime = 0;  //executes at a faster rate than this
 
-const unsigned long SEND_INTERVAL_MSHB = 10;//CAUTION: Make sure PC program 
+const unsigned long SEND_INTERVAL_MSHB = 30;//CAUTION: Make sure PC program 
 static unsigned long lastSendTimeHB = 0;   //executes at a faster rate than this
-
+                                            //Sending Acc introduces a slight lag ocassionally 
+                                            //with 10, 12 is safe. 30
 ///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // ================================================================
 // ===                    SETUP FUNCTION                       ===
@@ -268,20 +269,19 @@ if(BoardFoundByPC && (millis() - lastSendTimeHB >= SEND_INTERVAL_MSHB) && !Comms
   lastSendTimeHB = millis();
   SignalArdReady();
   SendDataPacketHB();
-  SignalArdCommsEst();
+  //SignalArdCommsEst();
 }
 
 if(CommsEstablished && (millis() - lastSendTime >= SEND_INTERVAL_MS))
 {
-
    lastSendTime = millis();
+   SendDataPackets(MEASURED_PITCH,pitch);
+   SendDataPackets(MEASURED_ROLL,roll);
+   SendDataPackets(MEASURED_YAW,yaw);
+   //SendDataPackets(MEASURED_ACCEL_X, AccX);
+   //SendDataPackets(MEASURED_ACCEL_Y, AccY);
+   //SendDataPackets(MEASURED_ACCEL_Z, AccZ);              
    
-   //if(Calibrated)
-   //{
-     SendDataPackets(MEASURED_PITCH,pitch);
-     SendDataPackets(MEASURED_ROLL,roll);
-     SendDataPackets(MEASURED_YAW,yaw);     
-   //}
    SignalArdCommsEst();
    SignalArdReady();
    SendDataPacketHB();   
@@ -461,15 +461,25 @@ void MeasureGyro(){
   Wire.beginTransmission(MPU);
   Wire.write(0x3B); // Start with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU, 6, true); // Read 6 registers total, each axis value is stored in 2 registers
+  if (Wire.requestFrom(MPU, 6, true) != 6) return;   // skip this sample, don't use garbage
+  //Wire.requestFrom(MPU, 6, true); // Read 6 registers total, each axis value is stored in 2 registers
   
   //For a range of +-2g, we need to divide the raw values by 16384, according to the datasheet
   AccX = (Wire.read() << 8 | Wire.read()) / 16384.0; // X-axis value
   AccY = (Wire.read() << 8 | Wire.read()) / 16384.0; // Y-axis value
   AccZ = (Wire.read() << 8 | Wire.read()) / 16384.0; // Z-axis value
   // Calculating Roll and Pitch from the accelerometer data
-  accAngleX = (atan(AccY / sqrt(pow(AccX, 2) + pow(AccZ, 2))) * 180 / PI) - 0.58; // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
-  accAngleY = (atan(-1 * AccX / sqrt(pow(AccY, 2) + pow(AccZ, 2))) * 180 / PI) + 1.58; // AccErrorY ~(-1.58)
+  
+  float denomX = sqrt(AccX*AccX + AccZ*AccZ);
+  float denomY = sqrt(AccY*AccY + AccZ*AccZ);
+
+  if (denomX > 0.01 && denomY > 0.01)      // sensor actually returned gravity
+  {
+    accAngleX = atan(AccY / denomX) * 180/PI - 0.58;
+    accAngleY = atan(-AccX / denomY) * 180/PI + 1.58;
+  }
+  //accAngleX = (atan(AccY / sqrt(pow(AccX, 2) + pow(AccZ, 2))) * 180 / PI) - 0.58; // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
+  //accAngleY = (atan(-1 * AccX / sqrt(pow(AccY, 2) + pow(AccZ, 2))) * 180 / PI) + 1.58; // AccErrorY ~(-1.58)
   //accAngleY = (atan(abs(AccY)/abs(AccX)));
   
 
@@ -508,19 +518,10 @@ void MeasureGyro(){
   roll = 0.96 * gyroAngleX + 0.04 * accAngleX;
   pitch = 0.96 * gyroAngleY + 0.04 * accAngleY;
 
-
-  RollTransfer=roll*TransferGain;
-  PitchTransfer=pitch*TransferGain;
-  YawTransfer=yaw*TransferGain;
+  if (isnan(gyroAngleX) || isinf(gyroAngleX)) gyroAngleX = accAngleX;
+  if (isnan(gyroAngleY) || isinf(gyroAngleY)) gyroAngleY = accAngleY;
+  if (isnan(roll) || isnan(pitch)) { roll = accAngleX; pitch = accAngleY; }
   
-  PitchCounter ++;
-/*
-Serial.print("\npitch read ");
-Serial.print(pitch);
-
-Serial.print("\nroll read ");
-Serial.print(roll);
-*/
  }
   ////_______________\\\\
  ////*****************\\\\
@@ -607,6 +608,17 @@ void SendDataPackets(SerialOrder Type, float value)
   Serial.print(Type);
   Serial.print(':');
   Serial.print(value);
+  Serial.print(END_MARKER);
+}
+
+void SendDataPackets(SerialOrder Type, float value, const int gain)
+{
+
+  float Value = value * gain;
+  Serial.print(START_MARKER);
+  Serial.print(Type);
+  Serial.print(':');
+  Serial.print(Value);
   Serial.print(END_MARKER);
 }
 
@@ -1002,6 +1014,10 @@ bool IsValidCommand(int command)
   
 }
 
+void RecalibrationRequired()
+{
+  
+}
 /*
 **************************************************************
 **************************************************************
