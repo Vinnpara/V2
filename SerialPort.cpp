@@ -903,7 +903,7 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
 
     std::wstring portName = L"\\\\.\\COM" + std::to_wstring(portNumber);
 
-    std::cout << "\nNow trying " << expectedName << " port "<< portNumber;
+    //std::cout << "\nNow trying " << expectedName << " port "<< portNumber;
        //<< SpecialChar <<"\nBaud "<< Baud<<" Ident "<< SpecialChar;
 
     this->connected = false;
@@ -949,7 +949,7 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
             //printf("\nERROR!!!_1");
             SerialInitialized = 0;
         }
-        std::cout << "\nINVALID HANDLE";
+        //std::cout << "\nINVALID HANDLE";
         return false; //Port does not exist or in use
     }
 
@@ -1030,10 +1030,10 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
         DWORD bytesRead = 0;
         if (!ReadFile(this->handler, &c, 1, &bytesRead, nullptr) || bytesRead == 0)
         {
-            std::cout << " \nTimeout ";
+            //std::cout << " \nTimeout ";
             continue;   // ReadIntervalTimeout elapsed with no byte; keep waiting
         }
-        std::cout << " \nReceived " << c;
+        //std::cout << " \nReceived " << c;
 
         if (c == START_MARKER)
         {
@@ -1059,8 +1059,8 @@ bool SerialPort::IndetifySerialPortHserial(int portNumber, const std::string& ex
     if (result.find(expectedName) != std::string::npos)
     {
         outHandle = this->handler;   // caller now owns this handle
-        printf("\nARD PORT FOUND FOR \n");
-        printf(expectedName.c_str());
+        //printf("\nARD PORT FOUND FOR \n");
+        //printf(expectedName.c_str());
 
         //CloseHandle(hSerial);
 

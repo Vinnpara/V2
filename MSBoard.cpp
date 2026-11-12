@@ -22,6 +22,11 @@ float MSBoard::ConvertValue(float ValX, float m, float C)
     return ConvertedVal;
 }
 
+void MSBoard::SortAndUpdateFromPacket(std::string& DataPacket)
+{
+
+}
+
 void MSBoard::CommandMSBSingleMotor()
 {
 
@@ -69,4 +74,9 @@ bool MSBoard::ConnectArduino()
 void MSBoard::SendAndReceive()
 {
 	CommandMSBSingleMotor();
+
+	ReadIntoBuffer();
+	ParseBuffer();
+	RefineDataPackets();
+	//ProcessDataPackets();
 }

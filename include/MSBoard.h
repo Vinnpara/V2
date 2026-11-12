@@ -28,7 +28,7 @@ public:
 
 	void CommandMSBSingleMotor();
 
-	void SortAndUpdateFromPacket(std::string& DataPacket) override {};
+	void SortAndUpdateFromPacket(std::string& DataPacket) override;
 
 	void SetSteer(float SteerCommand) { this->RawSteer = SteerCommand; };
 	void SetThrottle(float ThrottleCommand) { this->RawThrottle = ThrottleCommand; };

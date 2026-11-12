@@ -281,6 +281,13 @@ int main()
     static DWORD lastSendTime = GetTickCount64(),
                  lastSendTime2 = GetTickCount64();
 
+    static float LastUpdateTime = 0,
+                 ElapsedTimeDiag = 0,
+                 ExecRatePrint = 0;
+    const float Interval = 100.0;
+
+    static std::chrono::steady_clock::time_point LastTimePointMSB;
+
     while (!glfwWindowShouldClose(window) ) {
 
         auto t0Main = std::chrono::steady_clock::now();
@@ -326,7 +333,7 @@ int main()
         }
 
         TL1.SignalPCReadiness();
-        TL1.UpdateMotorSteerCommand(lastSendTime);
+        TL1.UpdateMotorSteerCommand(LastTimePointMSB);
         TL1.BoardsSendAndReceive();
         TL1.UpdateGyroData();
         TL1.UpdateRadar();
@@ -388,8 +395,8 @@ int main()
         RadarValue = TL1.GetRadarVal();
         RadarPosition = TL1.GetRadarPos();
 
-        //Rad1.UpdateValues(RadarValue, RadarPosition); //Commented out to speed up program. 4-5 ms (250 - 200 Hz)
-        //Rad1.RadarDraw();
+        Rad1.UpdateValues(RadarValue, RadarPosition); //Commented out to speed up program. 4-5 ms (250 - 200 Hz)
+        Rad1.RadarDraw();
 
         TL1.RecordData();
 
@@ -412,16 +419,35 @@ int main()
         DiagWindow->GetMessageToprint(DC1.GetPrintMessage());
         DiagWindow->ShowDiagnosisData(PrintDiagnosisMessages);
 
-
         DiagWindow->UpdateElapsedTime();
 
-        DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
-
-
-
         //With Radar draw: 20-25 ms (50 - 40 Hz), 7-9 ms without (142 - 111 Hz)
+
+        DiagWindow->UpdateRate(ExecRatePrint);
+        DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
+        
         auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0Main).count();
-        //std::cout << "\nTime elapsed, total program " << ms;
+
+        ElapsedTimeDiag += ms;
+
+        float ExecRate = 0;
+
+        if (ms > 0)
+            ExecRate = 1000 / ms;
+
+        //std::cout << "\nTime elapsed, total program " << ms << " Rate " << ExecRate << " Hz";
+
+        if ((ElapsedTimeDiag - LastUpdateTime) > Interval)
+        {
+            //Display at 30 Hz, make it readable
+            ElapsedTimeDiag = ms;
+            LastUpdateTime = ms;
+            ExecRatePrint = ExecRate;
+            //std::cout << "\nTime elapsed, total program " << ms << " Rate " << ExecRate << " Hz";
+        }
+
+
+        //std::cout << "\nTime elapsed, total program " << ms <<" Rate "<< ExecRate<<" Hz";
     }
 
     //ARD1.CloaseSerial();

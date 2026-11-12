@@ -76,7 +76,7 @@ static  bool StartValid = 0,
              EndValid =0,
              Calibrated = false;
 
-const unsigned long SEND_INTERVAL_MS = 20; //CAUTION: Make sure PC program  
+const unsigned long SEND_INTERVAL_MS = 20; //CAUTION: Make sure PC program 20: 50Hz, 30:33 Hz 
 static unsigned long lastSendTime = 0;  //executes at a faster rate than this
 
 const unsigned long SEND_INTERVAL_MSHB = 20;//CAUTION: Make sure PC program 
@@ -146,7 +146,6 @@ if(BoardFoundByPC && !CommsEstablished && (millis() - lastSendTimeHB >= SEND_INT
   SignalArdReady();
   SendDataPacketHB();
 }
-
 
 //DisplayStatus();
 

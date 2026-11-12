@@ -434,9 +434,15 @@ void TelemetryUI::UpdateGyroData()
                 Pitch = Gy->GetPitch();
                 Roll = Gy->GetRoll();
                 Yaw = Gy->GetYaw();
+                AccelX = Gy->GetAccelX();
+                AccelY = Gy->GetAccelY();
+                AccelZ = Gy->GetAccelZ();
             }
         }
     }
+
+    //std::cout << "\n Pitch :" << Pitch;
+    //std::cout << "\n Roll :" << Pitch;
 
     VM1->UpdateAttitudeValues(Yaw, Pitch, Roll);
     VM1->Draw();
@@ -461,7 +467,7 @@ void TelemetryUI::UpdateRadar()
     }
 }
 
-void TelemetryUI::UpdateMotorSteerCommand(static DWORD& lastSendTime)
+void TelemetryUI::UpdateMotorSteerCommand(static std::chrono::steady_clock::time_point LastPoint)
 {
     int SteerCommand = (int)SteerAngle;
 
@@ -484,8 +490,15 @@ void TelemetryUI::UpdateMotorSteerCommand(static DWORD& lastSendTime)
 
     DWORD now = GetTickCount64();
     const DWORD SEND_INTERVAL_MS = 10;   // 20 == 50 Hz, 10 == 100 Hz. Both seem fine
+
+    const float TIME_INTERVAL = 10.0f;
     
     //std::cout << "\nThrottle, reverse, steer " << SteerAngle << " " << ThrottleAngle << " "<< ReverseAngle;
+
+    std::chrono::steady_clock::time_point t0Main = std::chrono::steady_clock::now();
+
+    std::chrono::duration<float> elapsed_seconds = t0Main - LastPoint;
+    float ElapsedTime = elapsed_seconds.count();
 
     for (int i = 0; i < BoardsSelection.size(); i++)
     {
@@ -493,13 +506,14 @@ void TelemetryUI::UpdateMotorSteerCommand(static DWORD& lastSendTime)
         {
             if (MSBoard* M = dynamic_cast<MSBoard*>(BoardsSelection[i].get()))
             {
-                if (now - lastSendTime >= SEND_INTERVAL_MS)
+                if (ElapsedTime >= SEND_INTERVAL_MS)  //t0Main - LastTime >= TIME_INTERVAL (now - lastSendTime >= SEND_INTERVAL_MS)
                 {
                     M->SetSteer((float)SteerAngle);
                     M->SetThrottle(ThrottleAngle);
                     M->SetReverse(ReverseAngle);
 
-                    lastSendTime = now;
+                    LastPoint = t0Main;
+
                 }
             }
         }

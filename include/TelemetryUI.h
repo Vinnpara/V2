@@ -64,7 +64,7 @@ public:
 	void SignalPCReadiness(); /*INTERFACE*/
 	void UpdateGyroData(); /*INTERFACE*/
 	void UpdateRadar(); /*INTERFACE*/
-	void UpdateMotorSteerCommand(static DWORD& lastSendTime); /*INTERFACE*/
+	void UpdateMotorSteerCommand(static std::chrono::steady_clock::time_point LastPoint); /*INTERFACE*/
 
 	void TimerAnchorPoint(); /*INTERFACE*/
 	void TimerFunction(int Duration);
