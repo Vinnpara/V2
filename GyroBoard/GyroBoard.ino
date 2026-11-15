@@ -20,6 +20,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
+#include <MechaQMC5883.h>
+#include <QMC5883LCompass.h>
 
 #include "SerialOrder.h"
 #include "ArduinoReceiver.h"
@@ -90,6 +92,7 @@ float elapsedTime, currentTime, previousTime;
 int c = 0;
 
 MPU6050 mpu;
+QMC5883LCompass compass;
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -112,13 +115,31 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 
-const int TransferGain=100;
-const int TransferGain2=10000;
-int32_t RollTransfer, PitchTransfer, YawTransfer,
-        AccelXTranfer, AccelYTranfer, AccelZTranfer;
+//Magnetic compass variables
 
-//float pitch, roll, yaw;
+float OffsetX = -328.0,
+      OffsetY = 452.0,
+      ScaleX = 0.9797,
+      ScaleY = 1.0212;
 
+float Heading = 0,
+      CalX = 0,
+      CalY = 0;
+
+static float HeadingInitialValue = 0.0;
+
+static bool HeadingInitialized = false;
+
+//Kalman filter
+struct Kalman1D {
+  float angle = 0;      // estimated angle (deg)
+  float bias  = 0;      // estimated gyro bias (deg/s)
+  float P[2][2] = {{1, 0}, {0, 1}};
+  float Q_angle = 0.001f;
+  float Q_bias  = 0.003f;
+  float R       = 0.03f;   // measurement variance (deg^2)
+  bool  wrap360 = false;   // true for compass yaw
+};
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -133,12 +154,10 @@ void dmpDataReady() {
 // ===               VAR. FUNCTION VARIABLES               ===
 // ================================================================
 
-SerialOrder OrderReceivedRad, OrderSentRad;
+
 static bool PC_not_Ready=1,
             PC_Ready = 0,
             CommsEstablished =0,
-            ReStartSerial = 0,
-            SerialFlushed = 0,
             ValidHeartBeatPC = 0;
 
 unsigned long previousMillis = 0,
@@ -176,6 +195,8 @@ const unsigned long SEND_INTERVAL_MSHB = 30;//CAUTION: Make sure PC program
 static unsigned long lastSendTimeHB = 0;   //executes at a faster rate than this
                                             //Sending Acc introduces a slight lag ocassionally 
                                             //with 10, 12 is safe. 30
+Kalman1D kPitch, kRoll, kYaw;
+static unsigned long lastMicros = 0;
 ///////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // ================================================================
 // ===                    SETUP FUNCTION                       ===
@@ -183,6 +204,9 @@ static unsigned long lastSendTimeHB = 0;   //executes at a faster rate than this
 //***************************************************************\\
 
 void setup() {
+
+ kYaw.wrap360 = true;
+ kYaw.R = 4.0f;
 
   // put your setup code here, to run once:
   /*FOR GYROSCOPE*/
@@ -220,6 +244,12 @@ display.setTextColor(WHITE);
 
 void loop() {
   // put your main code here, to run repeatedly:
+  
+unsigned long now = micros(); //For Kalman
+float dt = (now - lastMicros) * 1e-6f;
+lastMicros = now;
+
+if (dt <= 0 || dt > 0.1) dt = 0.01;  
 
 /* to determin execution speed
  * ensure to manually set any 
@@ -250,7 +280,15 @@ if(!Calibrated && SendingBoardName )
 
 //if(Calibrated)
  MeasureGyro();
+ MeasureCompass();
+ 
+ //if(Calibrated)
+  FilterReadings(dt);
 
+ //Serial.print("Roll: "); Serial.print(roll);
+ //Serial.print(" | Pitch: "); Serial.print(pitch);
+ //Serial.print(" | Yaw: "); Serial.print(yaw);
+ //Serial.println();
 
 if(Serial.available()>0)
 {
@@ -307,13 +345,14 @@ if(Serial.available() && !CommsEstablished)
 //UpdateDisp();
 
 }
-  ////_______________\\\\
- ////*****************\\\\
-////  ACCEL/GYRO FUNC  \\\\
-\\\\*******************////
+  ////_______________________\\\\
+ ////*************************\\\\
+////  ACCEL/GYRO/COMPASS FUNC  \\\\
+\\\\***************************////
 void GyroSetup()
 {
   
+compass.init(); 
   
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
         Wire.begin();
@@ -502,27 +541,45 @@ void MeasureGyro(){
   GyroX = GyroX + 0.56; // GyroErrorX ~(-0.56)
   GyroY = GyroY - 2; // GyroErrorY ~(2)
   GyroZ = GyroZ + 0.79; // GyroErrorZ ~ (-0.8)
-  
-  // Currently the raw values are in degrees per seconds, deg/s, so we need to multiply by sendonds (s) to get the angle in degrees
-  float gyX, gyY, gyZ, rollX;
-  
-  gyroAngleX = gyroAngleX + GyroX * elapsedTime; // deg/s * s = deg
-  gyroAngleY = gyroAngleY + GyroY * elapsedTime;
-  //yaw =  yaw + GyroZ * elapsedTime;
 
-  gyroAngleX = 0.96 * gyroAngleX + 0.04 * accAngleX;
-  gyroAngleY = 0.96 * gyroAngleY + 0.04 * accAngleY;
- 
-   
-  // Complementary filter - combine acceleromter and gyro angle values
-  roll = 0.96 * gyroAngleX + 0.04 * accAngleX;
-  pitch = 0.96 * gyroAngleY + 0.04 * accAngleY;
-
-  if (isnan(gyroAngleX) || isinf(gyroAngleX)) gyroAngleX = accAngleX;
-  if (isnan(gyroAngleY) || isinf(gyroAngleY)) gyroAngleY = accAngleY;
-  if (isnan(roll) || isnan(pitch)) { roll = accAngleX; pitch = accAngleY; }
-  
  }
+
+void MeasureCompass()
+ {
+  compass.read();
+
+  int x = compass.getX();
+  int y = compass.getY();
+  int z = compass.getZ();
+  //int azimuth = compass.getAzimuth();
+  //if (azimuth < 0) azimuth += 360.0;
+  CalX = (x - OffsetX) * ScaleX;
+  CalY = (y - OffsetY) * ScaleY;
+
+  Heading = atan2(CalY,CalX) * 180.0/PI;
+
+  if(!HeadingInitialized)
+  {
+     HeadingInitialValue = Heading;
+     HeadingInitialized = 1;
+  }
+
+  if(HeadingInitialized)
+    Heading = Heading - HeadingInitialValue;
+  
+  //if (Heading < 0) Heading += 360.0;
+
+ }
+
+void FilterReadings(float dt)
+{
+ pitch = KalmanUpdate(kPitch, GyroY, accAngleY, dt);
+ roll  = KalmanUpdate(kRoll,  GyroX, accAngleX, dt);
+ yaw   = KalmanUpdate(kYaw,   GyroZ, Heading, dt);
+
+ if (isnan(roll) || isnan(pitch)) { roll = accAngleX; pitch = accAngleY; }
+}
+ 
   ////_______________\\\\
  ////*****************\\\\
 ////  ESTABLISH COMMS  \\\\
@@ -961,6 +1018,40 @@ void UpdateDisp()
  ////******************\\\\
 ////  HELPER FUNCTIONS  \\\\
 \\\\*******************////
+
+float KalmanUpdate(Kalman1D &k, float gyroRate, float measurement, float dt)
+{
+  // predict
+  k.angle += (gyroRate - k.bias) * dt;
+  k.P[0][0] += dt * (dt * k.P[1][1] - k.P[0][1] - k.P[1][0] + k.Q_angle);
+  k.P[0][1] -= dt * k.P[1][1];
+  k.P[1][0] -= dt * k.P[1][1];
+  k.P[1][1] += k.Q_bias * dt;
+
+  // innovation
+  float y = measurement - k.angle;
+  if (k.wrap360) {
+    while (y >  180) y -= 360;
+    while (y < -180) y += 360;
+  }
+
+  // update
+  float S  = k.P[0][0] + k.R;
+  float K0 = k.P[0][0] / S;
+  float K1 = k.P[1][0] / S;
+  k.angle += K0 * y;
+  k.bias  += K1 * y;
+
+  float p00 = k.P[0][0], p01 = k.P[0][1];
+  k.P[0][0] -= K0 * p00;  k.P[0][1] -= K0 * p01;
+  k.P[1][0] -= K1 * p00;  k.P[1][1] -= K1 * p01;
+
+  if (k.wrap360) {
+    if (k.angle >= 360) k.angle -= 360;
+    if (k.angle <    0) k.angle += 360;
+  }
+  return k.angle;
+}
 
 bool IsValidCommand(int command)
 {

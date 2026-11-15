@@ -423,9 +423,6 @@ int main()
 
         //With Radar draw: 20-25 ms (50 - 40 Hz), 7-9 ms without (142 - 111 Hz)
 
-        DiagWindow->UpdateRate(ExecRatePrint);
-        DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
-        
         auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0Main).count();
 
         ElapsedTimeDiag += ms;
@@ -445,6 +442,9 @@ int main()
             ExecRatePrint = ExecRate;
             //std::cout << "\nTime elapsed, total program " << ms << " Rate " << ExecRate << " Hz";
         }
+
+        DiagWindow->UpdateRate(ExecRatePrint);
+        DiagWindow->DrawDiagnostic(DiagWindow->ReturnWindowHandle());
 
 
         //std::cout << "\nTime elapsed, total program " << ms <<" Rate "<< ExecRate<<" Hz";

@@ -238,7 +238,7 @@ MonitorPCHeartBeat();
 MonitorPCReadiness();
 DeterminePCReadiness();
 
-if(!BoardFoundByPC && BoardRequested)
+if(!BoardFoundByPC) //&& BoardRequested
 {
   SendBoardName();
 }
