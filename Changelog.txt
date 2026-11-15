@@ -59,3 +59,7 @@ Added HB,Board ready, and comms est to MSB. MSB also uses chrono instead of dwor
 Added back the radar draw. Program runs 45-50 Hz, occasional drops < 40 Hz. Gyro collection needs to be 30 Hz
 in this condition, so unable to send Acc data. Also needs about 10sec for gyro comms est. and 20sec to get readings 
 without lag.
+
+15/11/2026
+Added the QMC5883L digital compass to the gyro code for a drift compensated yaw reading. The compass could use better 
+calibration however. Implemented 1D Kalman filter for pitch, roll, and yaw.
