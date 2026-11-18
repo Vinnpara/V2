@@ -52,12 +52,9 @@ void RadarVirtual::Draw(glm::vec3 ScaleVector, glm::vec4 ColorMatrixShader) {
 }
 
 RadarVirtual::RadarVirtual() {
-
-}
-
-RadarVirtual::~RadarVirtual() {
-
-	glDeleteVertexArrays(1, &VAO);
+	for (int i = 0; i < 172; i++) {
+		RadarValues.push_back(0.0);
+	}
 }
 
 
@@ -136,6 +133,15 @@ void RadarVirtual::GenerateSegments() {
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
+}
+
+void RadarVirtual::UpdateVals(int16_t RadarVal, int16_t RadarPos) {
+
+	this->RadarValue = RadarVal;
+	this->RadarPosition = RadarPos;
+
+	if (RadarPos >= 0 && RadarPos < 181) //172
+		RadarValues[RadarPos] = RadarVal;
 }
 
 /*
@@ -231,7 +237,7 @@ void RadarScaleLongitudinal::Draw(GraphicRender &Gr1){
 
 		float ScaleValue = ConvertValue(j, mScaleLong, CScaleLong);
 
-		for (int t = 0; t < TriangleHalves; t += 10) {
+		for (int t = 0; t < TriangleHalves; t += 20) {
 
 			glm::mat4 transform = glm::mat4(1.0f);
 			float AngleTest = glm::radians(-(float)t);
@@ -244,7 +250,7 @@ void RadarScaleLongitudinal::Draw(GraphicRender &Gr1){
 			Gr1.Draw(true, this->ColorRadarScale, this->TransformRadarScaleLong);
 		}
 
-		for (int t = 0; t < TriangleHalves; t += 10) {
+		for (int t = 0; t < TriangleHalves; t += 20) {
 
 			glm::mat4 transform = glm::mat4(1.0f);
 			float AngleTest = glm::radians((float)t);
@@ -255,6 +261,46 @@ void RadarScaleLongitudinal::Draw(GraphicRender &Gr1){
 			//glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 			Gr1.UseShader();
 			Gr1.Draw(true, this->ColorRadarScale, this->TransformRadarScaleLong);
+		}
+	}
+
+}
+
+void RadarScaleLongitudinal::Draw(std::shared_ptr<GraphicRender> GR) {
+
+
+
+	static int TriangleHalves = int(NumberOfTriangles / 2);
+	int j;
+
+	for (j = 0; j <= 200; j += 20) {
+
+		float ScaleValue = ConvertValue(j, mScaleLong, CScaleLong);
+
+		for (int t = 0; t < TriangleHalves; t += 20) {
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians(-(float)t);
+			transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+			TransformRadarScaleLong = transform;
+			//glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			GR->UseShader();
+			GR->Draw(true, this->ColorRadarScale, this->TransformRadarScaleLong);
+		}
+
+		for (int t = 0; t < TriangleHalves; t += 20) {
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians((float)t);
+			transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+			TransformRadarScaleLong = transform;
+			//glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			GR->UseShader();
+			GR->Draw(true, this->ColorRadarScale, this->TransformRadarScaleLong);
 		}
 	}
 
@@ -315,6 +361,45 @@ void RadarScaleLateral::Draw(GraphicRender& Gr1) {
 
 			Gr1.UseShader();
 			Gr1.Draw(true, this->ColorRadarScale, this->TransformRadarScale);
+
+		}
+	}
+
+}
+
+void RadarScaleLateral::Draw(std::shared_ptr<GraphicRender> GR) {
+
+	static int TriangleHalves = int(NumberOfTriangles / 2);
+	int j;
+
+
+	for (j = 0; j <= 200; j += 10) {
+
+		float ScaleValue = ConvertValue(float(j), mRadarLateral, CRadarLateral);
+
+		for (int t = 0; t < TriangleHalves; t++) {
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians(-(float)t);
+			transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			TransformRadarScale = transform;
+
+			GR->UseShader();
+			GR->Draw(true, this->ColorRadarScale, this->TransformRadarScale);
+
+		}
+
+		for (int t = 0; t < TriangleHalves; t++) {
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians((float)t);
+			transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			TransformRadarScale = transform;
+
+			GR->UseShader();
+			GR->Draw(true, this->ColorRadarScale, this->TransformRadarScale);
 
 		}
 	}
@@ -392,6 +477,54 @@ void RadarBackground::Draw(GraphicRender& Gr1) {
 	}
 
 }
+void RadarBackground::Draw(std::shared_ptr<GraphicRender> GR) {
+
+	static int TriangleHalves = int(NumberOfTriangles / 2);
+
+	for (int t = 0; t < TriangleHalves; t++) {
+
+		glm::mat4 transform = glm::mat4(1.0f);
+		float AngleTest = glm::radians(-(float)t);
+		transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+		transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+		TransformRadarBack = transform;
+		//glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		GR->UseShader();
+		GR->Draw(false, this->ColorRadarBack, this->TransformRadarBack);
+
+
+		/*this->VS1.SetVector4f("Color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		this->VS1.SetMatrix4("transform", transform);
+
+		glBindVertexArray(VAODrawSegments);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDrawArrays(GL_TRIANGLES, 0, TriangleHalves);*/
+
+	}
+
+	for (int t = 0; t < TriangleHalves; t++) {
+
+		glm::mat4 transform = glm::mat4(1.0f);
+		float AngleTest = glm::radians((float)t);
+		transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+		transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+
+		TransformRadarBack = transform;
+		//glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		GR->UseShader();
+		GR->Draw(false, this->ColorRadarBack, this->TransformRadarBack);
+
+		/*this->VS1.SetVector4f("Color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		this->VS1.SetMatrix4("transform", transform);
+
+		glBindVertexArray(VAODrawSegments);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDrawArrays(GL_TRIANGLES, 0, TriangleHalves);*/
+
+	}
+
+}
 
 /// <summary>
 /// RADAR CLASS
@@ -417,16 +550,9 @@ void RadarActual::RadarInitAct(Shader* Shader1, unsigned int VAOuse, std::vector
 
 }
 
-void RadarActual::UpdateVals(int16_t RadarVal, int16_t RadarPos) {
 
-	this->RadarValue = RadarVal;
-	this->RadarPosition = RadarPos;
 
-	if(RadarPos >=0 && RadarPos <172)
-	 RadarValues[RadarPos] = RadarVal;
-}
-
-void RadarActual::DrawFull(GraphicRender& Gr1) {
+void RadarActual::Draw(GraphicRender& Gr1) {
 
 	if (RadarValues.size() > 1) {
 
@@ -436,35 +562,35 @@ void RadarActual::DrawFull(GraphicRender& Gr1) {
 
 
 
-				float Xvalue = (float)t;
-				float XvalueRadVal = float(abs(RadarValues.at(t)));
+			float Xvalue = (float)t;
+			float XvalueRadVal = float(abs(RadarValues.at(t)));
 
-				float RawScaleVal= ConvertValue(XvalueRadVal, RadarScaleM, RadarScaleC);
+			float RawScaleVal = ConvertValue(XvalueRadVal, RadarScaleM, RadarScaleC);
 
-				float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
+			float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
 
-				glm::mat4 transform = glm::mat4(1.0f);
+			glm::mat4 transform = glm::mat4(1.0f);
 
-				float AngleTest = glm::radians(ConvertValue(Xvalue, RadarPosM, RadarPosC));
-				transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
+			float AngleTest = glm::radians(ConvertValue(Xvalue, RadarPosM, RadarPosC));
+			transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
 
-				//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
-				transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
-				//cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
+			//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			//cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
 
-				float ValueRed = ConvertValue(XvalueRadVal, RadarRedM, RadarRedC);
-				float ValueBlue = ConvertValue(XvalueRadVal, RadarBlueM, RadarBlueC);
+			float ValueRed = ConvertValue(XvalueRadVal, RadarRedM, RadarRedC);
+			float ValueBlue = ConvertValue(XvalueRadVal, RadarBlueM, RadarBlueC);
 
-				glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
+			glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
 
-				TransformRadar = transform;
-				Colorval = Colval;
+			TransformRadar = transform;
+			Colorval = Colval;
 
-				//std::cout << "\nRED VAL " << Colorval.a;
-				//std::cout << "\nSize of RadarVal " << RadarValues.at(t);
+			//std::cout << "\nRED VAL " << Colorval.a;
+			//std::cout << "\nSize of RadarVal " << RadarValues.at(t);
 
-				Gr1.UseShader();
-				Gr1.Draw(this->Colorval, this->TransformRadar, (RadarValues.size()*3));
+			Gr1.UseShader();
+			Gr1.Draw(this->Colorval, this->TransformRadar, (RadarValues.size() * 3));
 
 
 		}
@@ -473,40 +599,55 @@ void RadarActual::DrawFull(GraphicRender& Gr1) {
 
 	}
 
+
 }
 
-void RadarActual::Draw(GraphicRender& Gr1) {
+void RadarActual::Draw(std::shared_ptr<GraphicRender> GR) {
 
-	float Xvalue = abs((float)RadarPosition);
+	if (RadarValues.size() > 1) {
 
-	float XvalueRadVal = abs(float(RadarValue));
+		static int TriangleHalves = int((RadarValues.size()) / 2);
+
+		for (int t = 0; t < RadarValues.size(); t++) {
 
 
-	float RawScaleVal = ConvertValue(XvalueRadVal, RadarScaleM, RadarScaleC);
 
-	float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
+			float Xvalue = (float)t;
+			float XvalueRadVal = float(abs(RadarValues.at(t)));
 
-	glm::mat4 transform = glm::mat4(1.0f);
+			float RawScaleVal = ConvertValue(XvalueRadVal, RadarScaleM, RadarScaleC);
 
-	float AngleTest = glm::radians(ConvertValue(Xvalue, RadarPosM, RadarPosC));
-	transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
+			float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
 
-	//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
-	transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
-	//cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
+			glm::mat4 transform = glm::mat4(1.0f);
 
-	float ValueRed = ConvertValue(XvalueRadVal, RadarRedM, RadarRedC);
-	float ValueBlue = ConvertValue(XvalueRadVal, RadarBlueM, RadarBlueC);
+			float AngleTest = glm::radians(ConvertValue(Xvalue, RadarPosM, RadarPosC));
+			transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
 
-	glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
+			//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			//cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
 
-    TransformRadar = transform;
-    Colorval = Colval;
+			float ValueRed = ConvertValue(XvalueRadVal, RadarRedM, RadarRedC);
+			float ValueBlue = ConvertValue(XvalueRadVal, RadarBlueM, RadarBlueC);
 
-	//std::cout << "\nRED VAL " << Colorval.a;
-	//std::cout << "\nBLUE VAL " << Colorval.b;
+			glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
 
-	Gr1.UseShader();
-	Gr1.Draw(false, this->Colorval, this->TransformRadar);
+			TransformRadar = transform;
+			Colorval = Colval;
+
+			//std::cout << "\nRED VAL " << Colorval.a;
+			//std::cout << "\nSize of RadarVal " << RadarValues.at(t);
+
+			GR->UseShader();
+			GR->Draw(this->Colorval, this->TransformRadar, (RadarValues.size() * 3));
+
+
+		}
+
+
+
+	}
+	//std::cout << "\nRad size " << RadarValues.size();
 
 }

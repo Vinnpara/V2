@@ -332,14 +332,16 @@ int main()
             DC1.SetMessageStatus(ControllerStatus, 9002, MESSAGE_ON);
         }
 
+
+
         TL1.SignalPCReadiness();
         TL1.UpdateMotorSteerCommand(LastTimePointMSB);
         TL1.BoardsSendAndReceive();
         TL1.UpdateGyroData();
         TL1.UpdateRadar();
         TL1.MonitorCommsStatus(DC1);
-
         TL1.ClearDataPackets();
+        
 
         TL1.CalcVelocity();
         
@@ -378,13 +380,13 @@ int main()
 
         //TL1.UpdateValues3Attitude(ConvertedYaw, ConvertedPitch, ConvertedRoll);
 
-        TL1.RenderPitch();
-        TL1.RenderRoll();
-        TL1.RenderYaw();
+        //TL1.RenderPitch();
+        //TL1.RenderRoll();
+        //TL1.RenderYaw();
         //TL1.UpdateValuesRadar();
-        TL1.RenderRadar();
-        TL1.RenderModel();
-        TL1.RenderControllerState(ControllerPresent);
+        //TL1.RenderRadar();
+        //TL1.RenderModel();
+        //TL1.RenderControllerState(ControllerPresent);
 
         TL1.GetRecStartStopCommand(DiagWindow->RecStartStatus(), DiagWindow->RecStopStatus());
 
@@ -395,8 +397,8 @@ int main()
         RadarValue = TL1.GetRadarVal();
         RadarPosition = TL1.GetRadarPos();
 
-        Rad1.UpdateValues(RadarValue, RadarPosition); //Commented out to speed up program. 4-5 ms (250 - 200 Hz)
-        Rad1.RadarDraw();
+        Rad1.UpdateRadarValues(250, 75); //Commented out to speed up program. 4-5 ms (250 - 200 Hz)
+        Rad1.RadarUIDraw();
 
         TL1.RecordData();
 

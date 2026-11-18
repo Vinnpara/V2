@@ -20,42 +20,73 @@
 #include<serial/SerialOrder.h>
 
 GraphicRender *GR1, *GR2;
-RadarScaleLongitudinal* RSL;
-RadarBackground* RB;
-RadarScaleLateral* RS;
-RadarActual* RA;
+//RadarScaleLongitudinal* RSL;
+//RadarBackground* RB;
+//RadarScaleLateral* RS;
+//RadarActual* RA;
 
 RadarUI::RadarUI() {
 
 
 }
 
-RadarUI::RadarUI(Shader Shade) {
+std::unique_ptr<RadarVirtual> RadarUI::CreateRadar(RadarClassType Type)
+{
+   
+    switch (Type)
+    {
+    case SCALE_LONG:  return std::make_unique<RadarScaleLongitudinal>();
+    case SCALE_LAT:   return std::make_unique<RadarScaleLateral>();
+    case BACKGROUND:      return std::make_unique<RadarBackground>();
+    case ACTUAL:      return std::make_unique<RadarActual>();
+    }
 
+    
+
+    return nullptr;
+}
+
+std::vector<float> RadarUI::GenerateVertices(int VerticesNUmber, float* vertices1_1)
+{
+    std::vector<float> TriangleVertices;
+
+
+    for (int i = 0; i < VerticesNUmber; i++) {
+
+        for (int j = 0; j < 9; j++) {
+
+            TriangleVertices.push_back(vertices1_1[j]);
+
+
+        }
+    }
+    std::cout << "\nVertices side solid lines " << sizeof(vertices1_1);
+    return TriangleVertices;
 
 }
 
-void RadarUI::ReTryRequest(SerialPort& Serial, SerialOrder Command) {
+std::vector<float> RadarUI::GenerateVertices2(int VerticesNUmber) 
+{
+    std::vector<float> TriangleVertices;
 
-    bool TransferFail;
+    float vertices1_1[] = {
+        // first triangle 10 triangles
+        0.000873f, 0.1f, 0.0f,  // p1
+        -0.000873f, 0.1f, 0.0f,  // p2
+    };
 
-    char buff[1] = { Command };
-    TransferFail = Serial.writeSerialPort(buff, 1);
-    //cout << "\n RETRYING COMMAND " << TransferFail << endl;
+
+    for (int i = 0; i < VerticesNUmber; i++) {
+
+        for (int j = 0; j < 6; j++) {
+
+            TriangleVertices.push_back(vertices1_1[j]);
 
 
-}
-
-int16_t  RadarUI::BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue) {
-
-    if (ReadValue <= MinValue)
-        ReadValue = MinValue;
-
-    else if (ReadValue >= MaxValue)
-        ReadValue = MaxValue;
-
-    return ReadValue;
-
+        }
+    }
+    std::cout << "\nVertices side dashed lines " << sizeof(vertices1_1);
+    return TriangleVertices;
 }
 
 float RadarUI::maxval(float max, float min, float& val) {
@@ -70,79 +101,6 @@ float RadarUI::maxval(float max, float min, float& val) {
     return value;
 }
 
-
-void RadarUI::ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand) {
-
-
-    SerialOrder ReceivedType;
-
-    if (Serial.isConnected()) {
-
-        ReceivedType = read_order(Serial);
-        //cout << "\nENUM RECEVIED " << ReceivedType << endl;
-        switch (ReceivedType)
-        {
-        case HELLO:
-        {
-            //cout << "\nHELLO" << endl;
-            break;
-        }
-        case RADAR_DISTANCE:
-        {   //This is sent as an int16_t
-            int16_t MeasuredRadarDistance = read_i16(Serial);
-            RadarValue = MeasuredRadarDistance;
-            BufferFilterInt16(201, 0, MeasuredRadarDistance);
-            //cout << "\nRADAR_DISTANCE " << MeasuredRadarDistance << endl;
-            break;
-        }
-        case RADAR_POSITION:
-        {   //This is sent as an int16_t
-            int16_t MeasuredRadarPosition = read_i16(Serial);
-            RadarPosition = MeasuredRadarPosition;
-            BufferFilterInt16(170, 0, MeasuredRadarPosition);
-            //cout << "\nRADAR_POSITION " << MeasuredRadarPosition << endl;
-            break;
-        }
-        default:
-        {
-            //The PC is not getting any valid values so do not write into serial on ard.
-
-            //SerialOrder OrderWait = PC_NOT_READY;
-
-            //char buff[1] = { OrderWait };
-            //bool TransferReceived = false;
-            //bool TransferFail = Serial.writeSerialPort(buff, 1);
-
-            ReTryRequest(Serial, Command);
-        }
-
-        }
-
-        if ((Command - 10) == ReceivedType) {
-            ExpectedCommand = true;
-
-        }
-        else
-            ExpectedCommand = false;
-        //cout << "\nCommand not received   " << Command << endl;
-       
-    }
-    else
-        std::cout << "\nARDUINO DISCONNECTED " << std::endl;
-
-}
-
-
-void RadarUI::RequestReadData(SerialPort& Serial, SerialOrder Command) {
-
-    bool TransferFail;
-    char buff[1] = { Command };
-    TransferFail = Serial.writeSerialPort(buff, 1);
-
-}
-
-
-
 void RadarUI::RadarInitalize() {
 
     SectorVertices = GenerateVertices(NumberOfTriangles, VerticesSolid);
@@ -156,10 +114,35 @@ void RadarUI::RadarInitalize() {
     GR1 = new GraphicRender(ResourceManager::GetShader("radar"), SectorVertices, TriangleHalves);
     GR2 = new GraphicRender(ResourceManager::GetShader("radar"), LineSectorVertices, TriangleHalves);
 
-    RB = new RadarBackground;
-    RSL = new RadarScaleLongitudinal;
-    RS = new RadarScaleLateral;
-    RA = new RadarActual;
+    for (int i = 0; i < RendersNum; i++)
+    {
+        Renders.push_back(std::make_shared< GraphicRender>());
+        Renders[i]->SetType((GraphicRenderType)(i + 1));
+    }
+
+    for (int i = 0; i < RendersNum; i++)
+    {
+        Renders[i]->SetShader(ResourceManager::GetShader("radar"));
+        Renders[i]->SetNumberOFVertices(TriangleHalves);
+
+        if (Renders[i]->Gettype() == SECTORS)
+            Renders[i]->SetVerticesBuffer(SectorVertices);
+        if (Renders[i]->Gettype() == LINES)
+            Renders[i]->SetVerticesBuffer(LineSectorVertices);
+    }
+
+   //RB = new RadarBackground;
+  // RSL = new RadarScaleLongitudinal;
+   //RS = new RadarScaleLateral;
+   //RA = new RadarActual;
+    
+    for (int i = 1; i <= 4; i++)
+    {
+        //std::cout << "\nCREATE " << (RadarClassType)i;
+        Radars.push_back(CreateRadar((RadarClassType)i));
+    }
+
+    std::cout << "\nRadar size " << Radars.size();
 
     /*ResourceManager::LoadShader("D:/V2/V2/V2/include/RadarBackgroundVertex.vs", "D:/V2/V2/V2/include/RadarBackgroundFragment.ffs", nullptr, "radar");
     ResourceManager::GetShader("radar").Use().SetInteger("radar", 0);
@@ -201,42 +184,80 @@ void RadarUI::RadarInitalize() {
 }
 
 
-void RadarUI::UpdateValues(int16_t RadarVal, int16_t RadarPos) {
+void RadarUI::UpdateRadarValues(int16_t RadarVal, int16_t RadarPos) {
 
     this->RadarValue = RadarVal;
     this->RadarPosition = RadarPos;
     
-    RA->UpdateVals(RadarValue, RadarPos);
+    //RA->UpdateVals(RadarValue, RadarPos);
+    
+    for (int i = 0; i < Radars.size(); i++)
+    {
 
+        if (Radars[i]->GetRadarType() == ACTUAL)
+        {
+            Radars[i]->UpdateVals(RadarValue, RadarPos);
+        }
+    }
+    
 }
 
-void RadarUI::UpdateValues(SerialPort& Serial) {
 
-    static bool ValidRadarVal, ValidRadarPos;
-
-    RequestReadData(Serial, REQUEST_RADAR);
-    ReadBuffer(Serial, REQUEST_RADAR, ValidRadarVal);
-   
-   RequestReadData(Serial, REQUEST_RADAR_POS);
-   ReadBuffer(Serial, REQUEST_RADAR_POS, ValidRadarPos);
-   
-    RA->UpdateVals(RadarValue, RadarPosition); //This function causes the unexpected crash
-
-}
-
-void RadarUI::RadarDraw() {
+void RadarUI::RadarUIDraw() {
     
    // ScaleLong->Draw(*GR1);
    //ScaleLat->Draw();
    //Background->Draw();
 
-    RA->Draw(*GR1);
-    RA->DrawFull(*GR1);
-    RS->Draw(*GR2);
-    RSL->Draw(*GR1);
-    RB->Draw(*GR1);
+    //RA->Draw(*GR1);
+    //RS->Draw(*GR2);
+    //RSL->Draw(*GR1);
+    //RB->Draw(*GR1);
 
+    int IdxSector = 0, IdxLines = 0;
+
+    for (int i = 0; i < RendersNum; i++)
+    {
+
+        if (Renders[i]->Gettype() == SECTORS)
+            IdxSector = i;
+
+        if (Renders[i]->Gettype() == LINES)
+            IdxLines = i;
+    }
+    int IdxActual = 0,
+        IdxScalLong = 0,
+        IdxScaleLat = 0,
+        IdxBackGround = 0;
+    
+    for (int i = 0; i < Radars.size(); i++)
+    {
+        if (Radars[i].get() != nullptr && Radars[i]->GetRadarType() && Radars[i]->GetRadarType() == ACTUAL)
+            IdxActual = i;
+        if (Radars[i].get() != nullptr && Radars[i]->GetRadarType() && Radars[i]->GetRadarType() == SCALE_LONG)
+            IdxScalLong = i;
+        if (Radars[i].get() != nullptr && Radars[i]->GetRadarType() && Radars[i]->GetRadarType() == SCALE_LAT)
+            IdxScaleLat = i;
+        if (Radars[i].get() != nullptr && Radars[i]->GetRadarType() && Radars[i]->GetRadarType() == BACKGROUND)
+            IdxBackGround = i;
+        
+    }
+    //The order of drawing matters
+
+    if (Radars[IdxActual].get() != nullptr && Renders[IdxSector].get() != nullptr)
+        Radars[IdxActual]->Draw(Renders[IdxSector]);
+
+    //if (Radars[IdxScaleLat].get() != nullptr)
+        //Radars[IdxScaleLat]->Draw(Renders[IdxLines]);
+
+    if (Radars[IdxScalLong].get() != nullptr && Renders[IdxSector].get() != nullptr)
+        Radars[IdxScalLong]->Draw(Renders[IdxSector]);
+
+    if (Radars[IdxBackGround].get() != nullptr && Renders[IdxSector].get() != nullptr)
+        Radars[IdxBackGround]->Draw(Renders[IdxSector]);
 }
+
+
 
 int16_t RadarUI::RadarVal() {
     
@@ -251,12 +272,12 @@ int16_t RadarUI::RadarPos() {
 
 RadarUI::~RadarUI() {
     //delete ScaleLong;
-    delete GR1;
-    delete GR2;
-    delete RB;
-    delete RS;
-    delete RSL;
-    delete RA;
+   // delete GR1;
+   // delete GR2;
+   //delete RB;
+   //delete RS;
+   //delete RSL;
+   //delete RA;
 
     std::cout << "\nDELETED IN RADAR UI ";
 }

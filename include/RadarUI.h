@@ -31,26 +31,25 @@ Using the RadarVirtual classes
 
 */
 
-class RadarUI: protected  RadarVirtual {
+class RadarUI {
 public:
 	RadarUI();
-	RadarUI(Shader Shade);
-	void RadarInitalize();
-	void UpdateValues(int16_t RadarVal, int16_t RadarPos);
-	void RadarDraw();
-	void UpdateValues(SerialPort& Serial);
+
+	void RadarInitalize(); //USED
+	void UpdateRadarValues(int16_t RadarVal, int16_t RadarPos); //USED
+	void RadarUIDraw(); //USED
+
 	~RadarUI();
 	int16_t RadarVal();
 	int16_t RadarPos();
 
 private:
 	/*Private funnctions*/
-
-	void ReadBuffer(SerialPort& Serial, SerialOrder Command, static bool& ExpectedCommand);
-	void RequestReadData(SerialPort& Serial, SerialOrder Command);
-	int16_t BufferFilterInt16(int16_t MaxValue, int16_t MinValue, int16_t& ReadValue);
-	void ReTryRequest(SerialPort& Serial, SerialOrder Command);
+	std::unique_ptr<RadarVirtual>CreateRadar(RadarClassType Type);
 	float maxval(float max, float min, float &val);
+
+	std::vector<float> GenerateVertices(int VerticesNUmber, float* vertices1_1);
+	std::vector<float> GenerateVertices2(int VerticesNUmber);
 
 	/*Private variables*/
 	
@@ -83,6 +82,8 @@ private:
 	int16_t RadarValue, RadarPosition;
 	std::vector<int16_t>RadarValues;
 
+	const int NumberOfTriangles = 182;
+
 	float *RadarVerts,
 		  *RadarScaleVerts;
 
@@ -91,11 +92,10 @@ private:
 
 	int TriangleHalves = 0;
 
+	std::vector<std::unique_ptr<RadarVirtual>> Radars;
+	std::vector < std::shared_ptr<GraphicRender>> Renders;
 
-
-	Shader S1;
-	
-
+	const int RendersNum = 2;
 };
 
 #endif
