@@ -63,3 +63,8 @@ without lag.
 15/11/2026
 Added the QMC5883L digital compass to the gyro code for a drift compensated yaw reading. The compass could use better 
 calibration however. Implemented 1D Kalman filter for pitch, roll, and yaw.
+
+18/11/2026
+RadarUI is more generic now with drawing. Lateral needs to only show marks at 0.3m, 1m, and 2m. Radar actual needs to be
+one sweeping line. And not what we have currently. Also, could be useful to have an option to choose between 180 and 360
+seep angle.

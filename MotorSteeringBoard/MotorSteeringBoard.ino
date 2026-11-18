@@ -273,7 +273,7 @@ if (millis() - lastRttReport > 2000 && rttCount > 0)
 }
 
 
-UpdateDisp();
+//UpdateDisp();
 }
 
 ////******END OF MAIN LOOP********///////

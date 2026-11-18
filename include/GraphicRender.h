@@ -10,6 +10,13 @@
 #include <ShaderVision.h>
 #include<vector>
 #include <camera.h>
+enum GraphicRenderType
+{
+	SECTORS = 1,
+	LINES = 2,
+};
+
+typedef enum GraphicRenderType GraphicRenderType;
 class GraphicRender
 {
 public:
@@ -32,6 +39,15 @@ public:
 	void initRenderData3D(std::vector<float> Vertices);
 	//this class will delete the VAO and VBO
 
+	//Set params
+	void SetShader(ShaderVision& VS1) { this->VS = VS1; };
+	void SetVerticesBuffer(std::vector<float> BufferVertices);
+	void SetNumberOFVertices(int num) { this->NumberOfVertices = num; };
+
+	void SetType(GraphicRenderType type) { this->Type = type; }
+
+	GraphicRenderType Gettype() {return Type;}
+
 private:
 	//Shader object
 	Shader *shade;
@@ -43,7 +59,7 @@ private:
 	// Initializes and configures the quad's buffer and vertex attributes
 	std::vector<float> Vertices;
 	void initRenderData();
-
+	GraphicRenderType Type;
 
 
 };

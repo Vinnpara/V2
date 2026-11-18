@@ -196,6 +196,11 @@ GraphicRender::GraphicRender(std::vector<float> BufferVertices, int NumOfVertice
     std::cout << "\nGRAPHIC RENDER CONSTRUCTOR NO VS " << std::endl;
 }
 
+void GraphicRender::SetVerticesBuffer(std::vector<float> BufferVertices)
+{
+    initRenderData(BufferVertices);
+}
+
 void GraphicRender::Draw(bool IsScale) {
 
     if (IsScale) {
