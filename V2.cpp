@@ -49,6 +49,7 @@
 #include <ResourceHandle.h>
 #include <TelemetryUI.h>
 #include <camera.h>
+#include <ObjectMap.h>
 
 #include <ArduinoReceiver.h>
 #include <Vision.h>
@@ -288,6 +289,11 @@ int main()
 
     static std::chrono::steady_clock::time_point LastTimePointMSB;
 
+    ObjectMap FwdMap;
+
+    std::map< int, int> MAPTest = { {0, 90}, {20, 85} , {40, 25},  {60, 10},  {80, 40}, 
+                                    { 100, 110 },  {120, 95},  {140, 70}, {160, 100} };
+
     while (!glfwWindowShouldClose(window) ) {
 
         auto t0Main = std::chrono::steady_clock::now();
@@ -397,7 +403,13 @@ int main()
         RadarValue = TL1.GetRadarVal();
         RadarPosition = TL1.GetRadarPos();
 
-        Rad1.UpdateRadarValues(250, 75); //Commented out to speed up program. 4-5 ms (250 - 200 Hz)
+        FwdMap.SetCurrentReading(RadarValue, RadarPosition, TL1.ReturnYaw());
+        FwdMap.UpdateSegment();
+
+        Rad1.UpdateRadarValues(RadarValue, RadarPosition); //Commented out to speed up program. 4-5 ms (250 - 200 Hz) 250,75
+
+        Rad1.SetFwdObjMap(FwdMap.GetUpdatedMap()); //MAPTest  Rad1.SetFwdObjMap(FwdMap.GetUpdatedMap());
+
         Rad1.RadarUIDraw();
 
         TL1.RecordData();

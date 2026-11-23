@@ -38,10 +38,13 @@ public:
 	void RadarInitalize(); //USED
 	void UpdateRadarValues(int16_t RadarVal, int16_t RadarPos); //USED
 	void RadarUIDraw(); //USED
+	void SetFwdObjMap(std::map< int, int> Map); 
 
 	~RadarUI();
 	int16_t RadarVal();
 	int16_t RadarPos();
+
+	std::map< int, int> AvgObjectsTest;
 
 private:
 	/*Private funnctions*/

@@ -602,8 +602,10 @@ void RadarActual::Draw(GraphicRender& Gr1) {
 
 }
 
-void RadarActual::Draw(std::shared_ptr<GraphicRender> GR) {
 
+
+void RadarActual::Draw(std::shared_ptr<GraphicRender> GR) {
+	/*
 	if (RadarValues.size() > 1) {
 
 		static int TriangleHalves = int((RadarValues.size()) / 2);
@@ -647,7 +649,125 @@ void RadarActual::Draw(std::shared_ptr<GraphicRender> GR) {
 
 
 
-	}
+	}*/
 	//std::cout << "\nRad size " << RadarValues.size();
+	
+	
+	//This will paint just the currect reading:
+	
+	float Xvalue = abs((float)RadarPosition);
+	float XvalueRadVal = abs(float(RadarValue));
+	float RawScaleVal = ConvertValue(XvalueRadVal, RadarScaleM, RadarScaleC);
+	float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
+	glm::mat4 transform = glm::mat4(1.0f);
+	float AngleTest = glm::radians(ConvertValue(Xvalue, RadarPosM, RadarPosC));
+	transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
+	//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+	transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+	//cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
+	float ValueRed = ConvertValue(XvalueRadVal, RadarRedM, RadarRedC);
+	float ValueBlue = ConvertValue(XvalueRadVal, RadarBlueM, RadarBlueC);
+	glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
+	TransformRadar = transform;
+	Colorval = Colval;
+	//std::cout << "\Radar VAL " << RadarValue;
+	//std::cout << "\nPosition VAL " << RadarPosition;
+	GR->UseShader();
+	GR->Draw(false, this->Colorval, this->TransformRadar);
+	
+}
+
+/// <summary>
+/// RADAR MAP
+/// The actual class that will draw the radar
+///
+/// </summary>
+
+RadarMap::RadarMap()
+{
+
+}
+
+
+void RadarMap::Draw(std::shared_ptr<GraphicRender> GR) 
+{
+//Will draw just a segment of 20 degrees.
+//start position of the for loop is the starting
+//angle
+
+
+	std::vector<std::pair<int, int>> AveragedMapSegments;
+
+	for (const auto& pair : AvgObjectsLocal)
+	{
+		AveragedMapSegments.push_back(pair);
+	}
+
+	for (int i = 0; i < AveragedMapSegments.size(); i++)
+	{
+		//std::cout << "\n maps vals " << AveragedMapSegments[i].first << " " << AveragedMapSegments[i].second;
+		int StartPos = 0,
+			StartVal = AveragedMapSegments[i].second;
+
+		StartPos = AveragedMapSegments[i].first;  //AveragedMapSegments[i].first-20
+
+		//if (AveragedMapSegments[i].first == 20)
+			//StartPos = 0;
+
+		//if (AveragedMapSegments[i].first == 160)
+			//StartPos = AveragedMapSegments[i].first;
+
+		//if (AveragedMapSegments[i].first == 40)
+			//StartPos = AveragedMapSegments[i].first - 20;
+			
+
+		for (int t = StartPos; t < SegmentSize + StartPos; t++) {
+
+			float RawScaleVal = ConvertValue(StartVal, RadarScaleM, RadarScaleC);
+			float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
+
+			glm::mat4 transform = glm::mat4(1.0f); //1.0 std
+
+			//float AngleTest = glm::radians((float)t);
+			float AngleTest = glm::radians(ConvertValue((float)t, RadarPosM, RadarPosC));
+
+			//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+			transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			TransformRadarMap = transform;
+
+			float ValueRed = ConvertValue(StartVal, RadarRedM, RadarRedC);
+			float ValueBlue = ConvertValue(StartVal, RadarBlueM, RadarBlueC);
+			glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
+			ColorRadarMap = Colval;
+			//glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			GR->UseShader();
+			GR->Draw(false, this->ColorRadarMap, this->TransformRadarMap);
+
+
+			/*
+			float Xvalue = abs((float)StartPos);
+			float XvalueRadVal = abs(float(StartVal));
+			float RawScaleVal = ConvertValue(XvalueRadVal, RadarScaleM, RadarScaleC);
+			float ScaleVal = maxval(8.0, 0.0, RawScaleVal);
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians(ConvertValue(Xvalue, RadarPosM, RadarPosC));
+			transform = glm::scale(transform, glm::vec3(ScaleVal, ScaleVal, ScaleVal));
+			//transform = glm::scale(transform, glm::vec3(8.0f, 8.0f, 8.0f));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			//cout << "\nRADARVALUE ANGLE VALUE SCALE VALUE " << RadarVal.at(t)<<" "<<t<<" "<< ConvertRadarValue(float(RadarVal.at(t)))<<" "<< RadarVal.size();
+			float ValueRed = ConvertValue(XvalueRadVal, RadarRedM, RadarRedC);
+			float ValueBlue = ConvertValue(XvalueRadVal, RadarBlueM, RadarBlueC);
+			glm::vec4 Colval = glm::vec4(ValueRed, 0.0f, ValueBlue, 1.0f);
+			TransformRadarMap = transform;
+			ColorRadarMap = Colval;
+			//std::cout << "\Radar VAL " << RadarValue;
+			//std::cout << "\nPosition VAL " << RadarPosition;
+			GR->UseShader();
+			GR->Draw(false, this->ColorRadarMap, this->TransformRadarMap);
+			*/
+
+		}
+	}
 
 }
