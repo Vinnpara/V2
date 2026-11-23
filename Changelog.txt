@@ -68,3 +68,7 @@ calibration however. Implemented 1D Kalman filter for pitch, roll, and yaw.
 RadarUI is more generic now with drawing. Lateral needs to only show marks at 0.3m, 1m, and 2m. Radar actual needs to be
 one sweeping line. And not what we have currently. Also, could be useful to have an option to choose between 180 and 360
 seep angle.
+
+22/11/2026
+Added Object map to cal averages of segments. Currently, set to a resolution of 10 degree segments, where what is displayed
+is the average distance measured. The measured dist function might need work. Also corrected the offset of radar actual

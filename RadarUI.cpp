@@ -19,7 +19,7 @@
 #include<serial/SerialPort.h>
 #include<serial/SerialOrder.h>
 
-GraphicRender *GR1, *GR2;
+//GraphicRender *GR1, *GR2;
 //RadarScaleLongitudinal* RSL;
 //RadarBackground* RB;
 //RadarScaleLateral* RS;
@@ -39,6 +39,7 @@ std::unique_ptr<RadarVirtual> RadarUI::CreateRadar(RadarClassType Type)
     case SCALE_LAT:   return std::make_unique<RadarScaleLateral>();
     case BACKGROUND:      return std::make_unique<RadarBackground>();
     case ACTUAL:      return std::make_unique<RadarActual>();
+    case MAP:      return std::make_unique<RadarMap>();
     }
 
     
@@ -111,8 +112,8 @@ void RadarUI::RadarInitalize() {
 
     int TriangleHalves = int(NumberOfTriangles / 2);
 
-    GR1 = new GraphicRender(ResourceManager::GetShader("radar"), SectorVertices, TriangleHalves);
-    GR2 = new GraphicRender(ResourceManager::GetShader("radar"), LineSectorVertices, TriangleHalves);
+    //GR1 = new GraphicRender(ResourceManager::GetShader("radar"), SectorVertices, TriangleHalves);
+    //GR2 = new GraphicRender(ResourceManager::GetShader("radar"), LineSectorVertices, TriangleHalves);
 
     for (int i = 0; i < RendersNum; i++)
     {
@@ -136,7 +137,7 @@ void RadarUI::RadarInitalize() {
    //RS = new RadarScaleLateral;
    //RA = new RadarActual;
     
-    for (int i = 1; i <= 4; i++)
+    for (int i = 1; i <= 5; i++)
     {
         //std::cout << "\nCREATE " << (RadarClassType)i;
         Radars.push_back(CreateRadar((RadarClassType)i));
@@ -196,10 +197,28 @@ void RadarUI::UpdateRadarValues(int16_t RadarVal, int16_t RadarPos) {
 
         if (Radars[i]->GetRadarType() == ACTUAL)
         {
-            Radars[i]->UpdateVals(RadarValue, RadarPos);
+            Radars[i]->UpdateVals(RadarValue, RadarPosition);
         }
     }
     
+}
+
+void RadarUI::SetFwdObjMap(std::map< int, int> Map)
+{ 
+    //this->AvgObjectsTest = Map; 
+
+    for (int i = 0; i < Radars.size(); i++)
+    {
+
+        if (Radars[i]->GetRadarType() == MAP)
+        {
+            //Radars[i]->UpdateVals(RadarValue, RadarPosition);
+
+            if (RadarMap* Rm = dynamic_cast<RadarMap*>(Radars[i].get()))
+                Rm->SetAvegMap(Map);
+
+        }
+    }
 }
 
 
@@ -228,7 +247,8 @@ void RadarUI::RadarUIDraw() {
     int IdxActual = 0,
         IdxScalLong = 0,
         IdxScaleLat = 0,
-        IdxBackGround = 0;
+        IdxBackGround = 0,
+        IdxMap = 0;
     
     for (int i = 0; i < Radars.size(); i++)
     {
@@ -240,12 +260,18 @@ void RadarUI::RadarUIDraw() {
             IdxScaleLat = i;
         if (Radars[i].get() != nullptr && Radars[i]->GetRadarType() && Radars[i]->GetRadarType() == BACKGROUND)
             IdxBackGround = i;
+        if (Radars[i].get() != nullptr && Radars[i]->GetRadarType() && Radars[i]->GetRadarType() == MAP)
+            IdxMap = i;
         
     }
     //The order of drawing matters
+    //Actual needs to be first;
 
     if (Radars[IdxActual].get() != nullptr && Renders[IdxSector].get() != nullptr)
         Radars[IdxActual]->Draw(Renders[IdxSector]);
+
+    if (Radars[IdxMap].get() != nullptr && Renders[IdxSector].get() != nullptr)
+        Radars[IdxMap]->Draw(Renders[IdxSector]);
 
     //if (Radars[IdxScaleLat].get() != nullptr)
         //Radars[IdxScaleLat]->Draw(Renders[IdxLines]);

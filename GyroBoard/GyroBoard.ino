@@ -122,7 +122,8 @@ float OffsetX = -328.0,
       ScaleX = 0.9797,
       ScaleY = 1.0212;
 
-float Heading = 0,
+float TrueHeading = 0,
+      Heading = 0,
       CalX = 0,
       CalY = 0;
 
@@ -556,7 +557,7 @@ void MeasureCompass()
   CalX = (x - OffsetX) * ScaleX;
   CalY = (y - OffsetY) * ScaleY;
 
-  Heading = atan2(CalY,CalX) * 180.0/PI;
+  TrueHeading = atan2(CalY,CalX) * 180.0/PI;
 
   if(!HeadingInitialized)
   {
@@ -565,7 +566,7 @@ void MeasureCompass()
   }
 
   if(HeadingInitialized)
-    Heading = Heading - HeadingInitialValue;
+    Heading = TrueHeading - HeadingInitialValue;
   
   //if (Heading < 0) Heading += 360.0;
 

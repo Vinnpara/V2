@@ -11,7 +11,7 @@
 
 #include <fstream>
 #include <math.h>
-
+#include <map>
 #include<vector>
 #include <GraphicRender.h>
 #include <Shader.h>
@@ -22,7 +22,8 @@ enum RadarClassType
 	SCALE_LONG = 1,
 	SCALE_LAT = 2,
 	BACKGROUND = 3,
-	ACTUAL = 4
+	ACTUAL = 4,
+	MAP = 5
 };
 
 typedef enum RadarClassType RadarClassType;
@@ -111,7 +112,7 @@ public:
 	}
 
 	void Draw(GraphicRender &Gr1) override;
-	virtual void Draw(std::shared_ptr<GraphicRender> GR) override;
+	void Draw(std::shared_ptr<GraphicRender> GR) override;
 	RadarClassType GetRadarType() override {return type;};
 	//RadarVirtual R;
 protected:
@@ -135,7 +136,7 @@ public:
 		int Vertices);
 
 	void Draw(GraphicRender& Gr1) override;
-	virtual void Draw(std::shared_ptr<GraphicRender> GR) override;
+	void Draw(std::shared_ptr<GraphicRender> GR) override;
 	RadarClassType GetRadarType() override { return type; };
 
 protected:
@@ -160,7 +161,7 @@ public:
 		int Vertices);
 
 	void Draw(GraphicRender& Gr1) override;
-	virtual void Draw(std::shared_ptr<GraphicRender> GR) override;
+	void Draw(std::shared_ptr<GraphicRender> GR) override;
 	RadarClassType GetRadarType() override { return type; };
 
 	glm::mat4 TransformRadarBack;
@@ -185,13 +186,14 @@ public:
 	void UpdateVals(int16_t RadarVal, int16_t RadarPos);
 
 	void Draw(GraphicRender& Gr1) override;
-	virtual void Draw(std::shared_ptr<GraphicRender> GR) override;
+	//void DrawSegment(std::shared_ptr<GraphicRender> GR);
+	void Draw(std::shared_ptr<GraphicRender> GR) override;
 	RadarClassType GetRadarType() override { return type; };
 
 protected:
 
 	float RadarPosM=1.0;
-	float RadarPosC=-82.5;
+	float RadarPosC= -90; //-82.5
 	float RadarScaleM = 0.0395;
 	float RadarScaleC = 0.1;
 	float RadarRedM = -0.005;
@@ -199,11 +201,48 @@ protected:
 	float RadarBlueM = 0.005;
 	float RadarBlueC = 0.0;
 
-	int16_t RadarValue, RadarPosition;
+	//int16_t RadarValue, RadarPosition;
 
 	glm::mat4 TransformRadar;
 	glm::vec4 Colorval=glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	RadarClassType  type = ACTUAL;
 	
+};
+
+/*
+RADAR MAP
+*/
+class RadarMap :public RadarVirtual
+{
+public:
+	RadarMap();
+	RadarClassType GetRadarType() override { return type; };
+
+	void SetAvegMap(std::map< int, int> AvgObjectsTest) {this->AvgObjectsLocal = AvgObjectsTest;};
+
+	void Draw(GraphicRender& Gr1)override {};
+	void Draw(std::shared_ptr<GraphicRender> GR) override;
+
+protected:
+	RadarClassType  type = MAP;
+
+	float RadarPosM = 1.0;
+	float RadarPosC = -90;  //-82.5
+	float RadarScaleM = 0.0395;
+	float RadarScaleC = 0.1;
+	float RadarRedM = -0.005;
+	float RadarRedC = 1.0;
+	float RadarBlueM = 0.005;
+	float RadarBlueC = 0.0;
+
+	//int16_t RadarValue, RadarPosition;
+
+	std::map< int, int> AvgObjectsLocal;
+
+
+	glm::mat4 TransformRadarMap;
+	glm::vec4 ColorRadarMap = glm::vec4(0.2f, 0.3f, 0.6f, 1.0f);
+
+	const int SegmentSize = 10;  //20 for 20 deg resoltuion
 };
 #endif

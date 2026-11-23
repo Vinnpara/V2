@@ -33,6 +33,7 @@
     <ClCompile Include="Line.cpp" />
     <ClCompile Include="MessageHandler.cpp" />
     <ClCompile Include="MSBoard.cpp" />
+    <ClCompile Include="ObjectMap.cpp" />
     <ClCompile Include="Radar.cpp" />
     <ClCompile Include="RadarBoard.cpp" />
     <ClCompile Include="RadarUI.cpp" />
@@ -75,6 +76,7 @@
     <ClInclude Include="include\Lane.h" />
     <ClInclude Include="include\MessageHandler.h" />
     <ClInclude Include="include\MSBoard.h" />
+    <ClInclude Include="include\ObjectMap.h" />
     <ClInclude Include="include\Radar.h" />
     <ClInclude Include="include\RadarBoard.h" />
     <ClInclude Include="include\RadarUI.h" />
