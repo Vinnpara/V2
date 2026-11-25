@@ -243,6 +243,29 @@ void GyroBoard::SortAndUpdateFromPacket(std::string& DataPacket)
            AccelZ = measureval;
             break;
         }
+        case MEASURED_HDG:
+        {
+            std::string StrRaw;
+
+            for (int i = DataPacket.size(); i > -1; i--)
+            {
+                if (DataPacket[i] == ':')
+                    break;
+                else
+                    StrRaw.push_back(DataPacket[i]);
+
+            }
+
+            std::reverse(StrRaw.begin(), StrRaw.end());
+            float measureval = 0;
+            measureval = std::stof(StrRaw);
+            //std::cout << "\n HDG " << measureval<<" "<< StrRaw;
+            //if (measureval > 0)
+                //measureval = (measureval / 100); //Verify with gain on ard side
+
+            Heading = measureval;
+            break;
+        }
         case ARD_COMMS_EST:
         {
             CommsEst = 1;

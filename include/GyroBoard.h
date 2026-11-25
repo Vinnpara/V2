@@ -32,7 +32,8 @@ public:
 	float GetPitch() { return Pitch;}
 	float GetAccelX() { return AccelX;}
 	float GetAccelY() { return AccelY;}
-	float GetAccelZ() { return AccelZ;}	
+	float GetAccelZ() { return AccelZ;}
+	float GetHeading() { return Heading; }
 
 	const char* GetName() override { return "GYRO"; };
 	BoardSelection GetBoardIdent() override { return GYROSCOPE_BOARD; };
@@ -48,7 +49,8 @@ private:
 		     Pitch = 0,
 		     AccelX = 0,
 		     AccelY = 0,
-		     AccelZ = 0;
+		     AccelZ = 0,
+			 Heading = 0;
 
 		bool isValidFloat(const std::string& str);
 

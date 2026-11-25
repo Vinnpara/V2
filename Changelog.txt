@@ -72,3 +72,8 @@ seep angle.
 22/11/2026
 Added Object map to cal averages of segments. Currently, set to a resolution of 10 degree segments, where what is displayed
 is the average distance measured. The measured dist function might need work. Also corrected the offset of radar actual
+
+24/11/2026
+Added heading as another variable gyro transmits. This is relative to North. Reasonably accurate, upto 5 deg. Need to work
+on how zero the yaw properly. add the heading graphic to the radar. Current gyro transmission rate is 40 Hz. Program exec
+rate is about 70-85 Hz

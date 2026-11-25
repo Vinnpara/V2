@@ -372,10 +372,48 @@ void RadarScaleLateral::Draw(std::shared_ptr<GraphicRender> GR) {
 	static int TriangleHalves = int(NumberOfTriangles / 2);
 	int j;
 
-
+	/*
 	for (j = 0; j <= 200; j += 10) {
 
 		float ScaleValue = ConvertValue(float(j), mRadarLateral, CRadarLateral);
+
+		for (int t = 0; t < TriangleHalves; t++) {
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians(-(float)t);
+			transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			TransformRadarScale = transform;
+
+			GR->UseShader();
+			GR->Draw(true, this->ColorRadarScale, this->TransformRadarScale);
+
+		}
+
+		for (int t = 0; t < TriangleHalves; t++) {
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			float AngleTest = glm::radians((float)t);
+			transform = glm::scale(transform, glm::vec3(ScaleValue, ScaleValue, ScaleValue));
+			transform = glm::rotate(transform, AngleTest, glm::vec3(0.0f, 0.0f, 1.0f));
+			TransformRadarScale = transform;
+
+			GR->UseShader();
+			GR->Draw(true, this->ColorRadarScale, this->TransformRadarScale);
+
+		}
+	}
+	*/
+	/*const int Marker1 = 20,
+		      Marker2 = 50,
+		      Marker3 = 100,
+		      Marker4 = 200;*/
+
+	const int Markers[6] = {20, 50 ,100 }; //In cm
+
+	for (j = 0; j <= 3; j ++) 
+	{
+		float ScaleValue = ConvertValue(float(Markers[j]), mRadarLateral, CRadarLateral);
 
 		for (int t = 0; t < TriangleHalves; t++) {
 

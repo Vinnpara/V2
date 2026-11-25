@@ -122,13 +122,20 @@ float OffsetX = -328.0,
       ScaleX = 0.9797,
       ScaleY = 1.0212;
 
+//On robot
+float OffsetXRob = -175.5,
+      OffsetYRob = 365.0,
+      ScaleXRob = 0.9756,
+      ScaleYRob = 1.0257;
+      
+
 float TrueHeading = 0,
+      TrueHeadingPC = 0,
       Heading = 0,
       CalX = 0,
       CalY = 0;
 
 static float HeadingInitialValue = 0.0;
-
 static bool HeadingInitialized = false;
 
 //Kalman filter
@@ -189,10 +196,10 @@ static  bool StartValid = 0,
 //static unsigned long loopCount = 0;
 //static unsigned long lastRateCheck = 0;
 
-const unsigned long SEND_INTERVAL_MS = 30; //CAUTION: Make sure PC program 10:100Hz, 20:50Hz, 30:33 Hz   
+const unsigned long SEND_INTERVAL_MS = 25; //CAUTION: Make sure PC program 10:100Hz, 20:50Hz, 30:33 Hz   
 static unsigned long lastSendTime = 0;  //executes at a faster rate than this
 
-const unsigned long SEND_INTERVAL_MSHB = 30;//CAUTION: Make sure PC program 
+const unsigned long SEND_INTERVAL_MSHB = 25;//CAUTION: Make sure PC program 
 static unsigned long lastSendTimeHB = 0;   //executes at a faster rate than this
                                             //Sending Acc introduces a slight lag ocassionally 
                                             //with 10, 12 is safe. 30
@@ -317,6 +324,7 @@ if(CommsEstablished && (millis() - lastSendTime >= SEND_INTERVAL_MS))
    SendDataPackets(MEASURED_PITCH,pitch);
    SendDataPackets(MEASURED_ROLL,roll);
    SendDataPackets(MEASURED_YAW,yaw);
+   SendDataPackets(MEASURED_HDG,TrueHeading); //GyroZ, TrueHeadingPC   
    //SendDataPackets(MEASURED_ACCEL_X, AccX);
    //SendDataPackets(MEASURED_ACCEL_Y, AccY);
    //SendDataPackets(MEASURED_ACCEL_Z, AccZ);              
@@ -554,21 +562,26 @@ void MeasureCompass()
   int z = compass.getZ();
   //int azimuth = compass.getAzimuth();
   //if (azimuth < 0) azimuth += 360.0;
-  CalX = (x - OffsetX) * ScaleX;
-  CalY = (y - OffsetY) * ScaleY;
+  CalX = (x - OffsetXRob) * ScaleXRob;
+  CalY = (y - OffsetYRob) * ScaleYRob;
 
-  TrueHeading = atan2(CalY,CalX) * 180.0/PI;
+  TrueHeading = atan2(-CalY,-CalX) * 180.0/PI;
+
+  if(TrueHeading < 0)
+  {
+    TrueHeading = 180 + (180 - abs(TrueHeading));
+  }
+
+  //if (TrueHeading < 0 ) TrueHeading += 360.0;
 
   if(!HeadingInitialized)
   {
-     HeadingInitialValue = Heading;
+     HeadingInitialValue = TrueHeading;
      HeadingInitialized = 1;
   }
 
   if(HeadingInitialized)
     Heading = TrueHeading - HeadingInitialValue;
-  
-  //if (Heading < 0) Heading += 360.0;
 
  }
 

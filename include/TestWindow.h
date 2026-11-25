@@ -198,8 +198,7 @@ private:
 	ElapsedTimeWritten,
 	VelxWritten,
 	VelyWritten,
-	VelcWritten
-	;
+	HeadingWritten;
 	bool PitchValid,
 		 RollValid;
 

@@ -273,8 +273,8 @@ void RadarUI::RadarUIDraw() {
     if (Radars[IdxMap].get() != nullptr && Renders[IdxSector].get() != nullptr)
         Radars[IdxMap]->Draw(Renders[IdxSector]);
 
-    //if (Radars[IdxScaleLat].get() != nullptr)
-        //Radars[IdxScaleLat]->Draw(Renders[IdxLines]);
+    if (Radars[IdxScaleLat].get() != nullptr)
+        Radars[IdxScaleLat]->Draw(Renders[IdxLines]);
 
     if (Radars[IdxScalLong].get() != nullptr && Renders[IdxSector].get() != nullptr)
         Radars[IdxScalLong]->Draw(Renders[IdxSector]);

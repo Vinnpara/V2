@@ -355,7 +355,7 @@ int main()
         DiagWindow->UpdateAccelDiag(TL1.ReturnAccelX(), TL1.ReturnAccelY(), TL1.ReturnAccelZ());
         DiagWindow->UpdateRadarDaignostcs(TL1.GetRadarVal(), TL1.GetRadarPos());
         DiagWindow->UpdateMotorSteering(TL1.ReturnSteerAngle(), TL1.ReturnThrottleAngle());
-        DiagWindow->UpdateVelDiag(TL1.ReturnVelx(), TL1.ReturnVely(), TL1.ReturnVelocityCombined());
+        DiagWindow->UpdateVelDiag(TL1.ReturnVelx(), TL1.ReturnVely(), TL1.ReturnHeading());
         DiagWindow->UpdateElapsedTime(TL1.ReturnTotalTime());
 
 

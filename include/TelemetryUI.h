@@ -93,6 +93,10 @@ public:
 	{
 		return Yaw;
 	}
+	float ReturnHeading() /*INTERFACE*/
+	{
+		return Heading;
+	}
 	float ReturnAccelX() /*INTERFACE*/  {
 
 		return AccelX;
@@ -227,6 +231,7 @@ private:
 		  AccelX,
 		  AccelY,
 		  AccelZ,
+		  Heading,
 		  ConvertedRoll,
 		  ConvertedPitch,
 		  ConvertedYaw,
