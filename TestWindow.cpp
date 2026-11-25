@@ -27,7 +27,7 @@ double Yaw,
 	   AccelZ,
 	   VelX,
 	   VelY,
-	   VelComp
+	   Heading
 	   ;
 
 bool  YawValid,
@@ -47,7 +47,7 @@ LPWSTR PitchWritten,
 	   ElapsedTimeWritten,
 	   VelxWritten,
 	   VelyWritten,
-	   VelcWritten,
+	   HeadingWritten,
 	   TotalTimeElapsedWritten
 	   ;
 
@@ -1205,11 +1205,11 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			VelY.bottom = 25
 			;
 
-		RECT VelCom;
-		VelCom.left = 265,
-			VelCom.top = 190,
-			VelCom.right = 100,
-			VelCom.bottom = 25
+		RECT Heading;
+		Heading.left = 265,
+			Heading.top = 190,
+			Heading.right = 100,
+			Heading.bottom = 25
 			;
 
 		RECT TotalTime;
@@ -1350,10 +1350,10 @@ LRESULT CALLBACK WindProcDiag(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			NULL
 		);
 
-		CreateWindow(TEXT("STATIC"), TEXT("Vel Comp"),
+		CreateWindow(TEXT("STATIC"), TEXT("Heading"),
 			WS_VISIBLE | WS_CHILD,
-			VelCom.left, VelCom.top,
-			VelCom.right, VelCom.bottom,
+			Heading.left, Heading.top,
+			Heading.right, Heading.bottom,
 			hWnd,
 			(HMENU)NULL,
 			NULL,
@@ -2167,14 +2167,14 @@ void TestWindow::UpdateVelDiag(float velx, float vely, float velcomp) {
 	VelyWritten = portName1;
 
 
-	VelComp = velcomp;
-	std::string str3 = std::to_string(Yaw);
+	Heading = velcomp;
+	std::string str3 = std::to_string(Heading);
 	size_t size3 = str3.size() + 1;
 	const char* const_p3 = str3.c_str();
 	wchar_t* portName2 = new wchar_t[size2];
 	size_t outSize3;
 	mbstowcs_s(&outSize3, portName2, size3, const_p3, size3 - 1);
-	VelcWritten = portName2;
+	HeadingWritten = portName2;
 
 
 }
@@ -2577,7 +2577,7 @@ void TestWindow::DrawDiagnostic(HWND hWnd) {
 
 	DrawText(dc, VelxWritten, -1, &rect13, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	DrawText(dc, VelyWritten, -1, &rect14, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-	DrawText(dc, VelcWritten, -1, &rect15, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	DrawText(dc, HeadingWritten, -1, &rect15, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	DrawText(dc, TotalTimeElapsedWritten, -1, &rect16, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	

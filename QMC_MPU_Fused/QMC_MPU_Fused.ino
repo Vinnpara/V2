@@ -53,10 +53,21 @@ float OffsetX = -328.0,
       OffsetY = 452.0,
       ScaleX = 0.9797,
       ScaleY = 1.0212;
+//On robot
+
+float OffsetXRob = -175.5,
+      OffsetYRob = 365.0,
+      ScaleXRob = 0.9756,
+      ScaleYRob = 1.0257;
+      
+int RawXCompass,RawYCompass;
+
 
 float Heading = 0,
       CalX = 0,
       CalY = 0;
+      
+int azimuth =0;
 
 static float HeadingInitialValue = 0.0;
 
@@ -79,8 +90,19 @@ MeasureCompass();
 Serial.print("Roll: "); Serial.print(roll);
 Serial.print(" | Pitch: "); Serial.print(pitch);
 Serial.print(" | Yaw: "); Serial.print(yaw);
-Serial.print(" Heading: "); Serial.print(Heading);
+Serial.print(" |  Heading: "); Serial.print(Heading);
+Serial.print(" |  Az: "); Serial.print(azimuth);
 Serial.println();
+
+/*
+ * Manual cal
+*/
+
+//Serial.print("CompassRawX: "); Serial.print(RawXCompass);
+//Serial.print(" | CompassRawY: "); Serial.print(RawYCompass);
+//Serial.println();
+
+
 }
 
 void GyroSetup()
@@ -280,13 +302,24 @@ void MeasureGyro(){
   int x = compass.getX();
   int y = compass.getY();
   int z = compass.getZ();
-  //int azimuth = compass.getAzimuth();
-  //if (azimuth < 0) azimuth += 360.0;
-  CalX = (x - OffsetX) * ScaleX;
-  CalY = (y - OffsetY) * ScaleY;
 
-  Heading = atan2(CalY,CalX) * 180.0/PI;
+  RawXCompass = x;
+  RawYCompass = y; 
+  
+  int azimuth = compass.getAzimuth();
+  if (azimuth < 0) azimuth += 360.0;
+  
+  CalX = (x - OffsetXRob) * ScaleXRob;
+  CalY = (y - OffsetYRob) * ScaleYRob;
 
+  Heading = atan2(-CalY,-CalX) * 180.0/PI;
+
+  if(Heading < 0)
+  {
+    Heading = 180 + (180 - abs(Heading));
+  }
+  
+/*
   if(!HeadingInitialized)
   {
      HeadingInitialValue = Heading;
@@ -295,7 +328,8 @@ void MeasureGyro(){
 
   if(HeadingInitialized)
     Heading = Heading - HeadingInitialValue;
-  
+*/
+ 
   //if (Heading < 0) Heading += 360.0;
 
  }

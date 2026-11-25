@@ -174,6 +174,10 @@ bool ArduinoBoard::ValidSerialOrder(SerialOrder order)
     {
         return true;
     }
+    case MEASURED_HDG:
+    {
+        return true;
+    }
     case MEASURED_ACCEL_X:
     {
         return true;
@@ -469,6 +473,7 @@ void ArduinoBoard::RefineDataPackets()
 
     if (DataPackets.size() > 1)
     {
+        
         for (int i = 0; i < DataPackets.size(); i++)
         {
             bool ValidOrder = 0,
@@ -478,9 +483,6 @@ void ArduinoBoard::RefineDataPackets()
                 DataPacketValid = 0;
 
             int DecimalColonCounter = 0;
-
-            //std::cout << "\nPacket content in "<< i<<" " << DataPackets[i];
-
 
             if (DataPackets[i].size() < 2 && DataPackets[i].size() > 0)
             {
@@ -581,6 +583,8 @@ void ArduinoBoard::RefineDataPackets()
             }
 
 
+            //std::cout << "\nPre refined packet " << i << " " << DataPackets[i] <<" "<<ValidOrder << " " << SecondMemberValid << " " << ValidNumberOfCommaColons << " " << NoSquareBrackets;
+
             if (DataPacketValid)
                 RefinedPackets.push_back(DataPacket);
 
@@ -603,7 +607,7 @@ void ArduinoBoard::ProcessDataPackets()
             std::string DataPacket = DataPackets[i];
             SortAndUpdateFromPacket(DataPacket);
 
-            //std::cout << "\n Packet contents process function " << DataPacket;
+            //std::cout << "\n Packet contents process function " << DataPackets[i];
         }
 
     }

@@ -434,9 +434,11 @@ void TelemetryUI::UpdateGyroData()
                 Pitch = Gy->GetPitch();
                 Roll = Gy->GetRoll();
                 Yaw = Gy->GetYaw();
+                Heading = Gy->GetHeading();
                 AccelX = Gy->GetAccelX();
                 AccelY = Gy->GetAccelY();
                 AccelZ = Gy->GetAccelZ();
+                Heading = Gy->GetHeading();
             }
         }
     }

@@ -49,6 +49,7 @@ void ObjectMap::UpdateSegment()
 		AngleSegment *= 10;  //20
 
 
+
 	}
 
 	/*

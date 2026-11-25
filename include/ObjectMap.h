@@ -44,7 +44,7 @@ private:
 	std::pair <int, std::vector<std::pair <int, int>>> SegmentScanned;
 
 	static std::map< int, std::vector<std::pair <int, int>>> ObjectsDetected; //first element: segment, second
-	const int NumberOfSegments = 9;                                           //is a vector of pairs Radarpos first, 
+                                                                              //is a vector of pairs Radarpos first, 
 	                                                                          //radarval second.
 	
 	static bool SegmentIsScanned;
